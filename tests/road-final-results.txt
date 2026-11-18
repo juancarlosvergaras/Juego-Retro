@@ -1,0 +1,142 @@
+TAP version 13
+# Subtest: mission three defers combat through the helicopter introduction and begins at full health
+ok 1 - mission three defers combat through the helicopter introduction and begins at full health
+  ---
+  duration_ms: 45.93
+  type: 'test'
+  ...
+# Subtest: mecha activates only at its arena and survives damage until its single-phase destruction completes
+ok 2 - mecha activates only at its arena and survives damage until its single-phase destruction completes
+  ---
+  duration_ms: 1103.8967
+  type: 'test'
+  ...
+# Subtest: robot reward and selected second weapon survive resume, with four forms and separate ammunition
+ok 3 - robot reward and selected second weapon survive resume, with four forms and separate ammunition
+  ---
+  duration_ms: 21.6973
+  type: 'test'
+  ...
+# Subtest: checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+ok 4 - checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+  ---
+  duration_ms: 31.6416
+  type: 'test'
+  ...
+# Subtest: mission three exit plays its finale then transfers once to mission four, preserving the destination through pause and pagehide
+ok 5 - mission three exit plays its finale then transfers once to mission four, preserving the destination through pause and pagehide
+  ---
+  duration_ms: 8.8103
+  type: 'test'
+  ...
+# Subtest: an interrupted mission three finale resumes before handing off to the road
+ok 6 - an interrupted mission three finale resumes before handing off to the road
+  ---
+  duration_ms: 8.1781
+  type: 'test'
+  ...
+# Subtest: touch stick supports all eight movement and firing directions
+ok 7 - touch stick supports all eight movement and firing directions
+  ---
+  duration_ms: 0.4952
+  type: 'test'
+  ...
+# Subtest: stick deadzone prevents drift, outer ring sprints and boosts vertical jet flight
+ok 8 - stick deadzone prevents drift, outer ring sprints and boosts vertical jet flight
+  ---
+  duration_ms: 0.4902
+  type: 'test'
+  ...
+# Subtest: three fingers can move, jump and fire; releasing one does not clear another or the keyboard
+ok 9 - three fingers can move, jump and fire; releasing one does not clear another or the keyboard
+  ---
+  duration_ms: 0.4755
+  type: 'test'
+  ...
+# Subtest: cancel, lost capture and orientation cleanup release each contact exactly once
+ok 10 - cancel, lost capture and orientation cleanup release each contact exactly once
+  ---
+  duration_ms: 0.3022
+  type: 'test'
+  ...
+# Subtest: introduction blocks road progress and combat for five active seconds
+ok 11 - introduction blocks road progress and combat for five active seconds
+  ---
+  duration_ms: 1.3853
+  type: 'test'
+  ...
+# Subtest: turbo increases progress, lanes clamp, and jumps land on their road lane
+ok 12 - turbo increases progress, lanes clamp, and jumps land on their road lane
+  ---
+  duration_ms: 0.8341
+  type: 'test'
+  ...
+# Subtest: road contains all motorized enemy types and stops distance at boss without skipping it
+ok 13 - road contains all motorized enemy types and stops distance at boss without skipping it
+  ---
+  duration_ms: 0.7737
+  type: 'test'
+  ...
+# Subtest: boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+ok 14 - boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+  ---
+  duration_ms: 12.4355
+  type: 'test'
+  ...
+# Subtest: wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+ok 15 - wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+  ---
+  duration_ms: 1.3259
+  type: 'test'
+  ...
+# Subtest: robot fires two owned guns with independent rates and spends actual ammo
+ok 16 - robot fires two owned guns with independent rates and spends actual ammo
+  ---
+  duration_ms: 0.7427
+  type: 'test'
+  ...
+# Subtest: red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+ok 17 - red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+  ---
+  duration_ms: 0.1594
+  type: 'test'
+  ...
+# Subtest: swept collision detects fast shots crossing the whole enemy between frames
+ok 18 - swept collision detects fast shots crossing the whole enemy between frames
+  ---
+  duration_ms: 0.0779
+  type: 'test'
+  ...
+# Subtest: checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+ok 19 - checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+  ---
+  duration_ms: 0.18
+  type: 'test'
+  ...
+# Subtest: mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+ok 20 - mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+  ---
+  duration_ms: 0.2132
+  type: 'test'
+  ...
+# Subtest: interrupted road finale resumes, credits no second reward, and reaches completion
+ok 21 - interrupted road finale resumes, credits no second reward, and reaches completion
+  ---
+  duration_ms: 0.9048
+  type: 'test'
+  ...
+# Subtest: a simultaneous final hit and enemy bullet finishes the boss without trapping the victory behind a death menu
+ok 22 - a simultaneous final hit and enemy bullet finishes the boss without trapping the victory behind a death menu
+  ---
+  duration_ms: 0.1288
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1287.4882

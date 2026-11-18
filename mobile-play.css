@@ -1,0 +1,56 @@
+/* Touch controls occupy their own space, never the canvas. */
+.mobile-hud,.mobile-controls,.mobile-fullscreen,.mobile-stars{display:none}
+.mobile-play .mobile-stars{display:block;color:#ffd589;font-size:11px;order:-1}
+.mobile-play body{height:100dvh;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.mobile-play .header,.mobile-play .intro,.mobile-play .page-footer,.mobile-play aside{display:none}
+.mobile-play main{height:100%;max-width:none;margin:0;padding:0}
+.mobile-play .layout{height:100%;display:block}
+.mobile-play .game-card{position:relative;height:100%;display:flex;flex-direction:column;border:0;border-radius:0;box-shadow:none;overflow:hidden}
+.mobile-play .game-toolbar{flex:0 0 44px;height:44px;padding:0 10px;gap:6px;letter-spacing:0;flex-wrap:nowrap}
+.mobile-play .game-toolbar>span:first-child,.mobile-play .profile-badge,.mobile-play .game-toolbar #sound-toggle,.mobile-play .game-toolbar kbd{display:none}
+.mobile-play .game-toolbar .score-hud{margin:0 auto 0 0;font-size:9px}.mobile-play .score-hud strong{font-size:14px}
+.mobile-play .game-toolbar button{height:44px;min-width:48px;font-size:13px;border:1px solid #516473;border-radius:6px}
+.mobile-play .mobile-fullscreen{display:block;font-size:24px!important}
+.mobile-play .game-card>.boss-hud{height:26px;min-height:26px;flex:0 0 26px;padding:3px 10px;font-size:9px}
+.mobile-play .game-card>.boss-hud[hidden]{display:none}.mobile-play .boss-hud .life-track{height:4px;margin-top:2px}
+:root.mobile-play .game-card .viewport{height:auto;min-height:0;flex:1;aspect-ratio:auto;background:#101821;touch-action:none}
+.mobile-play .viewport>canvas{width:100%;height:100%;object-fit:contain}
+.mobile-play .viewport .hud,.mobile-play #power-wheel,.mobile-play .ammo-hud,.mobile-play .combat-hud,.mobile-play #challenge-status,.mobile-play .route,.mobile-play .touch-controls,.mobile-play .touch-two,.mobile-play .weapon-dock,.mobile-play .game-footer,.mobile-play #power-status{display:none!important}
+.mobile-play .mobile-hud{display:grid;grid-template-columns:64px minmax(0,1fr) 76px;gap:9px;padding:5px 12px;flex:0 0 44px;height:44px;background:#16252e;border-block:1px solid #35454f;align-items:center}
+.mobile-hud strong,.mobile-hud small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobile-hud strong{font-size:12px;color:#ffe0a0}.mobile-hud small{font-size:9px;color:#afc2c8;line-height:14px}
+.mobile-life{position:relative;padding-top:1px}.mobile-life small{display:none}.mobile-life strong{color:#a7e7b4}
+.mobile-life progress{display:block;width:100%;height:6px;accent-color:#98d8a5;margin-top:3px}
+.mobile-resources{text-align:right}
+.mobile-play .mobile-controls{display:grid;grid-template-columns:122px 1fr;grid-template-rows:118px 48px;gap:6px 12px;align-items:center;flex:0 0 184px;padding:6px 12px;background:#111d26;border-top:1px solid #425660;touch-action:none;user-select:none;-webkit-user-select:none}
+.mobile-stick-area{width:116px;text-align:center}.mobile-stick-area>small{display:block;font-size:8px;color:#91a8b1;margin-top:4px;letter-spacing:.4px}
+.mobile-stick{position:relative;width:104px;height:104px;margin:0 auto;border:2px solid #506976;border-radius:50%;background:radial-gradient(circle,#1b303e 0 40%,#152632 41%);touch-action:none}
+.stick-arrows{position:absolute;inset:0;display:grid;place-items:center;font-size:75px;color:#78919a55}
+.mobile-stick i{position:absolute;left:31px;top:31px;width:38px;height:38px;border-radius:50%;background:#526b78;border:2px solid #a2bcc6;box-shadow:0 4px 10px #0005;pointer-events:none}
+.mobile-stick.held{border-color:#f7c76a}
+.mobile-actions{display:grid;grid-template-columns:repeat(2,minmax(48px,72px));grid-template-rows:56px 46px;gap:6px;justify-content:end}
+.mobile-controls button{min-width:44px;min-height:44px;padding:3px;border:1px solid #607783;border-radius:10px;background:#223746;color:#e5eff2;font-size:11px;font-weight:600;touch-action:none;user-select:none;-webkit-user-select:none}
+.mobile-controls button.held{background:#4d6b7d;border-color:#fff}.mobile-controls button:disabled{opacity:.5}
+.mobile-actions .mobile-fire{background:#8c4636;border-color:#d99879}.mobile-actions .mobile-jump{background:#e2ac46;color:#18202a;border-color:#ffda86}
+.mobile-kick{grid-column:2}.mobile-tools{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+.mobile-tools button{font-size:10px;line-height:13px;overflow-wrap:anywhere}
+.mobile-play #context-two,.mobile-play .toast{left:50%;bottom:5px;max-width:90%;width:max-content;padding:5px 9px;font-size:10px;white-space:normal;transform:translateX(-50%);pointer-events:none}
+.mobile-play #tutorial-hint{left:5px;right:5px;bottom:5px;width:auto;max-width:none;padding:5px 9px;display:grid;grid-template-columns:1fr 44px;align-items:center;gap:2px 7px}
+.mobile-play #tutorial-hint[hidden]{display:none}.mobile-play #tutorial-hint .tutorial-label{display:none}.mobile-play #tutorial-hint strong{font-size:11px}.mobile-play #tutorial-hint p{font-size:10px;margin:0;line-height:1.25;grid-column:1}.mobile-play #tutorial-hint button{grid-column:2;grid-row:1/3;min-height:44px;padding:2px}
+@media(orientation:landscape) and (min-width:500px){
+ .mobile-play .mobile-hud{flex-basis:36px;height:36px;padding-block:2px}.mobile-play .game-toolbar{flex-basis:44px}
+ :root.mobile-play .game-card .viewport{margin-left:136px;margin-right:128px}
+ .mobile-play .mobile-controls{display:contents}
+ .mobile-play .mobile-stick-area{position:absolute;left:10px;bottom:6px}
+ .mobile-play .mobile-tools{position:absolute;left:7px;top:88px;width:122px;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ .mobile-play .mobile-tools button{min-height:44px}
+ .mobile-play .mobile-actions{position:absolute;right:6px;bottom:30px;width:116px;grid-template-columns:repeat(2,55px);grid-template-rows:60px 50px}
+ .mobile-play .mobile-stick{width:94px;height:94px}.mobile-play .mobile-stick i{left:26px;top:26px}
+ .mobile-play .mobile-stick-area>small{font-size:7px}
+}
+@media(orientation:landscape) and (max-height:370px){
+ .mobile-play .mobile-tools{top:82px;gap:2px}.mobile-play .mobile-tools button{min-height:44px}
+ .mobile-play .mobile-stick{width:82px;height:82px}.mobile-play .mobile-stick i{left:20px;top:20px}.mobile-play .mobile-stick-area>small{display:none}
+}
+
+.mobile-play .game-toolbar .developer-badge{max-width:85px;overflow:hidden;text-overflow:ellipsis;font-size:8px}

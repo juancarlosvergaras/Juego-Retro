@@ -1,0 +1,8 @@
+const T=ArcadeCityTank,I=ArcadeImpact,ctx=document.getElementById('scene').getContext('2d'),images={},p={x:3750,y:620};let tank=T.create(),bullets=[],blasts=[],last=0,paused=false;
+function tick(dt){T.update(tank,p,dt,bullets,blasts);for(const b of blasts)b.life-=dt;blasts=blasts.filter(b=>b.life>0);}
+function reset(dead=false){tank=T.create();bullets=[];blasts=[];if(dead)T.damage(tank,100);}
+document.getElementById('reset').onclick=()=>{reset();paused=false;};
+document.getElementById('destroy').onclick=()=>{reset(true);paused=false;};
+document.getElementById('time').oninput=e=>{reset(true);paused=true;let time=Number(e.target.value);while(time>0){const dt=Math.min(1/120,time);tick(dt);time-=dt;}};
+function draw(now){const dt=Math.min(.03,(now-last)/1000||0);last=now;if(!paused)tick(dt);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#3d4d57';ctx.fillRect(0,0,1100,560);ctx.fillStyle='#979887';ctx.fillRect(0,421,1100,7);ctx.fillStyle='#222d32';ctx.fillRect(0,428,1100,132);ctx.save();ctx.translate(-3500,-200);T.draw(ctx,tank,images.tank,images.crew,images.fragments);for(const blast of blasts)I.draw(ctx,blast);ctx.restore();document.getElementById('status').textContent=tank.hp>0?'En combate':tank.deathAge.toFixed(2)+' s · '+tank.fragments.length+' piezas';requestAnimationFrame(draw);}
+Promise.all(Object.entries({fragments:'tanque-fragmentos-v1.png',tank:'tanques-batalla-v1.png',crew:'tanque-tripulante-granada-v1.png',impact:'explosion-impacto-v1.png'}).map(([key,file])=>new Promise(resolve=>{const i=new Image();i.onload=()=>{images[key]=key==='crew'||key==='fragments'?prepareWhiteDeath(i):i;resolve();};i.src='../assets/sprites/'+file;}))).then(()=>{I.setSheet(images.impact);requestAnimationFrame(draw);});

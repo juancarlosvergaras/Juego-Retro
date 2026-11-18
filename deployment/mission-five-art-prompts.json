@@ -1,0 +1,46 @@
+{
+  "tool": "image_gen integrado",
+  "mode": "Built-in; no CLI",
+  "prompts": [
+    {
+      "id": "tank",
+      "path": "assets/sprites/mini-tanque-submarino-v1.png",
+      "prompt": "Production pixel art game sprite atlas, truly transparent RGBA background. EXACT 4 columns by 4 rows equal cells, 1536x1536. All sprites face RIGHT orthographic side view, isolated with generous padding, no text or grid. Consistent miniature olive military TANK playable character, chunky tracks, one oversized silver SUPER CANNON, blue optic slit, orange exhaust, crisp dark outline detailed 1990s arcade pixel clusters. SAME vehicle scale and center in each cell. Row1 four frames moving tracks and suspension. Row2 four firing sequence frames: charge blue muzzle, full cannon blast, cannon recoil, recovery. Row3 four transformation frames from tank to compact yellow olive MINI SUBMARINE: tracks folding into hull, armor closing watertight, propeller deploying, finished submarine with round glass cockpit and cannon torpedo tube. Row4 finished mini submarine four animation frames cruising propeller, diving pitched slightly, firing torpedo with bubbles, recoil. All within cells, transparent no floor shadow no scenery. Tank approximately twice human width, original design consistent military arcade game."
+    },
+    {
+      "id": "sea",
+      "path": "assets/worlds/mission-05/abismo-submarino-v1.png",
+      "prompt": "Pixel art background environment atlas for detailed 1990s side scrolling military arcade game. Opaque 1536x1024, EXACTLY two equal horizontal panels. TOP HALF: underwater deep ocean side view, cyan shafts of sun from top fading into navy abyss, distant ruined ships silhouettes, layered jagged rocks, coral seabed along bottom, sparse particles. No enemies no characters no text. BOTTOM HALF: interior of enormous military submarine side-scrolling combat room, dark steel walls, riveted pillars, pipes, glowing teal sonar screens, round portholes looking into deep blue water, yellow lamps, a continuous FLAT walkable steel floor at 92 percent of this lower panel. Both panels panoramic horizontally continuous, strict side view, no vanishing point. Crisp detailed pixel clusters and sharp edges, restrained steel teal navy with amber lights, not smooth painted art. These panels are used separately as ocean backdrop and final boss arena."
+    },
+    {
+      "id": "captain",
+      "path": "assets/sprites/capitan-abismo-v1.png",
+      "prompt": "Production pixel art sprite atlas transparent RGBA, EXACT 4 columns by 4 rows equal cells, square1536x1536. One ORIGINAL HUMAN naval captain boss, middle aged bearded rugged man wearing dark navy long coat, gold epaulets, captain peaked hat, armored trousers boots, mechanical weapons backpack but face fully human. Orthographic side view facing LEFT in EVERY cell. Same proportions, head size, baseline, detailed crisp dark outline military 1990s arcade pixel art, not blurry. Large isolated frames with generous padding. ROW1 4 walking frames holding heavy rotary gun aimed LEFT. ROW2 4 gun attack sequence: aiming, barrel spinning muzzle flash, firing, recovering. ROW3 4 distinct attacks: shoulder missile launcher firing LEFT-UP, throwing electric grenade LEFT, crouched planting shock emitter, arms spreading in rage. ROW4 death/reward sequence: stagger injured, dropping weapons kneeling, slumped defeated alive no gore, same discarded coat backpack and hat empty on floor. No background no text no borders no ground. Each character entirely contained in its own uniformcell."
+    },
+    {
+      "id": "naval",
+      "path": "assets/sprites/enemigos-marinos-v1.png",
+      "prompt": "Pixel art marine arcade asset atlas with transparent RGBA background EXACT4 columns x3 rows equal cells1536x1152. Strict side view, detailed crisp restrained navy olive teal steel, dark outlines, no text no grid no scenery, generous padding. ROW1 4 frames of enemy military scuba diver human with mask fins oxygen tank and speargun aimed LEFT, swimming cycle with distinct alternating bent legs. ROW2 left two cells enemy compact navy attack submarine facing LEFT cruise and torpedo launch. Row2 cell3 spiked naval mine with red blinking center; cell4 damaged exploded naval mine with metal parts. ROW3 cell1 gigantic sinister military SUBMARINE exterior facing RIGHT, long full hull with conningtower windows and hatch and propellers, entire vessel fits cell; cell2 large round submarine airlock door closed side view; cell3 same airlock open; cell4 floating diving checkpoint sonar buoy with glowing green screen. Everycell isolated transparent, identical object scale for alternateframes, sprites usable in side scrolling game. No gradients or smooth vector objects."
+    },
+    {
+      "id": "divers",
+      "path": "assets/sprites/personajes-buceo-v1.png",
+      "prompt": "Detailed military arcade pixel art SPRITE SHEET transparent RGBA, EXACT 4 columns by 4 rows square1536x1536. Playable characters swimming RIGHT, horizontal torso slightly inclined, mask transparent face visible, small oxygen backpack, dark outlines and crisp pixels, original classic arcade aesthetic. All sprites uniformcell size with padding. Row1 same olive HELMET SOLDIER underwater with fins four swim cycle poses, speargun forward. Row2 same anthropomorphic gray WOLF olive vest underwater with oxygen mask four swimming poses, arms paddling claws. Row3 same green ZOMBIE SOLDIER torn olive uniform underwater four swimming poses with green electric hand, no weapons. Row4 same silver skull ROBOT red eye olive chest underwater four swimming poses with dual compact guns. Maintain consistent scale, each character body fully inside cell. No text no labels no background no bubbles outside cell."
+    },
+    {
+      "id": "fighter",
+      "path": "assets/sprites/luchador-combate-v1.png",
+      "prompt": "Production playable FIGHTER character pixel art sprite atlas transparent RGBA. EXACT4columns by4rows uniform square1536x1536, every sprite isolated and entirely inside own cell with generous margins. Original muscular human commando martial artist, red headband, sleeveless dark olive combat vest, wrapped fists, olive cargo trousers and brown boots. Face RIGHT in all frames, same scale same grounded baseline, crisp detailed military arcade pixels matching helmet soldier art. Row1 four full walking/running cycle frames left foot forward, passing, right foot forward, passing. Row2 four punching COMBO frames: guard, left jab extended, right cross extended with twisting torso, powerful uppercut. Row3 four kicking frames: knee raised anticipation, side kick fully extended, spinning back kick, recovery guard. Row4 four utility poses: crouched guard, airborne knees bent, arms crossed idle, victory arms raised. No weapons no background no captions no grid. Strong expressive silhouette, realistic anatomy readable small, no smooth painting, preserve pixel texture."
+    },
+    {
+      "id": "fighter-mobility",
+      "path": "Referencia de trabajo; sustituida por v2",
+      "prompt": "Production military arcade PIXEL ART sprites, transparent RGBA, EXACT 4 columns by 3 rows uniform 1536x1152 cells. SAME playable human martial arts fighter in every cell: muscular, red headband, sleeveless olive combat vest, wrapped fists, olive cargo pants, brown boots. Faces RIGHT, consistent detailed crisp dark outlines original 1990s military arcade style. Row1 FOUR SWIMMING poses horizontally, transparent oxygen mask, small oxygen tank and fins, distinct alternating bent leg swim cycle and arm strokes. Row2 FOUR riding poses on SAME rugged olive military motorcycle, seated with knees around tank and hands on handlebars: cruising, leaning forward accelerating, punching forward from bike, airborne jump with suspension extended. Row3 FOUR final victory gesture poses standing upright boots on identical baseline: ready guard, salute, raised fist, both fists raised celebrating. Full bodies fully contained in each cell, generous padding and consistent size within each row. No text no grid no floor no background, no shadows outside sprite, actual alpha transparent."
+    },
+    {
+      "id": "fighter-mobility-padding",
+      "path": "assets/sprites/luchador-movilidad-v2.png",
+      "prompt": "Edit this sprite atlas, preserving this exact fighter's identity, outfit, pixel art style and the twelve poses. Fix ONLY cell spacing and size for game use: make EXACTLY four equal columns and three equal rows. Each sprite must fit COMPLETELY inside its own cell with at least 12% empty transparent padding on ALL FOUR SIDES. No arm, fin, scarf, wheel, raised fist or head can touch or cross a cell boundary. Reduce all sprites enough to achieve this. Row1 four swim poses, row2 four motorcycle poses, row3 four standing victory poses. Equal character scale within each row, equal bottom baseline within each row; keep arms-raised fighter body same size as salute, not smaller. Truly transparent background. Do not draw grid lines, borders or labels."
+    }
+  ]
+}

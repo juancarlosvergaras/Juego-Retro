@@ -1,0 +1,4 @@
+.air-cinematic .hud,.air-cinematic #power-wheel,.air-cinematic .combat-hud,.air-cinematic #context-two,.air-cinematic #challenge-status,.air-cinematic .touch-two{visibility:hidden;pointer-events:none}
+#robot-second-weapon{display:block;margin:6px auto;padding:7px 12px;font-size:11px;max-width:95%;color:#bfe8eb;border:1px solid #64a8b8;background:#152936}
+#robot-second-weapon[hidden]{display:none}
+.mission-three .boss-hud .life-track i{background:linear-gradient(90deg,#e09447,#ffdf87)}

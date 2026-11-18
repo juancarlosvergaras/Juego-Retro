@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>Agarre y subida al borde</title>
+<style>body{background:#1c2b39;color:#f2dca5;font:15px sans-serif}canvas{width:100%;max-width:1100px;image-rendering:pixelated}</style>
+<p>Agarre: avance con manos alternadas, rodear el borde, subir y apoyarse arriba.</p>
+<canvas width="1000" height="340"></canvas>
+<script src="/physics.js"></script><script src="/soldier-animation.js"></script><script src="/climb-atlas.js"></script><script src="/soldier-v2-atlas.js"></script><script>
+const c=document.querySelector('canvas').getContext('2d'),climb=new Image(),idle=new Image();
+climb.src='/assets/sprites/soldado-escalada-v2.png';idle.src='/assets/sprites/soldado-v2.png';
+Promise.all([climb.decode(),idle.decode()]).then(()=>{
+ const ps=[{x:100,y:100,w:160,thickness:18}],p=Object.assign(ArcadePhysics.createPlayer(),{x:175,y:190,grounded:false});
+ ArcadePhysics.attachHook(p,ArcadePhysics.findAnchor(p,[],ps));const states=[];let last=0;
+ function draw(t){const elapsed=(t/1000)%7;if(elapsed<last){Object.assign(p,ArcadePhysics.createPlayer(),{x:175,y:190,grounded:false,hangCycle:0});ArcadePhysics.attachHook(p,ArcadePhysics.findAnchor(p,[],ps));}last=elapsed;
+ ArcadePhysics.step(p,elapsed<1.8?{left:true}:elapsed<2.4?{}:{up:true},1/60,ps);
+ c.clearRect(0,0,1000,340);c.imageSmoothingEnabled=false;c.save();c.translate(150,0);c.scale(2,2);c.fillStyle='#9a9c92';c.fillRect(100,100,160,10);c.fillStyle='#824c2a';c.fillRect(100,110,160,8);
+ const pose=ArcadeSoldierAnimation.pose(p),sheet=p.rope?climb:idle,frames=p.rope?CLIMB_FRAMES:SOLDIER_V2_FRAMES,scale=p.rope?CLIMB_SCALE:SOLDIER_V2_SCALE;
+ const [sx,sy,w,h]=frames[pose.row||0][pose.frame||0];c.translate(p.x,p.y);c.scale(p.facing,1);c.drawImage(sheet,sx,sy,w,h,-w*scale/2,-h*scale,w*scale,h*scale);c.restore();requestAnimationFrame(draw);
+ }requestAnimationFrame(draw);
+});
+</script>

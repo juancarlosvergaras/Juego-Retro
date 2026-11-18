@@ -1,0 +1,674 @@
+FILE world-lighting EXIT 0
+TAP version 13
+# Subtest: cemetery lightning recurs between fifteen and twenty active seconds, never in the city or mausoleum
+ok 1 - cemetery lightning recurs between fifteen and twenty active seconds, never in the city or mausoleum
+  ---
+  duration_ms: 4.8412
+  type: 'test'
+  ...
+# Subtest: shadow returns to normal, only affects characters inside a caller-owned save/restore
+ok 2 - shadow returns to normal, only affects characters inside a caller-owned save/restore
+  ---
+  duration_ms: 0.2616
+  type: 'test'
+  ...
+# Subtest: lighting renders a bounded number of sources and does not alter gameplay or allocate pixel buffers
+ok 3 - lighting renders a bounded number of sources and does not alter gameplay or allocate pixel buffers
+  ---
+  duration_ms: 0.3751
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12.2383
+FILE mausoleum-king EXIT 0
+TAP version 13
+# Subtest: stone king transforms between and above both scaffolds, even after a zero-health interrupted landing
+ok 1 - stone king transforms between and above both scaffolds, even after a zero-health interrupted landing
+  ---
+  duration_ms: 25.1202
+  type: 'test'
+  ...
+# Subtest: stone king crosses a scaffold with a landing above its masonry, never an invalid zombie sprite
+ok 2 - stone king crosses a scaffold with a landing above its masonry, never an invalid zombie sprite
+  ---
+  duration_ms: 2.2677
+  type: 'test'
+  ...
+# Subtest: mausoleum has six standing zombies and four wall-roost bats with distinct persistent IDs
+ok 3 - mausoleum has six standing zombies and four wall-roost bats with distinct persistent IDs
+  ---
+  duration_ms: 1.8583
+  type: 'test'
+  ...
+# Subtest: king descends continuously from the original plinth before becoming vulnerable
+ok 4 - king descends continuously from the original plinth before becoming vulnerable
+  ---
+  duration_ms: 1.4664
+  type: 'test'
+  ...
+# Subtest: king waits for arrival at the plinth and living nearby zombies, including waking sleepers
+ok 5 - king waits for arrival at the plinth and living nearby zombies, including waking sleepers
+  ---
+  duration_ms: 0.318
+  type: 'test'
+  ...
+# Subtest: mission combat supplies the live zombie list to the king activation gate
+ok 6 - mission combat supplies the live zombie list to the king activation gate
+  ---
+  duration_ms: 20.3146
+  type: 'test'
+  ...
+# Subtest: stone shell breaks over time, zombie screams, and only the second death completes the fight
+ok 7 - stone shell breaks over time, zombie screams, and only the second death completes the fight
+  ---
+  duration_ms: 3.4596
+  type: 'test'
+  ...
+# Subtest: sword and claws hit only on extension and in the committed direction
+ok 8 - sword and claws hit only on extension and in the committed direction
+  ---
+  duration_ms: 0.7133
+  type: 'test'
+  ...
+# Subtest: stomp is telegraphed and its expanding ground wave can be jumped
+ok 9 - stomp is telegraphed and its expanding ground wave can be jumped
+  ---
+  duration_ms: 0.5085
+  type: 'test'
+  ...
+# Subtest: distant rock attack locks a marked landing point and lets the player evade
+ok 10 - distant rock attack locks a marked landing point and lets the player evade
+  ---
+  duration_ms: 0.6013
+  type: 'test'
+  ...
+# Subtest: vomit is a sustained fluid stream that leaves bounded, harmful, temporary pools
+ok 11 - vomit is a sustained fluid stream that leaves bounded, harmful, temporary pools
+  ---
+  duration_ms: 1.7903
+  type: 'test'
+  ...
+# Subtest: leap lands at the chosen target and the giant remains on the floor afterward
+ok 12 - leap lands at the chosen target and the giant remains on the floor afterward
+  ---
+  duration_ms: 0.5081
+  type: 'test'
+  ...
+# Subtest: weapons, explosive splash, wolf attacks and powers damage the same boss
+ok 13 - weapons, explosive splash, wolf attacks and powers damage the same boss
+  ---
+  duration_ms: 12.3228
+  type: 'test'
+  ...
+# Subtest: interruption and save/reload preserve phase boundaries and difficulty health proportions
+ok 14 - interruption and save/reload preserve phase boundaries and difficulty health proportions
+  ---
+  duration_ms: 3.057
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 89.5312
+FILE mausoleum-platforms EXIT 0
+TAP version 13
+# Subtest: the boss base has a permanent landing matching the upper cornice, only inside the mausoleum
+ok 1 - the boss base has a permanent landing matching the upper cornice, only inside the mausoleum
+  ---
+  duration_ms: 2.2833
+  type: 'test'
+  ...
+# Subtest: soldier, wolf and zombie land on the base and can jump away without falling through it
+ok 2 - soldier, wolf and zombie land on the base and can jump away without falling through it
+  ---
+  duration_ms: 6.2784
+  type: 'test'
+  ...
+# Subtest: a normal soldier can reach the base using the standard double jump
+ok 3 - a normal soldier can reach the base using the standard double jump
+  ---
+  duration_ms: 1.2078
+  type: 'test'
+  ...
+# Subtest: interior zombies spawn clear of the two walls and all four bat IDs remain persistent
+ok 4 - interior zombies spawn clear of the two walls and all four bat IDs remain persistent
+  ---
+  duration_ms: 2.0246
+  type: 'test'
+  ...
+# Subtest: mausoleum has two central scaffold obstacles and upper landings, plus the boss plinth landing
+ok 5 - mausoleum has two central scaffold obstacles and upper landings, plus the boss plinth landing
+  ---
+  duration_ms: 0.3223
+  type: 'test'
+  ...
+# Subtest: scaffold wall blocks walking and its upper deck catches a descending jump
+ok 6 - scaffold wall blocks walking and its upper deck catches a descending jump
+  ---
+  duration_ms: 4.5561
+  type: 'test'
+  ...
+# Subtest: four persistent bats wake from wall niches and move outside before diving
+ok 7 - four persistent bats wake from wall niches and move outside before diving
+  ---
+  duration_ms: 1.0826
+  type: 'test'
+  ...
+# Subtest: zombie combat scale matches the last transformation frame and remains the same after loading
+ok 8 - zombie combat scale matches the last transformation frame and remains the same after loading
+  ---
+  duration_ms: 0.7783
+  type: 'test'
+  ...
+# Subtest: boss rendering always disables interpolation and rounds destination sprite pixels
+ok 9 - boss rendering always disables interpolation and rounds destination sprite pixels
+  ---
+  duration_ms: 0.3814
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 25.6785
+FILE king-sprite-detail EXIT 0
+TAP version 13
+# Subtest: all 30 shipped boss poses have native detail above display resolution, including the leap
+ok 1 - all 30 shipped boss poses have native detail above display resolution, including the leap
+  ---
+  duration_ms: 0.5939
+  type: 'test'
+  ...
+# Subtest: silhouette extraction preserves claws beyond nominal cells without borrowing neighbouring pixels
+ok 2 - silhouette extraction preserves claws beyond nominal cells without borrowing neighbouring pixels
+  ---
+  duration_ms: 17.0657
+  type: 'test'
+  ...
+# Subtest: body scale remains fixed within each action; crouching and collapse are not enlarged
+ok 3 - body scale remains fixed within each action; crouching and collapse are not enlarged
+  ---
+  duration_ms: 0.1892
+  type: 'test'
+  ...
+# Subtest: every combat action uses its new strip even when a legacy atlas is supplied
+ok 4 - every combat action uses its new strip even when a legacy atlas is supplied
+  ---
+  duration_ms: 0.4562
+  type: 'test'
+  ...
+# Subtest: final transformation settles onto the combat art before control resumes
+ok 5 - final transformation settles onto the combat art before control resumes
+  ---
+  duration_ms: 0.5462
+  type: 'test'
+  ...
+# Subtest: live transition starts combat on that exact settled pose
+ok 6 - live transition starts combat on that exact settled pose
+  ---
+  duration_ms: 0.5058
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27.3883
+FILE mission-two-arrival EXIT 0
+TAP version 13
+# Subtest: parachute settles on the walking plane without a position discontinuity
+ok 1 - parachute settles on the walking plane without a position discontinuity
+  ---
+  duration_ms: 2.006
+  type: 'test'
+  ...
+# Subtest: campaign transfers score, ammunition and remaining supplies without mutating the first mission
+ok 2 - campaign transfers score, ammunition and remaining supplies without mutating the first mission
+  ---
+  duration_ms: 0.3089
+  type: 'test'
+  ...
+# Subtest: mission two includes twenty zombies and remembers their defeat separately from soldiers
+ok 3 - mission two includes twenty zombies and remembers their defeat separately from soldiers
+  ---
+  duration_ms: 117.6923
+  type: 'test'
+  ...
+# Subtest: dirigible reward is collected by the actual mission runtime and survives resume and retry
+ok 4 - dirigible reward is collected by the actual mission runtime and survives resume and retry
+  ---
+  duration_ms: 42.7714
+  type: 'test'
+  ...
+# Subtest: resizing while high over the map keeps the camera on the player
+ok 5 - resizing while high over the map keeps the camera on the player
+  ---
+  duration_ms: 15.3026
+  type: 'test'
+  ...
+# Subtest: mission two advances wolf idle gestures and maps sprint plus L to the same ram
+ok 6 - mission two advances wolf idle gestures and maps sprint plus L to the same ram
+  ---
+  duration_ms: 210.1986
+  type: 'test'
+  ...
+# Subtest: mausoleum enemies and both boss phases persist, pause, and award completion once
+ok 7 - mausoleum enemies and both boss phases persist, pause, and award completion once
+  ---
+  duration_ms: 263.1773
+  type: 'test'
+  ...
+# Subtest: arrival blocks action keys, lands, and unlocks both forms with T
+ok 8 - arrival blocks action keys, lands, and unlocks both forms with T
+  ---
+  duration_ms: 2043.8591
+  type: 'test'
+  ...
+# Subtest: pause freezes the arrival and resume preserves form and checkpoint
+ok 9 - pause freezes the arrival and resume preserves form and checkpoint
+  ---
+  duration_ms: 576.7042
+  type: 'test'
+  ...
+# Subtest: real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+ok 10 - real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+  ---
+  duration_ms: 183.971
+  type: 'test'
+  ...
+# Subtest: new missions refill upgraded health, while resuming keeps saved damage even during arrival
+ok 11 - new missions refill upgraded health, while resuming keeps saved damage even during arrival
+  ---
+  duration_ms: 14.9268
+  type: 'test'
+  ...
+# Subtest: city kills award points once and stay defeated after continuing
+ok 12 - city kills award points once and stay defeated after continuing
+  ---
+  duration_ms: 183.6079
+  type: 'test'
+  ...
+# Subtest: high fall kills in mission two and retry returns alive to the entrance
+ok 13 - high fall kills in mission two and retry returns alive to the entrance
+  ---
+  duration_ms: 366.4907
+  type: 'test'
+  ...
+# Subtest: mission runtime saves randomized loot and tank defeat without awarding them twice
+ok 14 - mission runtime saves randomized loot and tank defeat without awarding them twice
+  ---
+  duration_ms: 244.9494
+  type: 'test'
+  ...
+# Subtest: shared main menu pauses and resumes mission two without losing its loadout
+ok 15 - shared main menu pauses and resumes mission two without losing its loadout
+  ---
+  duration_ms: 180.2679
+  type: 'test'
+  ...
+# Subtest: mission two settings preserve boss damage and show the shared health bar only near the tank
+ok 16 - mission two settings preserve boss damage and show the shared health bar only near the tank
+  ---
+  duration_ms: 780.6242
+  type: 'test'
+  ...
+# Subtest: mission two arrow chords fire all four diagonals with navigation and keypad events
+ok 17 - mission two arrow chords fire all four diagonals with navigation and keypad events
+  ---
+  duration_ms: 3691.4215
+  type: 'test'
+  ...
+# Subtest: arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+ok 18 - arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+  ---
+  duration_ms: 18.4024
+  type: 'test'
+  ...
+# Subtest: a quick diagonal tap preserves its aim and fires once even with numpad zero
+ok 19 - a quick diagonal tap preserves its aim and fires once even with numpad zero
+  ---
+  duration_ms: 180.9617
+  type: 'test'
+  ...
+# Subtest: cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+ok 20 - cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+  ---
+  duration_ms: 3620.5037
+  type: 'test'
+  ...
+# Subtest: a diagonal J tap just before the weapon is ready is not discarded
+ok 21 - a diagonal J tap just before the weapon is ready is not discarded
+  ---
+  duration_ms: 349.4439
+  type: 'test'
+  ...
+# Subtest: pausing cancels a pending diagonal shot before continuing
+ok 22 - pausing cancels a pending diagonal shot before continuing
+  ---
+  duration_ms: 72.9864
+  type: 'test'
+  ...
+# Subtest: releasing J and one arrow before the next frame preserves the requested diagonal
+ok 23 - releasing J and one arrow before the next frame preserves the requested diagonal
+  ---
+  duration_ms: 31.5324
+  type: 'test'
+  ...
+# Subtest: X fires diagonally when its key events arrive, including held fire
+ok 24 - X fires diagonally when its key events arrive, including held fire
+  ---
+  duration_ms: 509.5837
+  type: 'test'
+  ...
+# Subtest: mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+ok 25 - mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+  ---
+  duration_ms: 2174.623
+  type: 'test'
+  ...
+# Subtest: mouse trigger tracks direction, coexists with J and clears on pause
+ok 26 - mouse trigger tracks direction, coexists with J and clears on pause
+  ---
+  duration_ms: 249.2663
+  type: 'test'
+  ...
+# Subtest: mouse tap keeps diagonal aim and arrival rejects pointer fire
+ok 27 - mouse tap keeps diagonal aim and arrival rejects pointer fire
+  ---
+  duration_ms: 258.883
+  type: 'test'
+  ...
+# Subtest: single-key diagonals in mission two match mission one without a three-key chord
+ok 28 - single-key diagonals in mission two match mission one without a three-key chord
+  ---
+  duration_ms: 1218.8838
+  type: 'test'
+  ...
+# Subtest: Heraldo blocks the mausoleum, unlocks zombie permanently and keeps five-second form cooldown on resume
+ok 29 - Heraldo blocks the mausoleum, unlocks zombie permanently and keeps five-second form cooldown on resume
+  ---
+  duration_ms: 270.0093
+  type: 'test'
+  ...
+# Subtest: entering just after the Heraldo falls cannot skip the permanent reward
+ok 30 - entering just after the Heraldo falls cannot skip the permanent reward
+  ---
+  duration_ms: 63.1815
+  type: 'test'
+  ...
+# Subtest: scene change clears projectiles, lingering impacts and unfinished melee actions
+ok 31 - scene change clears projectiles, lingering impacts and unfinished melee actions
+  ---
+  duration_ms: 14.5234
+  type: 'test'
+  ...
+# Subtest: partial old saves with malformed optional collections still load a playable mission
+ok 32 - partial old saves with malformed optional collections still load a playable mission
+  ---
+  duration_ms: 55.5437
+  type: 'test'
+  ...
+# Subtest: mission two alternates zombie idle gestures, freezes them on pause and interrupts with native fire
+ok 33 - mission two alternates zombie idle gestures, freezes them on pause and interrupts with native fire
+  ---
+  duration_ms: 434.8899
+  type: 'test'
+  ...
+# Subtest: down key speeds up parachute while attacks stay blocked, then leaves a safe landing
+ok 34 - down key speeds up parachute while attacks stay blocked, then leaves a safe landing
+  ---
+  duration_ms: 55.2619
+  type: 'test'
+  ...
+# Subtest: car damage survives runtime save/reload
+ok 35 - car damage survives runtime save/reload
+  ---
+  duration_ms: 28.5015
+  type: 'test'
+  ...
+# Subtest: PC activates on contact, persists immediately, and death retries there with inventory intact
+ok 36 - PC activates on contact, persists immediately, and death retries there with inventory intact
+  ---
+  duration_ms: 15.0212
+  type: 'test'
+  ...
+# Subtest: cemetery and mausoleum checkpoints restore their own scene from a dead save
+ok 37 - cemetery and mausoleum checkpoints restore their own scene from a dead save
+  ---
+  duration_ms: 17.5569
+  type: 'test'
+  ...
+# Subtest: fresh missions reset prior checkpoints while legacy saves still use the entrance on death
+ok 38 - fresh missions reset prior checkpoints while legacy saves still use the entrance on death
+  ---
+  duration_ms: 15.7367
+  type: 'test'
+  ...
+1..38
+# tests 38
+# suites 0
+# pass 38
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18579.9464
+FILE mission-two-combat EXIT 0
+TAP version 13
+# Subtest: city adds fifteen soldiers on streets and building platforms while preserving saved IDs
+ok 1 - city adds fifteen soldiers on streets and building platforms while preserving saved IDs
+  ---
+  duration_ms: 138.9122
+  type: 'test'
+  ...
+# Subtest: mission two applies landing damage once, ignores armor, and preserves wolf immunity
+ok 2 - mission two applies landing damage once, ignores armor, and preserves wolf immunity
+  ---
+  duration_ms: 2.4445
+  type: 'test'
+  ...
+# Subtest: guns, missiles and arrows damage enemies and platforms stop shots first
+ok 3 - guns, missiles and arrows damage enemies and platforms stop shots first
+  ---
+  duration_ms: 53.9593
+  type: 'test'
+  ...
+# Subtest: knife, axe, wolf claw, kick and purchased powers damage real city targets
+ok 4 - knife, axe, wolf claw, kick and purchased powers damage real city targets
+  ---
+  duration_ms: 16.0047
+  type: 'test'
+  ...
+# Subtest: enemy waits one second before firing, and its bullets respect shields
+ok 5 - enemy waits one second before firing, and its bullets respect shields
+  ---
+  duration_ms: 12.3222
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 229.0917
+FILE environment-fx EXIT 0
+TAP version 13
+# Subtest: player bullets break chips off a struck platform and stop
+ok 1 - player bullets break chips off a struck platform and stop
+  ---
+  duration_ms: 8.5085
+  type: 'test'
+  ...
+# Subtest: explosions detach fragments once, cap their count and clean them up
+ok 2 - explosions detach fragments once, cap their count and clean them up
+  ---
+  duration_ms: 6.23
+  type: 'test'
+  ...
+# Subtest: contact shadow stays on the supporting surface and is hidden while airborne
+ok 3 - contact shadow stays on the supporting surface and is hidden while airborne
+  ---
+  duration_ms: 2.139
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21.9046
+FILE form-transition EXIT 0
+TAP version 13
+# Subtest: all six transformations follow their own pair, reverse every intermediate and end in the real target
+ok 1 - all six transformations follow their own pair, reverse every intermediate and end in the real target
+  ---
+  duration_ms: 1.2951
+  type: 'test'
+  ...
+# Subtest: rendering keeps opaque feet anchored in both directions without changing player state
+ok 2 - rendering keeps opaque feet anchored in both directions without changing player state
+  ---
+  duration_ms: 1.5834
+  type: 'test'
+  ...
+# Subtest: visual transitions preserve the five second lock, health, ammunition and world position
+ok 3 - visual transitions preserve the five second lock, health, ammunition and world position
+  ---
+  duration_ms: 0.3638
+  type: 'test'
+  ...
+# Subtest: both missions preload and route the shared transformation sprites
+ok 4 - both missions preload and route the shared transformation sprites
+  ---
+  duration_ms: 1.8132
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 9.7804
+FILE level-two EXIT 0
+TAP version 13
+# Subtest: the horizontal route preserves a long city and cemetery with an interior beyond the entrance
+ok 1 - the horizontal route preserves a long city and cemetery with an interior beyond the entrance
+  ---
+  duration_ms: 2.7491
+  type: 'test'
+  ...
+# Subtest: open buildings can be traversed and every interior floor reached by both forms
+ok 2 - open buildings can be traversed and every interior floor reached by both forms
+  ---
+  duration_ms: 84.3965
+  type: 'test'
+  ...
+# Subtest: men and women flee left, shout once each, and permanently leave the scene
+ok 3 - men and women flee left, shout once each, and permanently leave the scene
+  ---
+  duration_ms: 1.0085
+  type: 'test'
+  ...
+# Subtest: the office has no invisible floor extending over the facade edge
+ok 4 - the office has no invisible floor extending over the facade edge
+  ---
+  duration_ms: 1.2333
+  type: 'test'
+  ...
+# Subtest: mausoleum doors only work near the ground-level opening in the matching scene
+ok 5 - mausoleum doors only work near the ground-level opening in the matching scene
+  ---
+  duration_ms: 0.4069
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 98.167
+FILE sky-expedition EXIT 0
+TAP version 13
+# Subtest: sky route adds a taller climbable tower and a distant high platform without changing old building IDs
+ok 1 - sky route adds a taller climbable tower and a distant high platform without changing old building IDs
+  ---
+  duration_ms: 2.2412
+  type: 'test'
+  ...
+# Subtest: multiple upgraded jumps or the basic jetpack reach the dirigible from the tall roof
+ok 2 - multiple upgraded jumps or the basic jetpack reach the dirigible from the tall roof
+  ---
+  duration_ms: 48.7351
+  type: 'test'
+  ...
+# Subtest: reward requires landing on the dirigible and persists as a passive double-speed jetpack in both missions
+ok 3 - reward requires landing on the dirigible and persists as a passive double-speed jetpack in both missions
+  ---
+  duration_ms: 0.6676
+  type: 'test'
+  ...
+# Subtest: MK II doubles normal and boost velocity in eight directions without doubling idle fuel consumption
+ok 4 - MK II doubles normal and boost velocity in eight directions without doubling idle fuel consumption
+  ---
+  duration_ms: 1.7267
+  type: 'test'
+  ...
+# Subtest: zombie can emerge early with up or jump and cannot emerge inside solid rubble
+ok 5 - zombie can emerge early with up or jump and cannot emerge inside solid rubble
+  ---
+  duration_ms: 0.8577
+  type: 'test'
+  ...
+# Subtest: lightning produces a bounded six-frame electrocution effect on the hit target only
+ok 6 - lightning produces a bounded six-frame electrocution effect on the hit target only
+  ---
+  duration_ms: 1.6771
+  type: 'test'
+  ...
+# Subtest: zombie run frames advance with actual travel and stop against walls
+ok 7 - zombie run frames advance with actual travel and stop against walls
+  ---
+  duration_ms: 9.6062
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.9318

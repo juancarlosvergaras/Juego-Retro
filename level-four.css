@@ -1,0 +1,19 @@
+:root:not(.mobile-play) .mission-four .game-card .viewport{width:100%;height:auto;min-height:0;aspect-ratio:16/9;background:#25343d}
+:root:not(.mobile-play) .mission-four .layout{display:flex;justify-content:center}
+:root:not(.mobile-play) .mission-four .game-card{width:100%;max-width:calc(max(360px,100dvh - 270px)*16/9)}
+.mission-four .header{height:50px}
+.mission-four main{padding-top:12px}
+.mission-four #level-two{width:100%;height:100%;aspect-ratio:16/9;image-rendering:pixelated}
+.road-cinematic>.hud,.road-cinematic>#power-wheel,.road-cinematic>.combat-hud,.road-cinematic>#challenge-status,.road-cinematic>#context-two,.road-cinematic>.touch-two{visibility:hidden}
+.mission-four #victory-screen .overlay-panel{background:#142932e8;border:1px solid #d6b56a}
+.mission-four #victory-screen h2{color:#ffda8b}
+.mission-four #victory-screen button{margin-top:12px}
+.mission-four #context-two{max-width:75%;font-size:11px}
+.mission-four .character-wheel{transform:scale(.72);transform-origin:top left}
+.mission-four .health-hud{transform:scale(.8);transform-origin:top center}
+.mission-four #power-wheel{transform:scale(.65);transform-origin:top right}
+.mission-four .combat-hud{transform:scale(.65);transform-origin:bottom right}
+.mission-four #challenge-status{top:126px;transform:scale(.75);transform-origin:top left}
+.mission-four #context-two{bottom:8px;padding:5px 9px;font-size:9px}
+.mission-four .touch-two [data-key="KeyE"],.mission-four .touch-two [data-key="KeyF"]{display:none}
+@media(max-width:700px){.mission-four #context-two{max-width:58%;font-size:8px}.mission-four #boss-title{font-size:9px}}

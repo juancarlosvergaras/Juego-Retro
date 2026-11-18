@@ -1,0 +1,73 @@
+TAP version 13
+# Subtest: each robot arm keeps its own cadence when pairing a rifle and a rocket launcher
+ok 1 - each robot arm keeps its own cadence when pairing a rifle and a rocket launcher
+  ---
+  duration_ms: 1.5422
+  type: 'test'
+  ...
+# Subtest: solid cargo blocks passage, and the metal flight deck prevents burrowing
+not ok 2 - solid cargo blocks passage, and the metal flight deck prevents burrowing
+  ---
+  duration_ms: 7.9414
+  type: 'test'
+  location: 'C:\\Juego Arcade\\tests\\air-mecha.test.cjs:3:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + null
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual: ~
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (C:\Juego Arcade\tests\air-mecha.test.cjs:3:506)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: short air mission has fourteen soldiers, ten weapons, three stars and platforms under every sentry
+ok 3 - short air mission has fourteen soldiers, ten weapons, three stars and platforms under every sentry
+  ---
+  duration_ms: 0.7782
+  type: 'test'
+  ...
+# Subtest: mecha has a warning period then cycles through bullets, marked missiles and dodgeable ground waves
+ok 4 - mecha has a warning period then cycles through bullets, marked missiles and dodgeable ground waves
+  ---
+  duration_ms: 1.4076
+  type: 'test'
+  ...
+# Subtest: dual identical guns consume two bullets; an almost empty magazine fires only the available bullet
+ok 5 - dual identical guns consume two bullets; an almost empty magazine fires only the available bullet
+  ---
+  duration_ms: 0.1669
+  type: 'test'
+  ...
+# Subtest: dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown
+ok 6 - dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown
+  ---
+  duration_ms: 0.5036
+  type: 'test'
+  ...
+# Subtest: third campaign transfer retains progress and robot unlock without overwriting mission one loadout
+ok 7 - third campaign transfer retains progress and robot unlock without overwriting mission one loadout
+  ---
+  duration_ms: 0.2877
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 6
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18.0274

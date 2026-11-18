@@ -1,0 +1,21 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Continuidad del rey zombi</title>
+<style>body{margin:12px;background:#19272d;color:#ecdcc0;font:15px sans-serif}canvas{max-width:100%;image-rendering:pixelated}button{padding:8px;margin:4px}</style>
+<h1>Transformación → segunda fase</h1><p id="status">Cargando sprites…</p>
+<button id="play">Pausar</button><button id="step">Siguiente fotograma</button><button id="flip">Cambiar dirección</button>
+<canvas id="preview" width="1180" height="740"></canvas><pre id="checks"></pre>
+<script src="/mausoleum-king.js"></script><script src="/white-death-atlas.js"></script><script>
+const names=['marcha','plasma','salto','garras','derrota'];
+Promise.all(['rey-transformacion-v1',...names.map(n=>'rey-zombi-'+n+'-v4')].map(name=>new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src='/assets/sprites/'+name+'.png';}))).then(images=>{
+ const K=ArcadeMausoleumKing,start=performance.now(),atlas={kingTransform:K.prepareAtlas(prepareWhiteDeath(images[0]),2,'kingTransform'),kingZombie:K.prepareZombieStrips(images.slice(1))};
+ document.getElementById('status').textContent='30 poses · preparación '+Math.round(performance.now()-start)+' ms · misma altura de referencia';
+ const results=[];for(const [row,frames] of atlas.kingZombie.frames.entries()){results.push(names[row]+': '+frames.length+' poses, cuerpo de referencia '+frames[0].bodyHeight+' px, escala '+K.renderScale(atlas.kingZombie,'kingZombie',atlas,frames[0]).toFixed(3));if(frames.length!==6||K.renderScale(atlas.kingZombie,'kingZombie',atlas,frames[0])>=1)throw Error('Resolución insuficiente');}
+ document.getElementById('checks').textContent=results.join('\n');
+ const c=document.getElementById('preview').getContext('2d');let playing=true,time=0,last=0,dir=1;
+ document.getElementById('play').onclick=e=>{playing=!playing;e.target.textContent=playing?'Pausar':'Reproducir';};
+ document.getElementById('step').onclick=()=>{playing=false;time+=1/6;document.getElementById('play').textContent='Reproducir';};document.getElementById('flip').onclick=()=>dir*=-1;
+ function frame(ms){if(playing)time+=(ms-last)/1000;last=ms;c.fillStyle='#354249';c.fillRect(0,0,1180,740);c.font='16px sans-serif';c.fillStyle='#ebdab7';
+  const phases=['roar','walk','vomit','leap','claw','death'];
+  phases.forEach((phase,i)=>{const x=190+(i%3)*390,y=330+Math.floor(i/3)*350;const k=K.create({stage:2,active:true});Object.assign(k,{phase,x,y,facing:dir,cycle:time,age:phase==='roar'?2.15:(time%K.durations[phase]||0)});K.draw(c,k,atlas);c.fillStyle='#ebdab7';c.fillText(phase,x-60,y-275);c.fillRect(x-175,y,350,1);});requestAnimationFrame(frame);
+ }requestAnimationFrame(frame);
+}).catch(e=>{document.getElementById('status').textContent='ERROR: '+e;console.error(e);});
+</script></html>

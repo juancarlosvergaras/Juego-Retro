@@ -1,0 +1,752 @@
+FILE air-mecha EXIT 0
+TAP version 13
+# Subtest: each robot arm keeps its own cadence when pairing a rifle and a rocket launcher
+ok 1 - each robot arm keeps its own cadence when pairing a rifle and a rocket launcher
+  ---
+  duration_ms: 1.4515
+  type: 'test'
+  ...
+# Subtest: solid cargo blocks passage, and the metal flight deck prevents burrowing
+ok 2 - solid cargo blocks passage, and the metal flight deck prevents burrowing
+  ---
+  duration_ms: 7.1274
+  type: 'test'
+  ...
+# Subtest: the first mission also fires both robot arms through its real combat loop
+ok 3 - the first mission also fires both robot arms through its real combat loop
+  ---
+  duration_ms: 9.5994
+  type: 'test'
+  ...
+# Subtest: short air mission has fourteen soldiers, ten weapons, three stars and platforms under every sentry
+ok 4 - short air mission has fourteen soldiers, ten weapons, three stars and platforms under every sentry
+  ---
+  duration_ms: 0.7001
+  type: 'test'
+  ...
+# Subtest: mecha has a warning period then cycles through bullets, marked missiles and dodgeable ground waves
+ok 5 - mecha has a warning period then cycles through bullets, marked missiles and dodgeable ground waves
+  ---
+  duration_ms: 1.1359
+  type: 'test'
+  ...
+# Subtest: dual identical guns consume two bullets; an almost empty magazine fires only the available bullet
+ok 6 - dual identical guns consume two bullets; an almost empty magazine fires only the available bullet
+  ---
+  duration_ms: 0.1177
+  type: 'test'
+  ...
+# Subtest: dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown
+ok 7 - dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown
+  ---
+  duration_ms: 0.5623
+  type: 'test'
+  ...
+# Subtest: third campaign transfer retains progress and robot unlock without overwriting mission one loadout
+ok 8 - third campaign transfer retains progress and robot unlock without overwriting mission one loadout
+  ---
+  duration_ms: 0.3961
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27.8008
+FILE mission-three-runtime EXIT 0
+TAP version 13
+# Subtest: mission three defers combat through the helicopter introduction and begins at full health
+ok 1 - mission three defers combat through the helicopter introduction and begins at full health
+  ---
+  duration_ms: 58.6929
+  type: 'test'
+  ...
+# Subtest: mecha activates only at its arena and survives damage until its single-phase destruction completes
+ok 2 - mecha activates only at its arena and survives damage until its single-phase destruction completes
+  ---
+  duration_ms: 1030.1786
+  type: 'test'
+  ...
+# Subtest: robot reward and selected second weapon survive resume, with four forms and separate ammunition
+ok 3 - robot reward and selected second weapon survive resume, with four forms and separate ammunition
+  ---
+  duration_ms: 19.5025
+  type: 'test'
+  ...
+# Subtest: checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+ok 4 - checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+  ---
+  duration_ms: 28.2553
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1139.7195
+FILE mission-loadout EXIT 0
+TAP version 13
+# Subtest: mission selection inherits the last played first-mission inventory instead of resetting it
+ok 1 - mission selection inherits the last played first-mission inventory instead of resetting it
+  ---
+  duration_ms: 1.1064
+  type: 'test'
+  ...
+# Subtest: permanent jumps, fuel capacity, health and purchased powers carry into mission two
+ok 2 - permanent jumps, fuel capacity, health and purchased powers carry into mission two
+  ---
+  duration_ms: 0.3582
+  type: 'test'
+  ...
+# Subtest: all inherited ranged weapons consume their own ammo; melee and locked weapons do not grant ammo
+ok 3 - all inherited ranged weapons consume their own ammo; melee and locked weapons do not grant ammo
+  ---
+  duration_ms: 8.1504
+  type: 'test'
+  ...
+# Subtest: missiles travel beyond the first mission width and grenades bounce on actual mission floors
+ok 4 - missiles travel beyond the first mission width and grenades bounce on actual mission floors
+  ---
+  duration_ms: 28.0528
+  type: 'test'
+  ...
+# Subtest: purchased powers use real cooldowns and a drone without a target does not consume its cooldown
+ok 5 - purchased powers use real cooldowns and a drone without a target does not consume its cooldown
+  ---
+  duration_ms: 0.9506
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 44.1704
+FILE form-transition EXIT 0
+TAP version 13
+# Subtest: all six transformations follow their own pair, reverse every intermediate and end in the real target
+ok 1 - all six transformations follow their own pair, reverse every intermediate and end in the real target
+  ---
+  duration_ms: 1.2919
+  type: 'test'
+  ...
+# Subtest: rendering keeps opaque feet anchored in both directions without changing player state
+ok 2 - rendering keeps opaque feet anchored in both directions without changing player state
+  ---
+  duration_ms: 1.5804
+  type: 'test'
+  ...
+# Subtest: visual transitions preserve the five second lock, health, ammunition and world position
+ok 3 - visual transitions preserve the five second lock, health, ammunition and world position
+  ---
+  duration_ms: 0.5144
+  type: 'test'
+  ...
+# Subtest: both missions preload and route the shared transformation sprites
+ok 4 - both missions preload and route the shared transformation sprites
+  ---
+  duration_ms: 3.705
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 11.7819
+FILE air-shooting EXIT 0
+TAP version 13
+# Subtest: airborne shots show weapon with muzzle aligned while rising or falling in all directions
+ok 1 - airborne shots show weapon with muzzle aligned while rising or falling in all directions
+  ---
+  duration_ms: 23.2929
+  type: 'test'
+  ...
+# Subtest: ordinary fall returns when shot animation ends; empty ammo does not show false shot
+ok 2 - ordinary fall returns when shot animation ends; empty ammo does not show false shot
+  ---
+  duration_ms: 1.9002
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 39.207
+FILE aim-kicks EXIT 0
+TAP version 13
+# Subtest: eight directions preserve projectile speed and consume one round
+ok 1 - eight directions preserve projectile speed and consume one round
+  ---
+  duration_ms: 3.85
+  type: 'test'
+  ...
+# Subtest: shotgun spread rotates upward and uses one shell for five pellets
+ok 2 - shotgun spread rotates upward and uses one shell for five pellets
+  ---
+  duration_ms: 0.1563
+  type: 'test'
+  ...
+# Subtest: wolf ground kick stays grounded, has cooldown and ends
+ok 3 - wolf ground kick stays grounded, has cooldown and ends
+  ---
+  duration_ms: 18.3945
+  type: 'test'
+  ...
+# Subtest: airborne wolf kick releases rope and produces a flying attack
+ok 4 - airborne wolf kick releases rope and produces a flying attack
+  ---
+  duration_ms: 2.212
+  type: 'test'
+  ...
+# Subtest: soldier cannot use wolf kicks and wolf cooldown prevents simultaneous claw
+ok 5 - soldier cannot use wolf kicks and wolf cooldown prevents simultaneous claw
+  ---
+  duration_ms: 1.8639
+  type: 'test'
+  ...
+# Subtest: shots originate at the animated hand and animation starts only for real shots
+ok 6 - shots originate at the animated hand and animation starts only for real shots
+  ---
+  duration_ms: 1.664
+  type: 'test'
+  ...
+# Subtest: bow stays ahead of the support arm and arrows leave its tip in both directions
+ok 7 - bow stays ahead of the support arm and arrows leave its tip in both directions
+  ---
+  duration_ms: 0.6515
+  type: 'test'
+  ...
+# Subtest: sustained diagonal fire keeps shooting while walking in both directions
+ok 8 - sustained diagonal fire keeps shooting while walking in both directions
+  ---
+  duration_ms: 19.6522
+  type: 'test'
+  ...
+# Subtest: arrow controls honor actual navigation keys even when physical codes belong to the keypad
+ok 9 - arrow controls honor actual navigation keys even when physical codes belong to the keypad
+  ---
+  duration_ms: 0.3567
+  type: 'test'
+  ...
+# Subtest: arrow diagonal chords shoot symmetrically regardless of which key arrives first
+ok 10 - arrow diagonal chords shoot symmetrically regardless of which key arrives first
+  ---
+  duration_ms: 0.432
+  type: 'test'
+  ...
+# Subtest: shared shooting movement preserves aim and leaves aerial and hook controls available
+ok 11 - shared shooting movement preserves aim and leaves aerial and hook controls available
+  ---
+  duration_ms: 0.1561
+  type: 'test'
+  ...
+# Subtest: first mission buffers one diagonal tap during cooldown without extra shots
+ok 12 - first mission buffers one diagonal tap during cooldown without extra shots
+  ---
+  duration_ms: 7.2472
+  type: 'test'
+  ...
+# Subtest: fire buffer cancels on weapon changes, no ammunition, pause clear and expiry
+ok 13 - fire buffer cancels on weapon changes, no ammunition, pause clear and expiry
+  ---
+  duration_ms: 6.9356
+  type: 'test'
+  ...
+# Subtest: both missions share trigger mapping, including independent pointer and keyboard release
+ok 14 - both missions share trigger mapping, including independent pointer and keyboard release
+  ---
+  duration_ms: 9.926
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 86.0079
+FILE zombie-form EXIT 0
+TAP version 13
+# Subtest: zombie ignores high falls in both missions while soldier still takes landing damage
+ok 1 - zombie ignores high falls in both missions while soldier still takes landing damage
+  ---
+  duration_ms: 12.1014
+  type: 'test'
+  ...
+# Subtest: three forms cycle with five-second cooldown and preserve health and inventory
+ok 2 - three forms cycle with five-second cooldown and preserve health and inventory
+  ---
+  duration_ms: 0.2792
+  type: 'test'
+  ...
+# Subtest: zombie resists twice as much damage and burrowing blocks hits and falls without spending shield
+ok 3 - zombie resists twice as much damage and burrowing blocks hits and falls without spending shield
+  ---
+  duration_ms: 0.4714
+  type: 'test'
+  ...
+# Subtest: burrow lasts three seconds, moves underground and needs a released down key to repeat
+ok 4 - burrow lasts three seconds, moves underground and needs a released down key to repeat
+  ---
+  duration_ms: 16.1319
+  type: 'test'
+  ...
+# Subtest: platform crouch never tunnels or grants immunity and zombie cannot activate jetpack
+ok 5 - platform crouch never tunnels or grants immunity and zombie cannot activate jetpack
+  ---
+  duration_ms: 0.664
+  type: 'test'
+  ...
+# Subtest: rays are unlimited, aimed, stopped by solid geometry, and do not spend gun ammunition
+ok 6 - rays are unlimited, aimed, stopped by solid geometry, and do not spend gun ammunition
+  ---
+  duration_ms: 10.0361
+  type: 'test'
+  ...
+# Subtest: plasma sticks, slows enemy simulation, damages over time and expires
+ok 7 - plasma sticks, slows enemy simulation, damages over time and expires
+  ---
+  duration_ms: 43.196
+  type: 'test'
+  ...
+# Subtest: both combat runtimes refuse zombie weapons while allowing native attacks
+ok 8 - both combat runtimes refuse zombie weapons while allowing native attacks
+  ---
+  duration_ms: 3.6318
+  type: 'test'
+  ...
+# Subtest: zombie can use purchased powers except flame, and none can fire underground
+ok 9 - zombie can use purchased powers except flame, and none can fire underground
+  ---
+  duration_ms: 0.5191
+  type: 'test'
+  ...
+# Subtest: storm mini boss is slightly taller than wolf, telegraphs and cycles three attacks, persists health
+ok 10 - storm mini boss is slightly taller than wolf, telegraphs and cycles three attacks, persists health
+  ---
+  duration_ms: 3.3334
+  type: 'test'
+  ...
+# Subtest: zombie unlock survives progression storage and applies in any mission
+ok 11 - zombie unlock survives progression storage and applies in any mission
+  ---
+  duration_ms: 1.7279
+  type: 'test'
+  ...
+# Subtest: native lightning preserves the first mission final boss mutation
+ok 12 - native lightning preserves the first mission final boss mutation
+  ---
+  duration_ms: 1.6059
+  type: 'test'
+  ...
+# Subtest: burrow emerges on clear ground rather than inside a solid car or on its roof
+ok 13 - burrow emerges on clear ground rather than inside a solid car or on its roof
+  ---
+  duration_ms: 0.4138
+  type: 'test'
+  ...
+# Subtest: zombie transformations blend from and to the actual soldier or wolf portrait
+ok 14 - zombie transformations blend from and to the actual soldier or wolf portrait
+  ---
+  duration_ms: 1.3194
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 102.4296
+FILE developer-mode EXIT 0
+TAP version 13
+# Subtest: normal play retains its original store and developer activation only copies saves
+ok 1 - normal play retains its original store and developer activation only copies saves
+  ---
+  duration_ms: 1.3007
+  type: 'test'
+  ...
+# Subtest: developer saves across missions never overwrite normal campaign, profile or difficulty
+ok 2 - developer saves across missions never overwrite normal campaign, profile or difficulty
+  ---
+  duration_ms: 0.2448
+  type: 'test'
+  ...
+# Subtest: exit prevents late pagehide writes from restoring temporary data or touching real saves
+ok 3 - exit prevents late pagehide writes from restoring temporary data or touching real saves
+  ---
+  duration_ms: 0.2188
+  type: 'test'
+  ...
+# Subtest: mode lasts exactly thirty minutes and expired pages cannot persist developer progress
+ok 4 - mode lasts exactly thirty minutes and expired pages cannot persist developer progress
+  ---
+  duration_ms: 0.2209
+  type: 'test'
+  ...
+# Subtest: old developer pages cannot write into a newly activated session
+ok 5 - old developer pages cannot write into a newly activated session
+  ---
+  duration_ms: 0.1398
+  type: 'test'
+  ...
+# Subtest: closing the tab removes developer access and malformed or blocked session storage is safe
+ok 6 - closing the tab removes developer access and malformed or blocked session storage is safe
+  ---
+  duration_ms: 0.153
+  type: 'test'
+  ...
+# Subtest: grant unlocks every upgrade, weapon, power and form without defeating bosses
+ok 7 - grant unlocks every upgrade, weapon, power and form without defeating bosses
+  ---
+  duration_ms: 5.595
+  type: 'test'
+  ...
+# Subtest: developer immunity blocks projectiles, melee and falls without consuming shields
+ok 8 - developer immunity blocks projectiles, melee and falls without consuming shields
+  ---
+  duration_ms: 3.0723
+  type: 'test'
+  ...
+# Subtest: resource toggle restores normal consumption and preserves transformation animations
+ok 9 - resource toggle restores normal consumption and preserves transformation animations
+  ---
+  duration_ms: 1.303
+  type: 'test'
+  ...
+# Subtest: developer option changes remain in session storage
+ok 10 - developer option changes remain in session storage
+  ---
+  duration_ms: 0.368
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20.4462
+FILE mission-one-save EXIT 0
+TAP version 13
+# Subtest: mission one resumes a verified checkpoint with inventory and earned progress
+ok 1 - mission one resumes a verified checkpoint with inventory and earned progress
+  ---
+  duration_ms: 7.0312
+  type: 'test'
+  ...
+# Subtest: a defeated boss and available form survive profile switching
+ok 2 - a defeated boss and available form survive profile switching
+  ---
+  duration_ms: 2.1347
+  type: 'test'
+  ...
+# Subtest: unearned forms are not unlocked by a malformed save
+ok 3 - unearned forms are not unlocked by a malformed save
+  ---
+  duration_ms: 1.3939
+  type: 'test'
+  ...
+# Subtest: invalid checkpoint falls back to solid ground, not a wall or midair
+ok 4 - invalid checkpoint falls back to solid ground, not a wall or midair
+  ---
+  duration_ms: 1.1333
+  type: 'test'
+  ...
+# Subtest: dead saves restore checkpoint health and corrupted or blocked saves fail safely
+ok 5 - dead saves restore checkpoint health and corrupted or blocked saves fail safely
+  ---
+  duration_ms: 1.1592
+  type: 'test'
+  ...
+# Subtest: restored score marks prevent duplicated enemy and pickup rewards
+ok 6 - restored score marks prevent duplicated enemy and pickup rewards
+  ---
+  duration_ms: 3.1886
+  type: 'test'
+  ...
+# Subtest: worksite PC coordinates and screen states survive checkpoint saves and death reloads
+ok 7 - worksite PC coordinates and screen states survive checkpoint saves and death reloads
+  ---
+  duration_ms: 3.2615
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 37.8146
+FILE mission-two-arrival EXIT 0
+TAP version 13
+# Subtest: parachute settles on the walking plane without a position discontinuity
+ok 1 - parachute settles on the walking plane without a position discontinuity
+  ---
+  duration_ms: 1.8666
+  type: 'test'
+  ...
+# Subtest: campaign transfers score, ammunition and remaining supplies without mutating the first mission
+ok 2 - campaign transfers score, ammunition and remaining supplies without mutating the first mission
+  ---
+  duration_ms: 0.2884
+  type: 'test'
+  ...
+# Subtest: mission two includes twenty zombies and remembers their defeat separately from soldiers
+ok 3 - mission two includes twenty zombies and remembers their defeat separately from soldiers
+  ---
+  duration_ms: 119.9721
+  type: 'test'
+  ...
+# Subtest: dirigible reward is collected by the actual mission runtime and survives resume and retry
+ok 4 - dirigible reward is collected by the actual mission runtime and survives resume and retry
+  ---
+  duration_ms: 46.4164
+  type: 'test'
+  ...
+# Subtest: resizing while high over the map keeps the camera on the player
+ok 5 - resizing while high over the map keeps the camera on the player
+  ---
+  duration_ms: 16.0798
+  type: 'test'
+  ...
+# Subtest: mission two advances wolf idle gestures and maps sprint plus L to the same ram
+ok 6 - mission two advances wolf idle gestures and maps sprint plus L to the same ram
+  ---
+  duration_ms: 224.2167
+  type: 'test'
+  ...
+# Subtest: mausoleum enemies and both boss phases persist, pause, and award completion once
+ok 7 - mausoleum enemies and both boss phases persist, pause, and award completion once
+  ---
+  duration_ms: 280.2318
+  type: 'test'
+  ...
+# Subtest: arrival blocks action keys, lands, and unlocks both forms with T
+ok 8 - arrival blocks action keys, lands, and unlocks both forms with T
+  ---
+  duration_ms: 2186.9911
+  type: 'test'
+  ...
+# Subtest: pause freezes the arrival and resume preserves form and checkpoint
+ok 9 - pause freezes the arrival and resume preserves form and checkpoint
+  ---
+  duration_ms: 635.0114
+  type: 'test'
+  ...
+# Subtest: real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+ok 10 - real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+  ---
+  duration_ms: 202.0705
+  type: 'test'
+  ...
+# Subtest: new missions refill upgraded health, while resuming keeps saved damage even during arrival
+ok 11 - new missions refill upgraded health, while resuming keeps saved damage even during arrival
+  ---
+  duration_ms: 15.3417
+  type: 'test'
+  ...
+# Subtest: city kills award points once and stay defeated after continuing
+ok 12 - city kills award points once and stay defeated after continuing
+  ---
+  duration_ms: 194.1246
+  type: 'test'
+  ...
+# Subtest: high fall kills in mission two and retry returns alive to the entrance
+ok 13 - high fall kills in mission two and retry returns alive to the entrance
+  ---
+  duration_ms: 393.1129
+  type: 'test'
+  ...
+# Subtest: mission runtime saves randomized loot and tank defeat without awarding them twice
+ok 14 - mission runtime saves randomized loot and tank defeat without awarding them twice
+  ---
+  duration_ms: 203.4154
+  type: 'test'
+  ...
+# Subtest: shared main menu pauses and resumes mission two without losing its loadout
+ok 15 - shared main menu pauses and resumes mission two without losing its loadout
+  ---
+  duration_ms: 189.1953
+  type: 'test'
+  ...
+# Subtest: mission two settings preserve boss damage and show the shared health bar only near the tank
+ok 16 - mission two settings preserve boss damage and show the shared health bar only near the tank
+  ---
+  duration_ms: 848.8536
+  type: 'test'
+  ...
+# Subtest: mission two arrow chords fire all four diagonals with navigation and keypad events
+ok 17 - mission two arrow chords fire all four diagonals with navigation and keypad events
+  ---
+  duration_ms: 3980.7978
+  type: 'test'
+  ...
+# Subtest: arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+ok 18 - arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+  ---
+  duration_ms: 20.3453
+  type: 'test'
+  ...
+# Subtest: a quick diagonal tap preserves its aim and fires once even with numpad zero
+ok 19 - a quick diagonal tap preserves its aim and fires once even with numpad zero
+  ---
+  duration_ms: 198.105
+  type: 'test'
+  ...
+# Subtest: cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+ok 20 - cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+  ---
+  duration_ms: 3922.4624
+  type: 'test'
+  ...
+# Subtest: a diagonal J tap just before the weapon is ready is not discarded
+ok 21 - a diagonal J tap just before the weapon is ready is not discarded
+  ---
+  duration_ms: 367.56
+  type: 'test'
+  ...
+# Subtest: pausing cancels a pending diagonal shot before continuing
+ok 22 - pausing cancels a pending diagonal shot before continuing
+  ---
+  duration_ms: 77.7823
+  type: 'test'
+  ...
+# Subtest: releasing J and one arrow before the next frame preserves the requested diagonal
+ok 23 - releasing J and one arrow before the next frame preserves the requested diagonal
+  ---
+  duration_ms: 33.047
+  type: 'test'
+  ...
+# Subtest: X fires diagonally when its key events arrive, including held fire
+ok 24 - X fires diagonally when its key events arrive, including held fire
+  ---
+  duration_ms: 555.9679
+  type: 'test'
+  ...
+# Subtest: mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+ok 25 - mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+  ---
+  duration_ms: 2402.1641
+  type: 'test'
+  ...
+# Subtest: mouse trigger tracks direction, coexists with J and clears on pause
+ok 26 - mouse trigger tracks direction, coexists with J and clears on pause
+  ---
+  duration_ms: 261.8868
+  type: 'test'
+  ...
+# Subtest: mouse tap keeps diagonal aim and arrival rejects pointer fire
+ok 27 - mouse tap keeps diagonal aim and arrival rejects pointer fire
+  ---
+  duration_ms: 271.458
+  type: 'test'
+  ...
+# Subtest: single-key diagonals in mission two match mission one without a three-key chord
+ok 28 - single-key diagonals in mission two match mission one without a three-key chord
+  ---
+  duration_ms: 1358.5521
+  type: 'test'
+  ...
+# Subtest: Heraldo blocks the mausoleum, unlocks zombie permanently and keeps five-second form cooldown on resume
+ok 29 - Heraldo blocks the mausoleum, unlocks zombie permanently and keeps five-second form cooldown on resume
+  ---
+  duration_ms: 288.4632
+  type: 'test'
+  ...
+# Subtest: entering just after the Heraldo falls cannot skip the permanent reward
+ok 30 - entering just after the Heraldo falls cannot skip the permanent reward
+  ---
+  duration_ms: 65.3056
+  type: 'test'
+  ...
+# Subtest: scene change clears projectiles, lingering impacts and unfinished melee actions
+ok 31 - scene change clears projectiles, lingering impacts and unfinished melee actions
+  ---
+  duration_ms: 23.0726
+  type: 'test'
+  ...
+# Subtest: partial old saves with malformed optional collections still load a playable mission
+ok 32 - partial old saves with malformed optional collections still load a playable mission
+  ---
+  duration_ms: 55.1729
+  type: 'test'
+  ...
+# Subtest: mission two alternates zombie idle gestures, freezes them on pause and interrupts with native fire
+ok 33 - mission two alternates zombie idle gestures, freezes them on pause and interrupts with native fire
+  ---
+  duration_ms: 450.2557
+  type: 'test'
+  ...
+# Subtest: down key speeds up parachute while attacks stay blocked, then leaves a safe landing
+ok 34 - down key speeds up parachute while attacks stay blocked, then leaves a safe landing
+  ---
+  duration_ms: 57.1781
+  type: 'test'
+  ...
+# Subtest: car damage survives runtime save/reload
+ok 35 - car damage survives runtime save/reload
+  ---
+  duration_ms: 30.8082
+  type: 'test'
+  ...
+# Subtest: PC activates on contact, persists immediately, and death retries there with inventory intact
+ok 36 - PC activates on contact, persists immediately, and death retries there with inventory intact
+  ---
+  duration_ms: 16.5048
+  type: 'test'
+  ...
+# Subtest: cemetery and mausoleum checkpoints restore their own scene from a dead save
+ok 37 - cemetery and mausoleum checkpoints restore their own scene from a dead save
+  ---
+  duration_ms: 17.7873
+  type: 'test'
+  ...
+# Subtest: fresh missions reset prior checkpoints while legacy saves still use the entrance on death
+ok 38 - fresh missions reset prior checkpoints while legacy saves still use the entrance on death
+  ---
+  duration_ms: 18.0499
+  type: 'test'
+  ...
+# Subtest: leaving the defeated mausoleum transfers to mission three and pagehide cannot overwrite it
+ok 39 - leaving the defeated mausoleum transfers to mission three and pagehide cannot overwrite it
+  ---
+  duration_ms: 4.5643
+  type: 'test'
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20041.1859

@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: introduction blocks road progress and combat for five active seconds
+ok 1 - introduction blocks road progress and combat for five active seconds
+  ---
+  duration_ms: 2.5009
+  type: 'test'
+  ...
+# Subtest: turbo increases progress, lanes clamp, and jumps land on their road lane
+ok 2 - turbo increases progress, lanes clamp, and jumps land on their road lane
+  ---
+  duration_ms: 1.3255
+  type: 'test'
+  ...
+# Subtest: road contains all motorized enemy types and stops distance at boss without skipping it
+ok 3 - road contains all motorized enemy types and stops distance at boss without skipping it
+  ---
+  duration_ms: 1.4484
+  type: 'test'
+  ...
+# Subtest: boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+ok 4 - boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+  ---
+  duration_ms: 11.6252
+  type: 'test'
+  ...
+# Subtest: wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+ok 5 - wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+  ---
+  duration_ms: 1.6314
+  type: 'test'
+  ...
+# Subtest: robot fires two owned guns with independent rates and spends actual ammo
+ok 6 - robot fires two owned guns with independent rates and spends actual ammo
+  ---
+  duration_ms: 1.43
+  type: 'test'
+  ...
+# Subtest: red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+ok 7 - red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+  ---
+  duration_ms: 0.2197
+  type: 'test'
+  ...
+# Subtest: swept collision detects fast shots crossing the whole enemy between frames
+ok 8 - swept collision detects fast shots crossing the whole enemy between frames
+  ---
+  duration_ms: 0.0727
+  type: 'test'
+  ...
+# Subtest: checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+ok 9 - checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+  ---
+  duration_ms: 0.3161
+  type: 'test'
+  ...
+# Subtest: mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+ok 10 - mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+  ---
+  duration_ms: 0.5387
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 58.7308

@@ -1,0 +1,5 @@
+<!doctype html><meta charset="utf-8"><title>Combos del lobo</title><style>body{background:#28343b;color:#e5dfcc;font:16px system-ui;margin:20px}canvas{width:100%;max-width:1160px;image-rendering:pixelated}h1{font-size:24px}</style>
+<h1>Zarpazo, revés, golpe ascendente y patada de remate</h1><canvas width="1160" height="590"></canvas><script src="/soldier-animation.js"></script><script>
+const image=new Image(),canvas=document.querySelector('canvas'),ctx=canvas.getContext('2d'),A=ArcadeSoldierAnimation;
+image.src='/assets/sprites/lobo-combos-v1.png';image.onload=()=>{ctx.imageSmoothingEnabled=false;ctx.font='15px system-ui';A.wolfComboFrames.forEach((row,r)=>{ctx.fillStyle='#9aaa9e';ctx.fillRect(0,115+r*145,1160,1);row.forEach((f,i)=>{const s=A.wolfComboScale*1.35;ctx.drawImage(image,...f.slice(0,4),95+i*185-f[5]*s,115+r*145-f[3]*s,f[2]*s,f[3]*s)});ctx.fillText(['Zarpazo','Revés','Ascendente · remate','Patada · remate'][r],12,138+r*145)})};
+</script>

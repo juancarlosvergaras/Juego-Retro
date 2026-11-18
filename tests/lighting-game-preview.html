@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Luces y rey · prueba aislada</title><style>body{background:#17232b;color:#fff;font:14px system-ui}button{padding:8px;margin:4px}iframe{width:100%;height:730px;border:0}</style>
+<button data-scene="one">Misión 1</button><button data-scene="city">Ciudad</button><button data-scene="cemetery">Cementerio</button><button data-scene="king">Rey entre andamios</button><button id="flash">Mostrar relámpago</button><button id="break">Romper piedra</button><pre id="status"></pre><iframe id="game"></iframe>
+<script>
+if(location.port!=='4186')throw Error('Solo origen aislado');const f=document.getElementById('game'),status=document.getElementById('status');let scene='cemetery',hold=false,king;
+async function load(value){scene=value;hold=false;king=null;await new Promise(r=>{f.addEventListener('load',r,{once:true});f.src='about:blank';});
+ localStorage.setItem('cap-dollar.selected-profile.v1','1');sessionStorage.setItem('cap-dollar.selected-profile.v1','1');sessionStorage.removeItem('cap-dollar.dev-session.v1');
+ localStorage.setItem('obra10.progress.v1',JSON.stringify({version:1,levels:{life:5,jump:5},owned:[],shield:99}));localStorage.setItem('cap-dollar.campaign.v1',JSON.stringify({version:1,level:2}));
+ localStorage.setItem('cap-dollar.mission-two.v1',JSON.stringify({inside:scene==='king',x:scene==='king'?1215:scene==='city'?1200:11400,landed:true,hp:13,shield:99,form:'soldier',defeated:Array.from({length:330},(_,i)=>i),interiorDefeated:[300,301,302,303,304,305,320,321,322,323],king:scene==='king'?{stage:1,active:true,x:1215}:{},inventory:{selected:3,owned:[1,3],ammo:{3:300}}}));f.src=scene==='one'?'/index.html?entry=select':'/level-two.html?entry=resume';
+}
+f.onload=()=>{const w=f.contentWindow,L=w.ArcadeWorldLighting,K=w.ArcadeMausoleumKing;if(!L)return;const update=L.update;L.update=(s,dt,active,cam,width)=>{update(s,dt,active,cam,width);if(hold&&active)s.bolt={age:.19,x:cam.x+width*.72,cameraX:cam.x};status.textContent=scene+' · siguiente rayo '+s.remaining.toFixed(1)+' s · '+(king?king.phase+' / fase '+king.stage:'');};if(K){const step=K.update;K.update=(k,p,dt,hurt,enemies,platforms)=>{king=k;step(k,p,dt,()=>{},enemies,platforms);if(scene==='king')k.cooldown=100;};}};
+document.querySelectorAll('[data-scene]').forEach(b=>b.onclick=()=>load(b.dataset.scene));document.getElementById('flash').onclick=()=>hold=!hold;document.getElementById('break').onclick=()=>{if(king)f.contentWindow.ArcadeMausoleumKing.damage(king,999);};load('cemetery');
+</script>

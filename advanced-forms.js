@@ -1,0 +1,28 @@
+(function(root){
+ 'use strict';
+ const paths={transitionFx:'assets/sprites/transformacion-energia-v1.png',enemyStyle:'assets/sprites/enemigos-estilo-soldado-v2.png',tankJump:'assets/sprites/mini-tanque-salto-v1.png',alienPower:'assets/sprites/poder-alien-v1.png',tank:'assets/sprites/mini-tanque-submarino-v1.png',fighter:'assets/sprites/luchador-soldado-v3.png'};
+ const sheets={},frames={};let loading;
+ function atlas(image,cols=4,rows=4,cuts={}){const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const g=c.getContext('2d');g.drawImage(image,0,0);const data=g.getImageData(0,0,c.width,c.height).data,out=[];
+  for(let r=0;r<rows;r++)for(let col=0;col<cols;col++){const x0=Math.round((cuts.x?.[r]?.[col]??col/cols)*c.width),x1=Math.round((cuts.x?.[r]?.[col+1]??(col+1)/cols)*c.width),y0=Math.round((cuts.y?.[r]??r/rows)*c.height),y1=Math.round((cuts.y?.[r+1]??(r+1)/rows)*c.height);let l=x1,t=y1,b=y0,right=x0;for(let y=y0+2;y<y1-2;y++)for(let x=x0+2;x<x1-2;x++)if(data[(y*c.width+x)*4+3]>200){l=Math.min(l,x);right=Math.max(right,x);t=Math.min(t,y);b=Math.max(b,y);}out.push(right>l?[l,t,right-l+1,b-t+1]:[x0,y0,x1-x0,y1-y0]);}return out;
+ }
+ function load(){if(loading)return loading;loading=Promise.all([root.ArcadeBossAttackSprites?.load(),...Object.entries(paths).map(([id,path])=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>{sheets[id]=root.prepareWhiteDeath?root.prepareWhiteDeath(i):i;frames[id]=atlas(sheets[id],4,id==='fighter'?6:id==='tankJump'?3:4,id==='tankJump'?{y:[0,400/1086,770/1086,1]}:id==='fighter'?{y:[0,275/1536,535/1536,800/1536,1050/1536,1240/1536,1],x:{2:[0,.25,.5,.786,1]}}:{});if(id==='transitionFx')root.ArcadeFormTransition?.setEffects(sheets[id]);if(id==='enemyStyle')root.ArcadeExpansionEnemies?.setStyleSheet(sheets[id]);if(id==='alienPower')root.ArcadePowerSprites?.setAlienSheet(sheets[id]);if(id==='tank'||id==='fighter')root.ArcadeFormTransition?.setEndpoint(id,sheets[id],frames[id][0],id==='tank'?frames[id][0][3]*105/frames[id][0][2]:57);resolve();};i.onerror=()=>{loading=null;reject(Error(path));};i.src=path;}))]);return loading;}
+ function icon(form){return sheets[form]?{image:sheets[form],frame:frames[form][0]}:null;}
+ function special(p){return p.form==='tank'||p.form==='fighter';}
+ function shot(p){if(!special(p))return null;const a=p.aim||{x:p.facing||1,y:0},bonus=p.damageBonus||1;
+  if(p.form==='fighter'){p.fighterCombo=(p.fighterPose>0?(p.fighterCombo||0)+1:0)%3;p.fighterPose=.8;p.fighterAge=0;p.fighterKick=!!p.fighterKickInput;return{weapon:{rate:.32,range:92,damage:3+p.fighterCombo,ammo:null},bullets:[]};}
+  p.cannonPose=.65;return{weapon:{rate:.95,damage:8,ammo:null,speed:620},bullets:[{x:p.x+a.x*48,y:p.y-33+a.y*32,vx:a.x*620,vy:a.y*620,life:2.4,damage:8*bonus,slot:6,superCannon:true,enemy:false}]};
+ }
+ function tankJumpFrame(p){if(p.grounded!==false)return 8+Math.min(3,Math.floor((.24-Math.max(0,p.landing||0))/.24*4));const age=p.tankAirAge||0;if(age<.1)return Math.min(3,Math.floor(age/.025));return p.vy<-90?4:p.vy<60?5:p.vy<300?6:7;}
+ function tick(p,dt){p.tankAirAge=p.grounded===false?(p.tankAirAge||0)+dt:0;p.cannonPose=Math.max(0,(p.cannonPose||0)-dt);p.fighterPose=Math.max(0,(p.fighterPose||0)-dt);p.fighterAge=(p.fighterAge||0)+dt;}
+ function draw(c,p){if(!special(p)||!sheets[p.form])return false;
+  if(p.form==='fighter'&&(p.swimming||p.onMotorcycle||p.victoryAge!==undefined)){const fs=frames.fighter,index=p.victoryAge!==undefined?15:p.onMotorcycle?20+(p.grounded===false?3:p.fighterPose>0?2:p.roadBoost?1:0):16+Math.floor((p.anim||0)*8)%4,f=fs[index],scale=p.victoryAge!==undefined?57/fs[0][3]:p.onMotorcycle?104/fs[20][2]:90/fs[16][2];c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(p.x),Math.round(p.y));c.scale(p.facing||1,1);c.drawImage(sheets.fighter,...f,-Math.round(f[2]*scale/2),-Math.round(f[3]*scale),Math.round(f[2]*scale),Math.round(f[3]*scale));c.restore();return true;}
+  const tank=p.form==='tank';let fs=frames[p.form],img=sheets[p.form],frame;
+  if(tank){frame=p.submersible?(p.cannonPose>0?(p.cannonPose>.3?14:15):p.vy>30?13:12):p.cannonPose>0?4+Math.min(3,Math.floor((.65-p.cannonPose)/.65*4)):Math.floor((p.anim||0)*10)%4;}
+  else frame=p.fighterPose>0?(p.fighterKick?8+Math.min(3,Math.floor(p.fighterAge/.4*4)):5+(p.fighterCombo||0)):p.crouching?12:!p.grounded?13:Math.abs(p.vx)>8?Math.floor((p.anim||0)*10)%4:(p.idleTime||0)>6?14:4;
+  let jumpScale=null;if(tank&&!p.submersible&&frames.tankJump&&(p.grounded===false||p.landing>0)){frame=tankJumpFrame(p);fs=frames.tankJump;img=sheets.tankJump;jumpScale=105/fs[11][2];}const f=fs[frame],scale=jumpScale??(tank?105/fs[0][2]:57/fs[0][3]);c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(p.x),Math.round(p.y));c.scale(p.facing||1,1);if(p.hurt>0)c.filter='brightness(1.35)';c.drawImage(img,...f,tank?-Math.round(f[2]*scale/2):Math.round((f[0]%Math.round(img.width/4)-img.width/8)*scale),-Math.round(f[3]*scale),Math.round(f[2]*scale),Math.round(f[3]*scale));
+  if(p.transform>0){c.globalAlpha=.35*Math.sin(Math.PI*Math.min(1,p.transform/1.2));c.fillStyle='#95f5ed';for(let i=0;i<8;i++)c.fillRect(-50+i*13,-70+i%3*7,6,75-i*5);}c.restore();return true;
+ }
+ function morph(c,x,y,t,width=115){if(!sheets.tank)return;const f=frames.tank[8+Math.min(3,Math.floor(Math.max(0,t)*4))],scale=width/frames.tank[0][2];c.drawImage(sheets.tank,...f,x-f[2]*scale/2,y-f[3]*scale,f[2]*scale,f[3]*scale);}
+ const api={load,atlas,icon,special,shot,tick,draw,morph,tankJumpFrame};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeAdvancedForms=api;
+})(typeof window!=='undefined'?window:globalThis);
+

@@ -1,0 +1,422 @@
+TAP version 13
+# Subtest: all six transformations follow their own pair, reverse every intermediate and end in the real target
+ok 1 - all six transformations follow their own pair, reverse every intermediate and end in the real target
+  ---
+  duration_ms: 1.6258
+  type: 'test'
+  ...
+# Subtest: rendering keeps opaque feet anchored in both directions without changing player state
+ok 2 - rendering keeps opaque feet anchored in both directions without changing player state
+  ---
+  duration_ms: 1.2133
+  type: 'test'
+  ...
+# Subtest: visual transitions preserve the five second lock, health, ammunition and world position
+ok 3 - visual transitions preserve the five second lock, health, ammunition and world position
+  ---
+  duration_ms: 0.3135
+  type: 'test'
+  ...
+# Subtest: both missions preload and route the shared transformation sprites
+ok 4 - both missions preload and route the shared transformation sprites
+  ---
+  duration_ms: 1.6211
+  type: 'test'
+  ...
+# Subtest: form toggle requires boss defeat, preserves health and arsenal, and has transition lock
+ok 5 - form toggle requires boss defeat, preserves health and arsenal, and has transition lock
+  ---
+  duration_ms: 9.4741
+  type: 'test'
+  ...
+# Subtest: soldier projectiles keep moving after boss defeat
+ok 6 - soldier projectiles keep moving after boss defeat
+  ---
+  duration_ms: 5.5204
+  type: 'test'
+  ...
+# Subtest: wolf to soldier plays every transformation frame in reverse
+ok 7 - wolf to soldier plays every transformation frame in reverse
+  ---
+  duration_ms: 0.331
+  type: 'test'
+  ...
+# Subtest: boss transformation starts from the actual current form instead of a stale earlier form
+ok 8 - boss transformation starts from the actual current form instead of a stale earlier form
+  ---
+  duration_ms: 2.1932
+  type: 'test'
+  ...
+# Subtest: held Shift boosts all eight directions in both worlds and burns twice the fuel
+ok 9 - held Shift boosts all eight directions in both worlds and burns twice the fuel
+  ---
+  duration_ms: 3.9529
+  type: 'test'
+  ...
+# Subtest: boost runs only while moving and stops exactly when fuel is exhausted
+ok 10 - boost runs only while moving and stops exactly when fuel is exhausted
+  ---
+  duration_ms: 0.6182
+  type: 'test'
+  ...
+# Subtest: jetpack lifts off, holds perfectly still, switches off into gravity
+ok 11 - jetpack lifts off, holds perfectly still, switches off into gravity
+  ---
+  duration_ms: 13.2961
+  type: 'test'
+  ...
+# Subtest: eight flight directions have equal speed and release stops instantly
+ok 12 - eight flight directions have equal speed and release stops instantly
+  ---
+  duration_ms: 0.9164
+  type: 'test'
+  ...
+# Subtest: flight detaches traversal, lands on platforms, preserves armed pose and clears for rescue
+ok 13 - flight detaches traversal, lands on platforms, preserves armed pose and clears for rescue
+  ---
+  duration_ms: 0.4954
+  type: 'test'
+  ...
+# Subtest: mission one resumes a verified checkpoint with inventory and earned progress
+ok 14 - mission one resumes a verified checkpoint with inventory and earned progress
+  ---
+  duration_ms: 3.7765
+  type: 'test'
+  ...
+# Subtest: a defeated boss and available form survive profile switching
+ok 15 - a defeated boss and available form survive profile switching
+  ---
+  duration_ms: 3.1355
+  type: 'test'
+  ...
+# Subtest: unearned forms are not unlocked by a malformed save
+ok 16 - unearned forms are not unlocked by a malformed save
+  ---
+  duration_ms: 1.4811
+  type: 'test'
+  ...
+# Subtest: invalid checkpoint falls back to solid ground, not a wall or midair
+ok 17 - invalid checkpoint falls back to solid ground, not a wall or midair
+  ---
+  duration_ms: 1.4875
+  type: 'test'
+  ...
+# Subtest: dead saves restore checkpoint health and corrupted or blocked saves fail safely
+ok 18 - dead saves restore checkpoint health and corrupted or blocked saves fail safely
+  ---
+  duration_ms: 1.5677
+  type: 'test'
+  ...
+# Subtest: restored score marks prevent duplicated enemy and pickup rewards
+ok 19 - restored score marks prevent duplicated enemy and pickup rewards
+  ---
+  duration_ms: 2.4577
+  type: 'test'
+  ...
+# Subtest: worksite PC coordinates and screen states survive checkpoint saves and death reloads
+ok 20 - worksite PC coordinates and screen states survive checkpoint saves and death reloads
+  ---
+  duration_ms: 4.046
+  type: 'test'
+  ...
+# Subtest: mission three defers combat through the helicopter introduction and begins at full health
+ok 21 - mission three defers combat through the helicopter introduction and begins at full health
+  ---
+  duration_ms: 84.8354
+  type: 'test'
+  ...
+# Subtest: mecha activates only at its arena and survives damage until its single-phase destruction completes
+ok 22 - mecha activates only at its arena and survives damage until its single-phase destruction completes
+  ---
+  duration_ms: 1089.0795
+  type: 'test'
+  ...
+# Subtest: robot reward and selected second weapon survive resume, with four forms and separate ammunition
+ok 23 - robot reward and selected second weapon survive resume, with four forms and separate ammunition
+  ---
+  duration_ms: 18.5793
+  type: 'test'
+  ...
+# Subtest: checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+ok 24 - checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+  ---
+  duration_ms: 29.4067
+  type: 'test'
+  ...
+# Subtest: mission three exit plays its finale then transfers once to mission four, preserving the destination through pause and pagehide
+ok 25 - mission three exit plays its finale then transfers once to mission four, preserving the destination through pause and pagehide
+  ---
+  duration_ms: 70.9126
+  type: 'test'
+  ...
+# Subtest: an interrupted mission three finale resumes before handing off to the road
+ok 26 - an interrupted mission three finale resumes before handing off to the road
+  ---
+  duration_ms: 65.1738
+  type: 'test'
+  ...
+# Subtest: touch stick supports all eight movement and firing directions
+ok 27 - touch stick supports all eight movement and firing directions
+  ---
+  duration_ms: 0.4624
+  type: 'test'
+  ...
+# Subtest: stick deadzone prevents drift, outer ring sprints and boosts vertical jet flight
+ok 28 - stick deadzone prevents drift, outer ring sprints and boosts vertical jet flight
+  ---
+  duration_ms: 0.0973
+  type: 'test'
+  ...
+# Subtest: three fingers can move, jump and fire; releasing one does not clear another or the keyboard
+ok 29 - three fingers can move, jump and fire; releasing one does not clear another or the keyboard
+  ---
+  duration_ms: 0.3164
+  type: 'test'
+  ...
+# Subtest: cancel, lost capture and orientation cleanup release each contact exactly once
+ok 30 - cancel, lost capture and orientation cleanup release each contact exactly once
+  ---
+  duration_ms: 0.0803
+  type: 'test'
+  ...
+# Subtest: ground support remains stable and running is faster than walking
+ok 31 - ground support remains stable and running is faster than walking
+  ---
+  duration_ms: 5.0444
+  type: 'test'
+  ...
+# Subtest: double jump adds height, third jump is ignored
+ok 32 - double jump adds height, third jump is ignored
+  ---
+  duration_ms: 2.4709
+  type: 'test'
+  ...
+# Subtest: one-way platform passes from below and catches descending feet
+ok 33 - one-way platform passes from below and catches descending feet
+  ---
+  duration_ms: 2.7707
+  type: 'test'
+  ...
+# Subtest: fast falls land on first platform instead of tunneling
+ok 34 - fast falls land on first platform instead of tunneling
+  ---
+  duration_ms: 0.1772
+  type: 'test'
+  ...
+# Subtest: sliding is finite and a held key cannot restart it
+ok 35 - sliding is finite and a held key cannot restart it
+  ---
+  duration_ms: 4.6501
+  type: 'test'
+  ...
+# Subtest: world boundaries contain the character
+ok 36 - world boundaries contain the character
+  ---
+  duration_ms: 55.9458
+  type: 'test'
+  ...
+# Subtest: geometry keeps real gaps and all hook anchors touch solid undersides
+not ok 37 - geometry keeps real gaps and all hook anchors touch solid undersides
+  ---
+  duration_ms: 1.1271
+  type: 'test'
+  location: 'C:\\Juego Arcade\\tests\\physics.test.cjs:12:1'
+  failureType: 'testCodeFailure'
+  error: 'ladder ends on real surface'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (C:\Juego Arcade\tests\physics.test.cjs:17:73)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: simulation finds a route to the boss with double jumps and ladders across the new gaps
+ok 38 - simulation finds a route to the boss with double jumps and ladders across the new gaps
+  ---
+  duration_ms: 1342.0929
+  type: 'test'
+  ...
+# Subtest: introduction blocks road progress and combat for five active seconds
+ok 39 - introduction blocks road progress and combat for five active seconds
+  ---
+  duration_ms: 1.509
+  type: 'test'
+  ...
+# Subtest: turbo increases progress, lanes clamp, and jumps land on their road lane
+ok 40 - turbo increases progress, lanes clamp, and jumps land on their road lane
+  ---
+  duration_ms: 1.3506
+  type: 'test'
+  ...
+# Subtest: road contains all motorized enemy types and stops distance at boss without skipping it
+ok 41 - road contains all motorized enemy types and stops distance at boss without skipping it
+  ---
+  duration_ms: 0.8836
+  type: 'test'
+  ...
+# Subtest: boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+ok 42 - boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+  ---
+  duration_ms: 10.7231
+  type: 'test'
+  ...
+# Subtest: wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+ok 43 - wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+  ---
+  duration_ms: 1.1678
+  type: 'test'
+  ...
+# Subtest: robot fires two owned guns with independent rates and spends actual ammo
+ok 44 - robot fires two owned guns with independent rates and spends actual ammo
+  ---
+  duration_ms: 1.0256
+  type: 'test'
+  ...
+# Subtest: red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+ok 45 - red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+  ---
+  duration_ms: 0.2059
+  type: 'test'
+  ...
+# Subtest: swept collision detects fast shots crossing the whole enemy between frames
+ok 46 - swept collision detects fast shots crossing the whole enemy between frames
+  ---
+  duration_ms: 0.0582
+  type: 'test'
+  ...
+# Subtest: checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+ok 47 - checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+  ---
+  duration_ms: 0.1663
+  type: 'test'
+  ...
+# Subtest: mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+ok 48 - mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+  ---
+  duration_ms: 0.1283
+  type: 'test'
+  ...
+# Subtest: interrupted road finale resumes, credits no second reward, and reaches completion
+ok 49 - interrupted road finale resumes, credits no second reward, and reaches completion
+  ---
+  duration_ms: 0.5662
+  type: 'test'
+  ...
+# Subtest: a simultaneous final hit and enemy bullet finishes the boss without trapping the victory behind a death menu
+ok 50 - a simultaneous final hit and enemy bullet finishes the boss without trapping the victory behind a death menu
+  ---
+  duration_ms: 0.1014
+  type: 'test'
+  ...
+# Subtest: mission five only loads after play and a fresh campaign begins at full health with the mini submarine
+ok 51 - mission five only loads after play and a fresh campaign begins at full health with the mini submarine
+  ---
+  duration_ms: 9.2672
+  type: 'test'
+  ...
+# Subtest: mission four rewards tank, saves it, and transfers to five without late-save destination regression
+ok 52 - mission four rewards tank, saves it, and transfers to five without late-save destination regression
+  ---
+  duration_ms: 70.7235
+  type: 'test'
+  ...
+# Subtest: captain reward persists through menu, resume and no second points award
+ok 53 - captain reward persists through menu, resume and no second points award
+  ---
+  duration_ms: 70.7373
+  type: 'test'
+  ...
+# Subtest: tank input consumes no gun ammunition and player form plus checkpoint survive resume
+ok 54 - tank input consumes no gun ammunition and player form plus checkpoint survive resume
+  ---
+  duration_ms: 17.9096
+  type: 'test'
+  ...
+# Subtest: sea introduction freezes combat, then free swimming descends and clamps to the seabed
+ok 55 - sea introduction freezes combat, then free swimming descends and clamps to the seabed
+  ---
+  duration_ms: 134.0118
+  type: 'test'
+  ...
+# Subtest: enemy divers do not shoot offscreen; nearby enemies turn and fire at player
+ok 56 - enemy divers do not shoot offscreen; nearby enemies turn and fire at player
+  ---
+  duration_ms: 24.3013
+  type: 'test'
+  ...
+# Subtest: mini tank cannon has infinite ammunition, directional shots and a bounded firing rate
+ok 57 - mini tank cannon has infinite ammunition, directional shots and a bounded firing rate
+  ---
+  duration_ms: 9.416
+  type: 'test'
+  ...
+# Subtest: airlock requires reaching the deepest far end, seals for four seconds and starts captain safely
+ok 58 - airlock requires reaching the deepest far end, seals for four seconds and starts captain safely
+  ---
+  duration_ms: 16.9619
+  type: 'test'
+  ...
+# Subtest: captain telegraphs machinegun, missiles, electric grenade and charge in one encounter
+ok 59 - captain telegraphs machinegun, missiles, electric grenade and charge in one encounter
+  ---
+  duration_ms: 92.5707
+  type: 'test'
+  ...
+# Subtest: inside the submarine jumping avoids floor electric hazard, while standing suffers damage
+ok 60 - inside the submarine jumping avoids floor electric hazard, while standing suffers damage
+  ---
+  duration_ms: 0.5674
+  type: 'test'
+  ...
+# Subtest: zombie plasma creates a persistent damaging slow pool on the arena floor
+ok 61 - zombie plasma creates a persistent damaging slow pool on the arena floor
+  ---
+  duration_ms: 29.3921
+  type: 'test'
+  ...
+# Subtest: sonar checkpoint preserves rewards and supplies but resets unfinished captain on retry
+ok 62 - sonar checkpoint preserves rewards and supplies but resets unfinished captain on retry
+  ---
+  duration_ms: 0.4642
+  type: 'test'
+  ...
+# Subtest: defeating captain grants fighter once, resolves simultaneous death and resumes final sequence safely
+ok 63 - defeating captain grants fighter once, resolves simultaneous death and resumes final sequence safely
+  ---
+  duration_ms: 58.0883
+  type: 'test'
+  ...
+# Subtest: tank reward is granted by convoy defeat and carried into mission 5 without altering mission-one loadout
+ok 64 - tank reward is granted by convoy defeat and carried into mission 5 without altering mission-one loadout
+  ---
+  duration_ms: 0.5064
+  type: 'test'
+  ...
+# Subtest: new forms persist per profile, cycle with five-second cooldown, and fighter combos never spend ammo
+ok 65 - new forms persist per profile, cycle with five-second cooldown, and fighter combos never spend ammo
+  ---
+  duration_ms: 0.6116
+  type: 'test'
+  ...
+# Subtest: fighter punches and kicks hit overlapping enemies and tank cannot use hook or jetpack in older worlds
+ok 66 - fighter punches and kicks hit overlapping enemies and tank cannot use hook or jetpack in older worlds
+  ---
+  duration_ms: 0.686
+  type: 'test'
+  ...
+1..66
+# tests 66
+# suites 0
+# pass 65
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3439.3482

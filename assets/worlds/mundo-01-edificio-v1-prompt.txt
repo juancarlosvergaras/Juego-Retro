@@ -1,0 +1,17 @@
+Tool: built-in image_gen
+Prompt:
+Use case: stylized-concept.
+Asset type: vertical level environment concept image for a 2D side-scrolling pixel art arcade platformer.
+Create ONE tall VERTICAL image of an unfinished TEN-STORY BUILDING, our first game world. Show entire building from ground entrance at bottom to roof at top, building filling most of frame, with precisely TEN clearly countable playable floors above the ground foundation; roof is the cap, not an eleventh story. Each story occupies a similar vertical band. Portrait aspect ratio approximately 1:3, ideally 1024x3072.
+Art direction: rich crisp 16-bit arcade pixel art, visible square pixels, strong readable silhouettes, limited cohesive palette, dark outlines on foreground geometry, restrained highlights. Match a game featuring a small olive-uniform soldier. NO characters or enemies in this environment image. No text, labels, numbers, logos, HUD, borders.
+Camera: strict flat SIDE-ON orthographic gameplay view, front facade removed as a clean architectural cutaway. No isometric perspective, no dramatic camera tilt. Floors and platforms are HORIZONTAL, with readable flat top surfaces. Industrial construction site with exposed gray concrete columns, rusty orange steel I-beams, yellow safety railings, wooden scaffolding, hanging chains, rebar at unfinished edges, a small construction crane at roof. Dark desaturated blue-gray city skyline and sky behind, distant background low contrast so platforms stand out.
+Level structure: visually traceable zigzag ascent from bottom-left ground entrance to roof-right exit platform. Every floor has intentional openings so the character can jump upward between stories. Alternating left and right climbing shafts with short ladders and climbable scaffolding; intermediate small step platforms bridge vertical distances, no impossible giant gaps. Do not make ten solid continuous floor slabs blocking ascent. Include wide safe landing areas, occasional narrow platforms, a few broken floor gaps and suspended construction platforms. Keep traversal lanes clear and avoid decorative clutter over landing surfaces. Generous open room for jump arcs.
+Progression from bottom to top:
+Floors 1–2 broad concrete decks, beginner stepping platforms, sand piles, stacked bricks and wheelbarrow near edges.
+Floors 3–4 exposed structural beams with staggered wooden planks and scaffold ladders.
+Floors 5–6 wider atrium void with suspended platforms on chains and multiple ledges, side scaffolding.
+Floors 7–8 more unfinished steel framing, staggered small platforms, a few clearly visible hazard-striped edges.
+Floors 9–10 sparse upper construction decks, rebar, hanging building materials off traversal lanes, final ascent to roof platform.
+Keep exactly ten story bands architecturally obvious through repeated structural columns and floor remnants, without written floor numbers. Building silhouette coherent and believable, massive vertical height, immersive action-adventure atmosphere. Warm amber work lamps against cool dusk sky, no gradients that erase pixel style. Whole structure fits canvas with modest side margins and visible ground. This is a polished game level art concept, not a technical diagram or sprite sheet.
+
+Environment concept art, not an implemented level. Platforms, collision geometry and traversal distances need to be authored and validated in the game engine.

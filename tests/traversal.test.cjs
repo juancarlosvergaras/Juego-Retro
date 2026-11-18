@@ -1,0 +1,23 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const P=require('../physics.js');
+const {createEncounter,updateEncounter}=require('../encounter.js');
+const dt=1/120,platforms=P.createPlatforms(),env={ladders:P.createLadders(),anchors:P.createAnchors()};
+function tick(p,input,n=1){for(let i=0;i<n;i++)P.step(p,input,dt,platforms,env);}
+test('ladder climbs, holds without gravity and exits on the upper deck',()=>{const p=P.createPlayer(),l=env.ladders[0];p.x=l.x;tick(p,{up:true},30);assert.ok(p.ladder);const y=p.y;tick(p,{},60);assert.equal(p.y,y);tick(p,{up:true},Math.ceil((l.bottom-l.top)/95/dt)+1);assert.equal(p.y,l.top);assert.ok(p.grounded);assert.equal(p.ladder,null);});
+test('descending ladder passes through deck and jump leaves ladder',()=>{const p=P.createPlayer(),l=env.ladders[1];p.x=l.x;p.y=l.top;tick(p,{down:true},30);assert.ok(p.y>l.top&&p.ladder);tick(p,{jumpPressed:true});assert.equal(p.ladder,null);assert.ok(p.vy<0);});
+test('hook selects above within reach and refuses distant anchors',()=>{const p=P.createPlayer();assert.ok(P.findAnchor(p,env.anchors));assert.equal(P.findAnchor(p,[{x:145,y:20}]),null);assert.equal(P.findAnchor(p,[{x:145,y:2020}]),null);});
+test('hook attaches, supports swing and shortens; release preserves velocity',()=>{const p=P.createPlayer();tick(p,{hookPressed:true});assert.ok(p.rope);const length=p.rope.length;tick(p,{up:true,right:true},30);assert.ok(p.rope);assert.ok(p.rope.length<length);assert.ok(Math.hypot(p.x-p.rope.x,p.y-30-p.rope.y)<=p.rope.length+.1);const vx=p.vx;tick(p,{hookPressed:true,right:true});assert.equal(p.rope,null);assert.ok(Math.abs(p.vx-vx)<20);});
+test('jump releases rope and provides upward motion',()=>{const p=P.createPlayer();tick(p,{hookPressed:true});tick(p,{jumpPressed:true});assert.equal(p.rope,null);assert.ok(p.vy<0);});
+test('camera remains stable in dead zone then scrolls within bounds',()=>{const c={x:100,y:500},p={x:260,y:700,facing:1};P.updateCamera(c,p,{width:400,height:400},dt);assert.equal(c.y,500);assert.equal(c.x,100);p.y=1000;P.updateCamera(c,p,{width:400,height:400},dt);assert.ok(c.y>500);p.x=10000;p.y=9999;for(let i=0;i<1000;i++)P.updateCamera(c,p,{width:400,height:400},dt);assert.ok(c.x<=P.WORLD.width-400&&c.y<=P.WORLD.height-400);});
+test('reaching roof activates boss without granting victory',()=>{const e=createEncounter(),p=P.createPlayer();p.y=244;updateEncounter(e,p,{},dt);assert.ok(e.boss.active);assert.equal(e.won,false);});
+test('boss dies only after enough projectile hits',()=>{const e=createEncounter(),p=P.createPlayer();p.x=200;p.y=244;for(let i=0;i<18;i++){e.bullets.push({x:e.boss.x,y:210,vx:0,vy:0,life:1,enemy:false});updateEncounter(e,p,{},dt);}assert.equal(e.boss.hp,0);assert.ok(e.won);});
+test('enemy attacks damage player with temporary invulnerability',()=>{const e=createEncounter(),p=P.createPlayer();const hit=()=>e.bullets.push({x:p.x,y:p.y-25,vx:0,vy:0,life:1,enemy:true});hit();updateEncounter(e,p,{},dt);assert.equal(e.hp,4);hit();updateEncounter(e,p,{},dt);assert.equal(e.hp,4);assert.ok(e.invincible>0);});
+test('holding fire launches actual shots and can defeat the prototype boss',()=>{const e=createEncounter(),p=P.createPlayer();p.x=220;p.y=244;p.facing=1;for(let i=0;i<120*8&&!e.won&&!e.dead;i++)updateEncounter(e,p,{fire:true},dt);assert.ok(e.won);assert.ok(e.hp>0);});
+test('boss defeat transforms player and simulation continues with wolf movement and claws',()=>{const e=createEncounter(),p=P.createPlayer();p.x=220;p.y=P.WORLD.roof;for(let i=0;i<120*8&&!e.won;i++)updateEncounter(e,p,{fire:true},dt);assert.equal(p.form,'wolf');assert.equal(e.hp,8);assert.ok(p.transform>0);const start=p.x;for(let i=0;i<160;i++){P.step(p,{right:true},dt,platforms,env);updateEncounter(e,p,{},dt);}assert.ok(p.x>start);assert.equal(p.transform,0);updateEncounter(e,p,{fire:true},dt);assert.ok(p.claw>0);assert.equal(e.bullets.length,0);});
+test('ceiling blocks a hook aimed at a higher floor',()=>{const p=P.createPlayer();p.x=100;p.y=600;const a={x:100,y:300,id:1};assert.equal(P.findAnchor(p,[a],[{x:50,y:400,w:100,thickness:20}]),null);});
+test('hard landing triggers a short recovery animation',()=>{const p=P.createPlayer();p.y=600;p.vy=600;p.grounded=false;P.step(p,{},dt,[{x:0,w:729,y:604}]);assert.ok(p.landing>0);const time=p.landing;P.step(p,{},dt,[{x:0,w:729,y:604}]);assert.ok(p.landing<time);});
+
+
+
+test('every visible ladder can be entered below and climbed to its supported exit',()=>{for(const l of env.ladders){const p=P.createPlayer();p.x=l.x;p.y=l.bottom;tick(p,{up:true},1);assert.ok(p.ladder,'entry '+l.id);tick(p,{up:true},Math.ceil((l.bottom-l.top)/95/dt)+1);assert.ok(Math.abs(p.y-l.top)<1,'exit '+l.id);assert.ok(p.grounded,'supported exit '+l.id);}});

@@ -1,0 +1,16 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><title>Lobo · Revisión de sprites</title><style>body{margin:20px;background:#263e4a;color:#fff;font:15px system-ui}canvas{max-width:100%;image-rendering:pixelated}button{padding:10px;margin:5px}</style>
+<h1>Lobo · Reposo, pasos y patadas</h1><button id="pause">Pausar animación</button><button id="flip">Cambiar dirección</button><p id="status">Cargando</p><canvas id="sprites" width="1200" height="690"></canvas>
+<script src="/soldier-animation.js"></script><script src="/wolf-walk-atlas.js"></script><script src="/white-death-atlas.js"></script><script>
+const ctx=document.getElementById('sprites').getContext('2d'),S=ArcadeSoldierAnimation;let paused=false,dir=1,clock=0,last=0;
+document.getElementById('pause').onclick=()=>paused=!paused;document.getElementById('flip').onclick=()=>dir*=-1;
+Promise.all(['lobo-reposo-patadas-v2.png','lobo-caminata-v2.png'].map(name=>new Promise(resolve=>{const i=new Image();i.onload=()=>resolve(prepareWhiteDeath(i));i.src='/assets/sprites/'+name}))).then(([actions,walk])=>{
+ function draw(img,f,x,y,scale,lift=0){ctx.save();ctx.translate(x,y-lift);ctx.scale(dir,1);ctx.drawImage(img,...f.slice(0,4),-(f[5]??f[2]/2)*scale,-f[3]*scale,f[2]*scale,f[3]*scale);ctx.restore()}
+ function loop(now){if(!paused)clock+=Math.min(.05,(now-last)/1000||0);last=now;ctx.fillStyle='#263e4a';ctx.fillRect(0,0,1200,690);ctx.imageSmoothingEnabled=false;ctx.font='15px system-ui';
+ const labels=['Reposo / aullido','Saltito','Patada en tierra','Patada aérea'];
+ for(let row=0;row<4;row++){ctx.fillStyle='#d6e7ee';ctx.fillText(labels[row],10,24+row*105);ctx.fillStyle='#8ea095';ctx.fillRect(0,103+row*105,1200,1);for(let i=0;i<6;i++)draw(actions,S.wolfActionFrames[row][i],80+i*180,103+row*105,.31)}
+ ctx.fillStyle='#d6e7ee';ctx.fillText('Caminata · ocho pasos',10,442);for(let i=0;i<8;i++)draw(walk,WOLF_WALK_FRAMES[0][i],70+i*145,526,WOLF_WALK_SCALE);
+ const p={form:'wolf',grounded:true,vx:0,idleTime:6+clock%14},idle=S.wolfIdlePose(p);draw(actions,S.wolfActionFrames[idle.row][idle.frame],170,680,idle.scale*1.6,idle.lift*1.6);
+ draw(walk,WOLF_WALK_FRAMES[0][Math.floor(clock*12.8)%8],430,680,WOLF_WALK_SCALE*1.6);
+ for(const [i,air] of [false,true].entries()){const pose=S.wolfComboPose({form:'wolf',kickAir:air,wolfAttack:{kind:'kick',stage:1,age:clock%.8,duration:.8}});draw(actions,S.wolfActionFrames[pose.row][pose.frame],750+i*260,680,pose.scale*1.6)}
+ document.getElementById('status').textContent='Sprites limpios · escala de juego arriba · animaciones ampliadas abajo';requestAnimationFrame(loop)}requestAnimationFrame(loop);
+});</script></html>

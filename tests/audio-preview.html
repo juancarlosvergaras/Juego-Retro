@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>OBRA 10 · Banco de sonidos</title>
+<style>body{font:16px system-ui;background:#16232e;color:#eddbc0;padding:24px}button{background:#304757;border:1px solid #d0a85b;color:#ffe7bc;border-radius:5px;padding:10px;margin:4px}#sounds{max-width:1000px}output{display:block;white-space:pre-wrap;margin:18px 0}</style>
+<h1>Efectos de sonido</h1><p>Efectos sintetizados y mezclados localmente. Prueba individual y validación de señal.</p>
+<button id="check">Validar todos los sonidos</button><button id="mute">Silenciar</button><button id="pause">Pausar audio</button><div id="sounds"></div><output id="result">Listo</output>
+<script src="/sound-effects.js"></script><script>
+const audio=ArcadeAudio.create({storage:null}),result=document.querySelector('#result');
+for(const name of ArcadeAudio.names){const button=document.createElement('button');button.textContent=name;button.onclick=async()=>{await audio.unlock();audio.play(name);result.textContent=name+' · '+JSON.stringify(audio.status());};document.querySelector('#sounds').append(button);}
+for(const name of ['jeep','helicopter','jetpack','flame']){const button=document.createElement('button');button.textContent='Motor: '+name;let active=false;button.onclick=async()=>{await audio.unlock();active=!active;audio.loop(name,active?.65:0);result.textContent=name+' · '+JSON.stringify(audio.status());};document.querySelector('#sounds').append(button);}
+document.querySelector('#mute').onclick=()=>{audio.setMuted(!audio.status().muted);result.textContent=JSON.stringify(audio.status());};
+document.querySelector('#pause').onclick=()=>{audio.setRunning(!audio.status().running);result.textContent=JSON.stringify(audio.status());};
+document.querySelector('#check').onclick=async()=>{
+ result.textContent='Renderizando señales…';const reports=[];
+ try{for(const name of ArcadeAudio.names){const context=new OfflineAudioContext(2,44100*3,44100),engine=ArcadeAudio.create({context,storage:null});engine.play(name);const buffer=await context.startRendering();let peak=0,energy=0;for(const v of buffer.getChannelData(0)){if(!Number.isFinite(v))throw Error(name+': señal inválida');peak=Math.max(peak,Math.abs(v));energy+=v*v;}if(peak<.0001||peak>1)throw Error(name+': pico '+peak);reports.push(name+' ✓ pico '+peak.toFixed(3));if(engine.status().voices!==0)throw Error(name+': voces sin liberar');}
+ for(const name of ['jeep','helicopter','jetpack','flame']){
+  const context=new OfflineAudioContext(2,44100*2,44100),engine=ArcadeAudio.create({context,storage:null});engine.loop(name,.8);
+  const stopped=context.suspend(.5).then(()=>{engine.setRunning(false);return context.resume();});const buffer=await context.startRendering();await stopped;
+  const samples=buffer.getChannelData(0);let peak=0,tail=0;for(let i=0;i<samples.length;i++){peak=Math.max(peak,Math.abs(samples[i]));if(i>44100)tail=Math.max(tail,Math.abs(samples[i]));}
+  if(peak<.0001||peak>1||tail>.00001||engine.status().loops)throw Error(name+': bucle sin detener');reports.push(name+' ✓ motor y pausa');
+ }
+ const mixContext=new OfflineAudioContext(2,44100*3,44100),mix=ArcadeAudio.create({context:mixContext,storage:null});for(const name of ArcadeAudio.names)mix.play(name);const mixed=await mixContext.startRendering();let max=0;for(const v of mixed.getChannelData(0))max=Math.max(max,Math.abs(v));if(max>1||!Number.isFinite(max))throw Error('Mezcla saturada');reports.push('Mezcla simultánea ✓ pico '+max.toFixed(3));
+ result.textContent=reports.join('\n')+'\nTODOS CORRECTOS: '+reports.length;
+ }catch(error){result.textContent=reports.join('\n')+'\nERROR: '+error.message;}
+};
+</script>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head><base href="/">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10151c">
+  <title>OBRA 10 · Prueba de movimiento</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header"><a class="brand" href="./index.html"><span class="brand-mark">▥</span> OBRA<span>10</span></a><span class="build">PRIMER MUNDO <b>·</b> PROTOTIPO 06</span><span class="live"><i></i> LISTO PARA EXPLORAR</span></header>
+  <main>
+
+    <div class="layout">
+      <section class="game-card" aria-label="Prueba jugable">
+        <div class="game-toolbar"><span><i class="dot"></i> SECTOR 01 <span class="muted">/ LA OBRA</span></span><button id="pause" type="button">Menú <kbd>ESC</kbd></button></div>
+        <div class="viewport" id="viewport">
+          <canvas id="game" width="729" height="690" tabindex="0" aria-label="Juego de plataformas. A y D para moverte, W y S para escaleras, espacio para saltar, E para el gancho y J para disparar."></canvas>
+          <div class="hud"><section id="character-selector" aria-label="Personajes disponibles"></section><div class="health-hud"><span class="hud-label">SALUD</span><strong id="health">5 / 5</strong><div class="life-track" role="progressbar" aria-label="Vida del personaje" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5"><i id="health-fill"></i></div></div><div class="jump-hud"><span class="hud-label">SALTOS</span><strong id="jumps">● ●</strong></div></div>
+          <div id="boss-hud" class="boss-hud" hidden><div><span id="boss-title">LOBO BLANCO</span> <span id="boss-value">18 / 18</span></div><div class="life-track" role="progressbar" aria-label="Vida del jefe" aria-valuemin="0" aria-valuemax="18" aria-valuenow="18"><i id="boss-fill"></i></div></div><div class="ammo-hud"><span id="weapon-name">3 · Pistola</span><strong id="ammo-count">36</strong><small id="ammo-unit">BALAS</small></div><div id="message" class="toast" aria-live="polite">W: escaleras · E: agarrarse · J: disparar</div>
+          <div id="overlay" class="overlay"><div class="overlay-panel" role="dialog" aria-modal="true" aria-labelledby="overlay-title"><span class="eyebrow">OBRA 10</span><h2 id="overlay-title">Preparando la obra…</h2><p id="overlay-text">Cargando el personaje y el escenario.</p><button id="resume" class="primary" hidden>Continuar</button><div id="pause-options" hidden><button id="show-shortcuts" class="secondary" aria-expanded="false" aria-controls="shortcuts">Ver atajos de teclado</button><section id="shortcuts" hidden><h3>Atajos de teclado</h3><dl><div><dt>Moverse</dt><dd><kbd>A</kbd><kbd>D</kbd><span> / </span><kbd>←</kbd><kbd>→</kbd></dd></div><div><dt>Saltar / doble salto</dt><dd><kbd>Espacio</kbd></dd></div><div><dt>Escaleras</dt><dd><kbd>W</kbd><kbd>S</kbd><span> / </span><kbd>↑</kbd><kbd>↓</kbd></dd></div><div><dt>Agarrarse al techo / soltar</dt><dd><kbd>E</kbd></dd></div><div><dt>Cambiar arma</dt><dd><kbd>1–9</kbd></dd></div><div><dt>Disparar / atacar</dt><dd><kbd>J</kbd></dd></div><div><dt>Apuntar arriba / abajo</dt><dd><kbd>W / S</kbd><span> + </span><kbd>J</kbd></dd></div><div><dt>Diagonal al moverse</dt><dd><kbd>W/S</kbd><kbd>A/D</kbd><kbd>J</kbd></dd></div><div><dt>Diagonal sin moverse (arriba / abajo)</dt><dd><kbd>Q / C</kbd><span> + </span><kbd>J</kbd></dd></div><div><dt>Diagonal derecha arriba / abajo</dt><dd><kbd>O / M</kbd><span> + </span><kbd>J</kbd></dd></div><div><dt>Soldado / lobo (tras el jefe)</dt><dd><kbd>T</kbd></dd></div><div><dt>Patada del lobo</dt><dd><kbd>L</kbd></dd></div><div><dt>Correr</dt><dd><kbd>Shift</kbd></dd></div><div><dt>Agacharse</dt><dd><kbd>S</kbd><span> / </span><kbd>↓</kbd></dd></div><div><dt>Bajar una plataforma</dt><dd><kbd>S / ↓</kbd><span> + </span><kbd>Espacio</kbd></dd></div><div><dt>Deslizarse</dt><dd><kbd>Shift</kbd><span> + </span><kbd>S</kbd></dd></div><div><dt>Pausar</dt><dd><kbd>P</kbd><span> / </span><kbd>Esc</kbd></dd></div><div><dt>Volver al checkpoint</dt><dd><kbd>R</kbd></dd></div></dl><p class="menu-tip">Derrota al Capataz para desbloquear el cambio entre soldado y lobo.</p></section><button id="restart" class="secondary">↻ Reiniciar desde abajo</button><small class="menu-tip">ESC o P para continuar</small></div></div></div>
+          <div class="touch-controls" aria-label="Controles táctiles"><div><button data-control="left" aria-label="Mover a la izquierda">◀</button><button data-control="right" aria-label="Mover a la derecha">▶</button></div><div><button data-control="up" aria-label="Subir escalera o recoger cable">⇧</button><button data-control="down" aria-label="Bajar escalera o agacharse">↓</button><button data-control="run" aria-label="Correr">↠</button><button data-control="hook" aria-label="Agarrarse al techo o soltar">E</button><button data-control="fire" aria-label="Disparar">J</button><button data-control="transform" aria-label="Alternar soldado y lobo">T</button><button data-control="kick" aria-label="Patada del lobo">L</button><button data-control="jump" class="touch-jump" aria-label="Saltar">↑</button></div></div>
+        </div>
+        <div class="weapon-dock" aria-label="Armas del jugador"><div id="weapon-slots" class="weapon-slots" role="group" aria-label="Seleccionar arma del 1 al 9"></div></div>
+        <div class="game-footer"><span><i></i> <span id="state">Cargando</span></span><span><span id="hook-status">ACÉRCATE A UN TECHO</span></span></div>
+      </section>
+
+    </div>
+  </main>
+  <footer class="page-footer"><span>OBRA 10 <b>/</b> LABORATORIO ARCADE</span><span>Pixel art · Hecho para el navegador</span></footer>
+  <script src="sprite-atlas.js"></script><script src="physics.js"></script><script src="action-atlas.js"></script><script src="arsenal.js"></script><script src="bow-atlas.js"></script><script src="enemies.js"></script><script src="final-boss.js"></script><script src="black-wolf-atlas.js"></script><script src="medkits.js"></script><script src="encounter.js"></script><script src="kick-atlas.js"></script><script src="weapon-renderer.js"></script><script src="building-renderer.js"></script><script src="enemy-atlas.js"></script><script src="soldier-v2-atlas.js"></script><script src="slide-atlas.js"></script><script src="climb-atlas.js"></script><script src="soldier-animation.js"></script><script src="boss-renderer.js"></script><script src="extraction.js"></script><script>const original=ArcadePhysics.createPlayer;ArcadePhysics.createPlayer=()=>{const p=original(),l=ArcadePhysics.createLadders()[0];return Object.assign(p,{x:l.x,y:l.bottom-65,grounded:false,ladder:l});};</script><script src="ambience.js"></script><script src="worker-atlas.js"></script><script src="white-death-atlas.js"></script><script src="jeep-atlas.js"></script><script src="arrival.js"></script><script src="character-wheel.js"></script><script src="melee-atlas.js"></script><script src="sound-effects.js"></script><script src="sound-events.js"></script><script src="game.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

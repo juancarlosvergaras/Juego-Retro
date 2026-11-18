@@ -1,0 +1,5 @@
+# Paquetes de despliegue antiguos (13 GB): no caben en GitHub
+deployment/packages/
+
+# Configuración local de herramientas
+.claude/

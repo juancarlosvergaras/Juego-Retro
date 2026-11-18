@@ -1,0 +1,5 @@
+const Z=ArcadeCemeteryZombies,c=document.getElementById('scene').getContext('2d'),img=new Image();let atlas,time=0,last=0,animated=false;
+document.getElementById('animate').onclick=()=>animated=!animated;
+function render(now){time+=Math.min(.03,(now-last)/1000||0);last=now;c.imageSmoothingEnabled=false;c.fillStyle='#35424a';c.fillRect(0,0,1200,760);c.save();c.scale(2,2);
+for(let row=0;row<6;row++)for(let col=0;col<6;col++){const phase=animated?Math.floor(time*4)%6:col,n=Z.create()[row%3];Object.assign(n,{x:48+col*100,y:62+row*62,facing:col%2?-1:1,variant:0,phase:row<3?'waking':'active',spawnType:['earth','sleep','grave'][row],wakeAge:(phase+.05)/6*1.8,attackAge:null,vx:0});if(row===3){n.vx=45;n.runCycle=(phase+.05)/6;}if(row===4)n.attackAge=(phase+.05)/6*1.05;if(row===5){n.hp=0;n.death=1.3-phase*.17-.01;}c.fillStyle='#8b9383';c.fillRect(n.x-42,n.y,84,1);Z.draw(c,n,atlas);if(row===4&&phase===3)ArcadeImpact.projectile(c,{x:n.x+n.facing*20,y:n.y-34,vx:n.facing*190,vy:0,zombiePlasma:true});}c.restore();requestAnimationFrame(render);}
+img.onload=()=>{atlas=prepareWhiteDeath(img);requestAnimationFrame(render);};img.src='../assets/sprites/zombi-cementerio-v1.png';

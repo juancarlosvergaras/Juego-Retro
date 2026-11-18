@@ -1,0 +1,10 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');const P=require('../physics.js'),E=require('../encounter.js'),N=require('../enemies.js');
+test('three additional soldiers stand on left decks while the first remains on floor two',()=>{
+ const ns=N.create(),ps=P.createPlatforms();assert.equal(ns.length,9);assert.equal(ns[0].floor,2);
+ for(const n of ns.slice(6)){assert.ok(n.x<P.WORLD.width/2);assert.equal(n.facing,1);assert.ok(ps.some(s=>s.floor===n.floor&&s.y===n.y&&n.x>s.x&&n.x<s.x+s.w));}
+ assert.equal(new Set(ns.map(n=>n.id)).size,ns.length);
+});
+test('enemy pursues and fires without jumping at an airborne player',()=>{const e=E.createEncounter(),p=P.createPlayer(),n=e.enemies[0],ps=P.createPlatforms();const x=n.x;p.x=n.x-150;p.y=n.y;let fired=false;for(let i=0;i<180;i++){E.updateEncounter(e,p,{},1/120,ps);fired ||= e.bullets.some(b=>b.fromSoldier);}assert.ok(n.x<x);assert.ok(fired);n.grounded=true;n.jumpWait=0;p.y=n.y-90;E.updateEncounter(e,p,{},1/120,ps);assert.ok(n.vy>=0);});
+test('three pistol hits defeat enemy and stop its attacks',()=>{const e=E.createEncounter(),p=P.createPlayer(),n=e.enemies[0];e.enemies=[n];for(let i=0;i<3;i++){e.bullets.push({x:n.x,y:n.y-25,vx:0,vy:0,life:1,damage:1});E.updateEncounter(e,p,{},1/120,[]);}assert.equal(n.hp,0);assert.ok(n.death>0);e.bullets=[];for(let i=0;i<240;i++)E.updateEncounter(e,p,{},1/120,[]);assert.equal(e.bullets.length,0);});
+test('wolf claws and explosive blasts hurt the weak soldier',()=>{const e=E.createEncounter(),p=P.createPlayer(),n=e.enemies[0];p.x=n.x-50;p.y=n.y;p.form='wolf';n.frozen=5;E.updateEncounter(e,p,{fire:true},1/120,P.createPlatforms());assert.equal(n.hp,3);for(let i=0;i<16;i++)E.updateEncounter(e,p,{},1/120,P.createPlatforms());assert.equal(n.hp,1);N.area(e.enemies,n.x,n.y-20,85,4);assert.equal(n.hp,0);});
+test('missiles collide with soldier and kill with area damage',()=>{const e=E.createEncounter(),p=P.createPlayer(),n=e.enemies[0];e.bullets=[{x:n.x-50,y:n.y-25,vx:300,vy:0,life:2,slot:6,damage:5}];for(let i=0;i<24;i++)E.updateEncounter(e,p,{},1/120,P.createPlatforms());assert.equal(n.hp,0);assert.equal(e.explosions.length,1);});

@@ -1,0 +1,5 @@
+{
+  "tool": "image_gen (herramienta integrada)",
+  "prompt": "Use case: precise-object-edit. Edit target: the attached 1536x1024 six-frame helicopter sprite sheet. Change ONLY the large OPEN dark passenger doorway of each of the SIX helicopters to a CLOSED fitted olive-drab sliding cabin door. Each new door has a blue glass window in its upper half, riveted olive metal lower panel, small silver recessed handle, bevelled edge and thin dark seams, matching exactly the existing fuselage pixel-art rendering and lighting. The door must fill precisely the existing dark open rectangular doorway, including its current perspective, without changing the adjacent window panel or winch. Keep ALL six helicopters, rotor positions, canvas dimensions, layout, pixel positions, proportions and every other detail unchanged. No people, no text. This is a registered closed-door variant for game sprite animation, so strict positional consistency and identical sprite sizes are essential. Preserve background as in the input.",
+  "asset": "assets/sprites/helicoptero-puerta-cerrada-v1.png"
+}

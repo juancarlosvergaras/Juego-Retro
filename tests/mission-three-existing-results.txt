@@ -1,0 +1,238 @@
+TAP version 13
+# Subtest: parachute settles on the walking plane without a position discontinuity
+ok 1 - parachute settles on the walking plane without a position discontinuity
+  ---
+  duration_ms: 1.8244
+  type: 'test'
+  ...
+# Subtest: campaign transfers score, ammunition and remaining supplies without mutating the first mission
+ok 2 - campaign transfers score, ammunition and remaining supplies without mutating the first mission
+  ---
+  duration_ms: 0.2986
+  type: 'test'
+  ...
+# Subtest: mission two includes twenty zombies and remembers their defeat separately from soldiers
+ok 3 - mission two includes twenty zombies and remembers their defeat separately from soldiers
+  ---
+  duration_ms: 114.5164
+  type: 'test'
+  ...
+# Subtest: dirigible reward is collected by the actual mission runtime and survives resume and retry
+ok 4 - dirigible reward is collected by the actual mission runtime and survives resume and retry
+  ---
+  duration_ms: 41.2133
+  type: 'test'
+  ...
+# Subtest: resizing while high over the map keeps the camera on the player
+ok 5 - resizing while high over the map keeps the camera on the player
+  ---
+  duration_ms: 15.5547
+  type: 'test'
+  ...
+# Subtest: mission two advances wolf idle gestures and maps sprint plus L to the same ram
+ok 6 - mission two advances wolf idle gestures and maps sprint plus L to the same ram
+  ---
+  duration_ms: 204.4284
+  type: 'test'
+  ...
+# Subtest: mausoleum enemies and both boss phases persist, pause, and award completion once
+ok 7 - mausoleum enemies and both boss phases persist, pause, and award completion once
+  ---
+  duration_ms: 269.0146
+  type: 'test'
+  ...
+# Subtest: arrival blocks action keys, lands, and unlocks both forms with T
+ok 8 - arrival blocks action keys, lands, and unlocks both forms with T
+  ---
+  duration_ms: 2050.243
+  type: 'test'
+  ...
+# Subtest: pause freezes the arrival and resume preserves form and checkpoint
+ok 9 - pause freezes the arrival and resume preserves form and checkpoint
+  ---
+  duration_ms: 590.9305
+  type: 'test'
+  ...
+# Subtest: real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+ok 10 - real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+  ---
+  duration_ms: 185.3436
+  type: 'test'
+  ...
+# Subtest: new missions refill upgraded health, while resuming keeps saved damage even during arrival
+ok 11 - new missions refill upgraded health, while resuming keeps saved damage even during arrival
+  ---
+  duration_ms: 14.8392
+  type: 'test'
+  ...
+# Subtest: city kills award points once and stay defeated after continuing
+ok 12 - city kills award points once and stay defeated after continuing
+  ---
+  duration_ms: 179.9479
+  type: 'test'
+  ...
+# Subtest: high fall kills in mission two and retry returns alive to the entrance
+ok 13 - high fall kills in mission two and retry returns alive to the entrance
+  ---
+  duration_ms: 368.7753
+  type: 'test'
+  ...
+# Subtest: mission runtime saves randomized loot and tank defeat without awarding them twice
+ok 14 - mission runtime saves randomized loot and tank defeat without awarding them twice
+  ---
+  duration_ms: 188.9909
+  type: 'test'
+  ...
+# Subtest: shared main menu pauses and resumes mission two without losing its loadout
+ok 15 - shared main menu pauses and resumes mission two without losing its loadout
+  ---
+  duration_ms: 193.8122
+  type: 'test'
+  ...
+# Subtest: mission two settings preserve boss damage and show the shared health bar only near the tank
+ok 16 - mission two settings preserve boss damage and show the shared health bar only near the tank
+  ---
+  duration_ms: 877.7139
+  type: 'test'
+  ...
+# Subtest: mission two arrow chords fire all four diagonals with navigation and keypad events
+ok 17 - mission two arrow chords fire all four diagonals with navigation and keypad events
+  ---
+  duration_ms: 3719.4818
+  type: 'test'
+  ...
+# Subtest: arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+ok 18 - arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+  ---
+  duration_ms: 18.1418
+  type: 'test'
+  ...
+# Subtest: a quick diagonal tap preserves its aim and fires once even with numpad zero
+ok 19 - a quick diagonal tap preserves its aim and fires once even with numpad zero
+  ---
+  duration_ms: 189.5632
+  type: 'test'
+  ...
+# Subtest: cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+ok 20 - cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+  ---
+  duration_ms: 3708.3247
+  type: 'test'
+  ...
+# Subtest: a diagonal J tap just before the weapon is ready is not discarded
+ok 21 - a diagonal J tap just before the weapon is ready is not discarded
+  ---
+  duration_ms: 355.2483
+  type: 'test'
+  ...
+# Subtest: pausing cancels a pending diagonal shot before continuing
+ok 22 - pausing cancels a pending diagonal shot before continuing
+  ---
+  duration_ms: 75.3149
+  type: 'test'
+  ...
+# Subtest: releasing J and one arrow before the next frame preserves the requested diagonal
+ok 23 - releasing J and one arrow before the next frame preserves the requested diagonal
+  ---
+  duration_ms: 30.842
+  type: 'test'
+  ...
+# Subtest: X fires diagonally when its key events arrive, including held fire
+ok 24 - X fires diagonally when its key events arrive, including held fire
+  ---
+  duration_ms: 521.5103
+  type: 'test'
+  ...
+# Subtest: mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+ok 25 - mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+  ---
+  duration_ms: 2184.526
+  type: 'test'
+  ...
+# Subtest: mouse trigger tracks direction, coexists with J and clears on pause
+ok 26 - mouse trigger tracks direction, coexists with J and clears on pause
+  ---
+  duration_ms: 245.026
+  type: 'test'
+  ...
+# Subtest: mouse tap keeps diagonal aim and arrival rejects pointer fire
+ok 27 - mouse tap keeps diagonal aim and arrival rejects pointer fire
+  ---
+  duration_ms: 259.4312
+  type: 'test'
+  ...
+# Subtest: single-key diagonals in mission two match mission one without a three-key chord
+ok 28 - single-key diagonals in mission two match mission one without a three-key chord
+  ---
+  duration_ms: 1247.9457
+  type: 'test'
+  ...
+# Subtest: Heraldo blocks the mausoleum, unlocks zombie permanently and keeps five-second form cooldown on resume
+ok 29 - Heraldo blocks the mausoleum, unlocks zombie permanently and keeps five-second form cooldown on resume
+  ---
+  duration_ms: 270.5168
+  type: 'test'
+  ...
+# Subtest: entering just after the Heraldo falls cannot skip the permanent reward
+ok 30 - entering just after the Heraldo falls cannot skip the permanent reward
+  ---
+  duration_ms: 57.9223
+  type: 'test'
+  ...
+# Subtest: scene change clears projectiles, lingering impacts and unfinished melee actions
+ok 31 - scene change clears projectiles, lingering impacts and unfinished melee actions
+  ---
+  duration_ms: 13.6498
+  type: 'test'
+  ...
+# Subtest: partial old saves with malformed optional collections still load a playable mission
+ok 32 - partial old saves with malformed optional collections still load a playable mission
+  ---
+  duration_ms: 54.2004
+  type: 'test'
+  ...
+# Subtest: mission two alternates zombie idle gestures, freezes them on pause and interrupts with native fire
+ok 33 - mission two alternates zombie idle gestures, freezes them on pause and interrupts with native fire
+  ---
+  duration_ms: 422.418
+  type: 'test'
+  ...
+# Subtest: down key speeds up parachute while attacks stay blocked, then leaves a safe landing
+ok 34 - down key speeds up parachute while attacks stay blocked, then leaves a safe landing
+  ---
+  duration_ms: 51.3987
+  type: 'test'
+  ...
+# Subtest: car damage survives runtime save/reload
+ok 35 - car damage survives runtime save/reload
+  ---
+  duration_ms: 27.458
+  type: 'test'
+  ...
+# Subtest: PC activates on contact, persists immediately, and death retries there with inventory intact
+ok 36 - PC activates on contact, persists immediately, and death retries there with inventory intact
+  ---
+  duration_ms: 15.8155
+  type: 'test'
+  ...
+# Subtest: cemetery and mausoleum checkpoints restore their own scene from a dead save
+ok 37 - cemetery and mausoleum checkpoints restore their own scene from a dead save
+  ---
+  duration_ms: 17.5605
+  type: 'test'
+  ...
+# Subtest: fresh missions reset prior checkpoints while legacy saves still use the entrance on death
+ok 38 - fresh missions reset prior checkpoints while legacy saves still use the entrance on death
+  ---
+  duration_ms: 15.3356
+  type: 'test'
+  ...
+1..38
+# tests 38
+# suites 0
+# pass 38
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 18805.5025

@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><title>Zombi · dirección de los rayos</title>
+<style>body{background:#202a30;color:#fff;font:16px system-ui}canvas{display:block;image-rendering:pixelated;max-width:100%}button{padding:10px}</style>
+<h1>Mano y rayo · ambas orientaciones</h1><p>Prueba aislada del renderizador compartido. Sin guardados.</p>
+<button id="animate">Animar recuperación</button><canvas id="scene" width="1100" height="830"></canvas>
+<script src="/zombie-form.js"></script><script>
+const Z=ArcadeZombieForm,c=document.querySelector('canvas').getContext('2d'),base=new Image(),cast=new Image();let ready=0,animated=false,start=0;
+document.querySelector('button').onclick=()=>{animated=!animated;start=performance.now();};
+base.onload=cast.onload=()=>{if(++ready===2){Z.setSheet(base);Z.setCastSheet(cast);requestAnimationFrame(draw);}};
+base.src='/assets/sprites/zombi-soldado-v1.png';cast.src='/assets/sprites/zombi-disparo-direcciones-v1.png';
+function draw(now){c.fillStyle='#202a30';c.fillRect(0,0,1100,830);const age=animated?((now-start)/1000)%1*.28:.04;
+ for(let row=0;row<4;row++)for(let col=0;col<2;col++){
+  const facing=col?-1:1,[ax,ay]=[[0,-1],[Math.SQRT1_2,-Math.SQRT1_2],[1,0],[Math.SQRT1_2,Math.SQRT1_2]][row],p={form:'zombie',x:0,y:0,facing,grounded:row!==1,zombieAction:'ray',zombiePose:.28-age,castFacing:facing,castAim:{x:ax*facing,y:ay},h:68};
+  c.save();c.translate(250+col*530,190+row*200);c.scale(2,2);c.strokeStyle='#60707a';c.beginPath();c.moveTo(-100,0);c.lineTo(100,0);c.stroke();Z.draw(c,p);const o=Z.castOrigin(p);c.strokeStyle='#91eee5';c.lineWidth=1;c.beginPath();c.moveTo(o.x,o.y);c.lineTo(o.x+ax*facing*72,o.y+ay*72);c.stroke();c.fillStyle='#efffff';c.fillRect(o.x-1,o.y-1,2,2);c.restore();
+ }requestAnimationFrame(draw);
+}
+</script>

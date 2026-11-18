@@ -1,0 +1,292 @@
+TAP version 13
+# Subtest: each robot arm keeps its own cadence when pairing a rifle and a rocket launcher
+ok 1 - each robot arm keeps its own cadence when pairing a rifle and a rocket launcher
+  ---
+  duration_ms: 1.1416
+  type: 'test'
+  ...
+# Subtest: solid cargo blocks passage, and the metal flight deck prevents burrowing
+ok 2 - solid cargo blocks passage, and the metal flight deck prevents burrowing
+  ---
+  duration_ms: 6.2695
+  type: 'test'
+  ...
+# Subtest: the first mission also fires both robot arms through its real combat loop
+ok 3 - the first mission also fires both robot arms through its real combat loop
+  ---
+  duration_ms: 7.0731
+  type: 'test'
+  ...
+# Subtest: short air mission has fourteen soldiers, ten weapons, three stars and platforms under every sentry
+ok 4 - short air mission has fourteen soldiers, ten weapons, three stars and platforms under every sentry
+  ---
+  duration_ms: 0.5733
+  type: 'test'
+  ...
+# Subtest: mecha has a warning period then cycles through bullets, marked missiles and dodgeable ground waves
+ok 5 - mecha has a warning period then cycles through bullets, marked missiles and dodgeable ground waves
+  ---
+  duration_ms: 1.1582
+  type: 'test'
+  ...
+# Subtest: dual identical guns consume two bullets; an almost empty magazine fires only the available bullet
+ok 6 - dual identical guns consume two bullets; an almost empty magazine fires only the available bullet
+  ---
+  duration_ms: 0.1701
+  type: 'test'
+  ...
+# Subtest: dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown
+ok 7 - dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown
+  ---
+  duration_ms: 0.7331
+  type: 'test'
+  ...
+# Subtest: third campaign transfer retains progress and robot unlock without overwriting mission one loadout
+ok 8 - third campaign transfer retains progress and robot unlock without overwriting mission one loadout
+  ---
+  duration_ms: 0.4219
+  type: 'test'
+  ...
+# Subtest: normal play retains its original store and developer activation only copies saves
+ok 9 - normal play retains its original store and developer activation only copies saves
+  ---
+  duration_ms: 0.6873
+  type: 'test'
+  ...
+# Subtest: developer saves across missions never overwrite normal campaign, profile or difficulty
+ok 10 - developer saves across missions never overwrite normal campaign, profile or difficulty
+  ---
+  duration_ms: 0.4438
+  type: 'test'
+  ...
+# Subtest: exit prevents late pagehide writes from restoring temporary data or touching real saves
+ok 11 - exit prevents late pagehide writes from restoring temporary data or touching real saves
+  ---
+  duration_ms: 0.2562
+  type: 'test'
+  ...
+# Subtest: mode lasts exactly thirty minutes and expired pages cannot persist developer progress
+ok 12 - mode lasts exactly thirty minutes and expired pages cannot persist developer progress
+  ---
+  duration_ms: 0.1258
+  type: 'test'
+  ...
+# Subtest: old developer pages cannot write into a newly activated session
+ok 13 - old developer pages cannot write into a newly activated session
+  ---
+  duration_ms: 0.3909
+  type: 'test'
+  ...
+# Subtest: closing the tab removes developer access and malformed or blocked session storage is safe
+ok 14 - closing the tab removes developer access and malformed or blocked session storage is safe
+  ---
+  duration_ms: 0.1949
+  type: 'test'
+  ...
+# Subtest: grant unlocks every upgrade, weapon, power and form without defeating bosses
+ok 15 - grant unlocks every upgrade, weapon, power and form without defeating bosses
+  ---
+  duration_ms: 3.1336
+  type: 'test'
+  ...
+# Subtest: developer immunity blocks projectiles, melee and falls without consuming shields
+ok 16 - developer immunity blocks projectiles, melee and falls without consuming shields
+  ---
+  duration_ms: 1.0274
+  type: 'test'
+  ...
+# Subtest: resource toggle restores normal consumption and preserves transformation animations
+ok 17 - resource toggle restores normal consumption and preserves transformation animations
+  ---
+  duration_ms: 1.1071
+  type: 'test'
+  ...
+# Subtest: developer option changes remain in session storage
+ok 18 - developer option changes remain in session storage
+  ---
+  duration_ms: 0.146
+  type: 'test'
+  ...
+# Subtest: mission selection inherits the last played first-mission inventory instead of resetting it
+ok 19 - mission selection inherits the last played first-mission inventory instead of resetting it
+  ---
+  duration_ms: 0.2294
+  type: 'test'
+  ...
+# Subtest: permanent jumps, fuel capacity, health and purchased powers carry into mission two
+ok 20 - permanent jumps, fuel capacity, health and purchased powers carry into mission two
+  ---
+  duration_ms: 0.2061
+  type: 'test'
+  ...
+# Subtest: all inherited ranged weapons consume their own ammo; melee and locked weapons do not grant ammo
+ok 21 - all inherited ranged weapons consume their own ammo; melee and locked weapons do not grant ammo
+  ---
+  duration_ms: 5.6361
+  type: 'test'
+  ...
+# Subtest: missiles travel beyond the first mission width and grenades bounce on actual mission floors
+ok 22 - missiles travel beyond the first mission width and grenades bounce on actual mission floors
+  ---
+  duration_ms: 38.277
+  type: 'test'
+  ...
+# Subtest: purchased powers use real cooldowns and a drone without a target does not consume its cooldown
+ok 23 - purchased powers use real cooldowns and a drone without a target does not consume its cooldown
+  ---
+  duration_ms: 1.1633
+  type: 'test'
+  ...
+# Subtest: mission three defers combat through the helicopter introduction and begins at full health
+ok 24 - mission three defers combat through the helicopter introduction and begins at full health
+  ---
+  duration_ms: 40.8244
+  type: 'test'
+  ...
+# Subtest: mecha activates only at its arena and survives damage until its single-phase destruction completes
+ok 25 - mecha activates only at its arena and survives damage until its single-phase destruction completes
+  ---
+  duration_ms: 977.362
+  type: 'test'
+  ...
+# Subtest: robot reward and selected second weapon survive resume, with four forms and separate ammunition
+ok 26 - robot reward and selected second weapon survive resume, with four forms and separate ammunition
+  ---
+  duration_ms: 19.6485
+  type: 'test'
+  ...
+# Subtest: checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+ok 27 - checkpoint retry restores health and resets an unfinished mecha without removing collected weapons
+  ---
+  duration_ms: 25.808
+  type: 'test'
+  ...
+# Subtest: profile 1 preserves every legacy save without migration or erasure
+ok 28 - profile 1 preserves every legacy save without migration or erasure
+  ---
+  duration_ms: 0.334
+  type: 'test'
+  ...
+# Subtest: three slots persist distinct campaigns, checkpoints, inventory, upgrades and preferences
+ok 29 - three slots persist distinct campaigns, checkpoints, inventory, upgrades and preferences
+  ---
+  duration_ms: 0.2463
+  type: 'test'
+  ...
+# Subtest: new slots start empty while existing slot one remains intact
+ok 30 - new slots start empty while existing slot one remains intact
+  ---
+  duration_ms: 0.1488
+  type: 'test'
+  ...
+# Subtest: late saves after a switch remain bound to the originating profile
+ok 31 - late saves after a switch remain bound to the originating profile
+  ---
+  duration_ms: 0.0547
+  type: 'test'
+  ...
+# Subtest: open tabs stay pinned to their profiles across reloads while new tabs use last selection
+ok 32 - open tabs stay pinned to their profiles across reloads while new tabs use last selection
+  ---
+  duration_ms: 0.0756
+  type: 'test'
+  ...
+# Subtest: invalid selections and unavailable session storage cannot switch profiles
+ok 33 - invalid selections and unavailable session storage cannot switch profiles
+  ---
+  duration_ms: 0.0835
+  type: 'test'
+  ...
+# Subtest: developer mode copies only selected slot and never leaks grants into another slot
+ok 34 - developer mode copies only selected slot and never leaks grants into another slot
+  ---
+  duration_ms: 0.1793
+  type: 'test'
+  ...
+# Subtest: normal developer wrapper always uses selected profile even when caller supplies raw storage
+ok 35 - normal developer wrapper always uses selected profile even when caller supplies raw storage
+  ---
+  duration_ms: 0.0507
+  type: 'test'
+  ...
+# Subtest: temporary sessions from profile 1 remain compatible and do not activate profile 2
+ok 36 - temporary sessions from profile 1 remain compatible and do not activate profile 2
+  ---
+  duration_ms: 0.0564
+  type: 'test'
+  ...
+# Subtest: campaign summaries identify separate mission progress
+ok 37 - campaign summaries identify separate mission progress
+  ---
+  duration_ms: 36.5395
+  type: 'test'
+  ...
+# Subtest: introduction blocks road progress and combat for five active seconds
+ok 38 - introduction blocks road progress and combat for five active seconds
+  ---
+  duration_ms: 1.4755
+  type: 'test'
+  ...
+# Subtest: turbo increases progress, lanes clamp, and jumps land on their road lane
+ok 39 - turbo increases progress, lanes clamp, and jumps land on their road lane
+  ---
+  duration_ms: 0.8098
+  type: 'test'
+  ...
+# Subtest: road contains all motorized enemy types and stops distance at boss without skipping it
+ok 40 - road contains all motorized enemy types and stops distance at boss without skipping it
+  ---
+  duration_ms: 0.7268
+  type: 'test'
+  ...
+# Subtest: boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+ok 41 - boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+  ---
+  duration_ms: 10.2313
+  type: 'test'
+  ...
+# Subtest: wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+ok 42 - wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+  ---
+  duration_ms: 0.9891
+  type: 'test'
+  ...
+# Subtest: robot fires two owned guns with independent rates and spends actual ammo
+ok 43 - robot fires two owned guns with independent rates and spends actual ammo
+  ---
+  duration_ms: 0.7204
+  type: 'test'
+  ...
+# Subtest: red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+ok 44 - red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+  ---
+  duration_ms: 0.2631
+  type: 'test'
+  ...
+# Subtest: swept collision detects fast shots crossing the whole enemy between frames
+ok 45 - swept collision detects fast shots crossing the whole enemy between frames
+  ---
+  duration_ms: 0.0655
+  type: 'test'
+  ...
+# Subtest: checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+ok 46 - checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+  ---
+  duration_ms: 0.1855
+  type: 'test'
+  ...
+# Subtest: mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+ok 47 - mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+  ---
+  duration_ms: 0.137
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1243.7232

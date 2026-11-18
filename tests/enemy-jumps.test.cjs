@@ -1,0 +1,5 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),N=require('../enemies.js'),P=require('../physics.js');
+function enemy(){return Object.assign(P.createPlayer(),{x:200,y:300,hp:3,hit:0,flash:0,shot:99,jumpWait:0,facing:1});}
+test('hovering player does not trigger repeated jumps or double jumps',()=>{const n=enemy(),ps=[{x:0,y:300,w:729}],p={x:210,y:175,grounded:false,vx:0};for(let i=0;i<1200;i++){N.update([n],p,1/120,ps,[],()=>null);assert.equal(n.jumps,0);assert.equal(n.y,300);}});
+test('single planned jump reaches a nearby upper platform',()=>{const n=enemy(),ps=[{x:0,y:300,w:729},{x:230,y:240,w:110}],p={x:270,y:240,vx:0,grounded:true};let jumped=false;for(let i=0;i<250;i++){N.update([n],p,1/120,ps,[],()=>null);jumped||=n.vy<0;assert.ok(n.jumps<=1);}assert.ok(jumped);assert.equal(n.y,240);assert.ok(n.grounded);});
+test('enemy stops at an edge without a reachable landing',()=>{const n=enemy(),ps=[{x:100,y:300,w:160}],p={x:600,y:300,vx:0,grounded:true};for(let i=0;i<600;i++)N.update([n],p,1/120,ps,[],()=>null);assert.ok(n.x<260);assert.equal(n.y,300);assert.equal(n.jumps,0);});

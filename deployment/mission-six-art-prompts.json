@@ -1,0 +1,26 @@
+{
+  "tool": "image_gen integrado",
+  "mode": "Built-in; no CLI",
+  "prompts": [
+    {
+      "id": "mall",
+      "path": "assets/worlds/mission-06/centro-comercial-v1.png",
+      "prompt": "Pixel art environment sheet for an original 1990s detailed military arcade side scrolling game. Wide 1536x1536 image divided EXACTLY into THREE equal horizontal panorama bands, no gaps, no text. Each band is 1536x512, front elevation orthographic side view, straight floor at y=450 within band, no perspective floor receding. TOP BAND: spacious abandoned luxurious shopping mall ground floor with tall glass atrium, brass frames, greenery, boutiques with broken glass, cool teal skylight and warm amber shop lights, tile floor. MIDDLE BAND: upper shopping mall restaurant and fashion galleries, ornate railings, store windows, banners, cool teal and warm amber, storefronts and ceiling consistent with top. BOTTOM BAND: rooftop of mall, twilight city skyline far away, air ducts behind foreground, sky occupies top 75%, flat concrete roof deck at y=450. Crisp hand placed pixel clusters, no blur, rich detailed professional pixel art matching military soldier arcade game, no people, no monsters, no logos, no letters, no HUD. Foreground traversal surfaces clear. Three complete distinct usable background plates."
+    },
+    {
+      "id": "giant",
+      "path": "assets/sprites/gigante-azotea-v1.png",
+      "prompt": "Original pixel art boss animation spritesheet, TRANSPARENT RGBA background, exactly 4 columns by 3 rows equal cells, 1536x1536. EVERY CELL shows only huge humanoid mutant giant FROM WAIST UP, facing camera with slight left turn, NO legs ever. Thick slate gray skin, old torn dark rust industrial vest, yellow eyes, heavy muscular torso, enormous fists, recognizable consistent face. Same torso size in all 12 cells, generous padding no overlap. Row1: 4 idle/roar frames, breathing shoulders then mouth wide roaring. Row2: 4 attack frames, raises right fist, right fist slams downward, both hands raised holding broken concrete slab, throws slab forward. Row3: 4 frames: arms sweep across, leaning back hurt, chest collapsing exhausted, falling down below waist crop. Highly detailed crisp pixel art SNK era sprite, clear dark silhouette, individual pixel clusters, no antialiasing or blur, no gore, original monster, not known character. All isolated and consistently aligned bottom center."
+    },
+    {
+      "id": "props",
+      "path": "assets/sprites/centro-comercial-objetos-v1.png",
+      "prompt": "Original military arcade game's detailed pixel art prop sheet on TRUE transparent RGBA background. Exactly 4 columns x 3 rows evenly spaced cells, 1536x1152. No objects touch cell edges. Front/side elevation. Row1: THREE separate upright arcade cabinets front three-quarter view, first turquoise with tiny circuit maze and little cyan robot on screen, second magenta with a pinball board on screen, third orange with racing road and car on screen; fourth a lit neon sign reading only ARCADE. Row2: first long mall escalator side-view sloping from bottom left to upper right with black rubber handrails and silver steps; second another identical escalator frame with moving steps offset; third large shopping mall planter, fourth low broken marble service counter. Row3: first amber security terminal checkpoint computer on stand, second same terminal glowing green activated, third emergency rooftop door closed, fourth same door open. Crisp richly shaded professional 1990s pixel art with black outlines, teal/brass mall palette, original art no brands no known arcade characters. Background transparent not checkerboard. Objects separated and fully inside each cell."
+    },
+    {
+      "id": "effects",
+      "path": "assets/sprites/coloso-impactos-v1.png",
+      "prompt": "Transparent RGBA pixel art effects sprite atlas for an original giant gray mutant boss in 1990s military arcade platform game. EXACT grid 4 columns 2 rows equal cells. 1536x768 wide. Top row FOUR consecutive animation frames of an ENORMOUS GRAY CLOSED FIST smashing vertically down viewed from front slight side. Fist attached to muscular FOREARM that extends straight UP to upper edge of each cell, so renderer can clip upper arm offscreen; NO torso no head. Frame1 fist raised, frame2 knuckles descending, frame3 ground impact with broken stone chips, frame4 fist lifting with dusty pixel debris. Same scale and x center. Massive knuckles crisp individually shaded rock-gray skin, dark pixel contours, torn rust vest cuff at upper arm. Bottom row four separately isolated irregular broken concrete slabs/rocks rotating through flight frames, realistic angular silhouettes, small rebar details, clearly pixel art matching giant's fist. Transparent background, no floor, no shadows outside sprite, no text no grid lines, no glowing vector outlines, crisp pixels not blurry."
+    }
+  ]
+}

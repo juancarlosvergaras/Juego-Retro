@@ -1,0 +1,10 @@
+const c=document.getElementById('scene').getContext('2d'),A=ArcadeSoldierAnimation,images={};let facing=1;
+document.getElementById('turn').onclick=()=>facing*=-1;
+function frame(now){const time=now/1000;c.imageSmoothingEnabled=false;c.fillStyle='#273a49';c.fillRect(0,0,1200,650);
+const examples=[{slot:2,label:'Hacha · suspendido',vx:0},{slot:2,label:'Hacha · turbo',vx:280,boost:true},{slot:2,label:'Hacha · golpe en vuelo',vx:160,attack:true},{slot:1,label:'Cuchillo · vuelo',vx:160},{slot:3,label:'Pistola · vuelo',vx:160},{slot:5,label:'AK · diagonal',vx:160,ay:-.7},{slot:7,label:'Arco · vuelo',vx:160},{slot:6,label:'Cohete · vuelo',vx:160}];
+for(const [i,ex]of examples.entries()){const p={x:0,y:0,vx:ex.vx*facing,vy:0,facing,anim:time,jetpack:true,jetBoost:!!ex.boost,form:'soldier',fuel:500,fuelMax:680,aim:{x:facing,y:ex.ay||0}},e={inventory:{selected:ex.slot},weaponAction:ex.attack?{slot:ex.slot,age:time%1.3,duration:.65}:null},pose=A.pose(p,{},e),gait=A.gait(p),melee=pose.sheet==='melee';
+c.fillStyle='#ffe1a1';c.font='16px system-ui';c.fillText(ex.label,15+(i%4)*300,30+Math.floor(i/4)*310);c.save();c.translate(140+(i%4)*300,210+Math.floor(i/4)*310);c.scale(3,3);ArcadeJetpackRenderer.pose(c,p);ArcadeJetpackRenderer.draw(c,p,[],'back');
+function sprite(image,atlas,row,frame,scale){const f=atlas[row][frame];c.save();c.scale(facing,1);c.drawImage(image,...f.slice(0,4),-(f[5]??f[2]/2)*scale,-f[3]*scale,f[2]*scale,f[3]*scale);c.restore();}
+A.drawGait(c,p,gait,()=>sprite(images.soldier,SOLDIER_V2_FRAMES,4,0,SOLDIER_V2_SCALE),()=>sprite(melee?images.melee:images.soldier,melee?MELEE_FRAMES:SOLDIER_V2_FRAMES,pose.row,pose.frame,melee?MELEE_SCALE:SOLDIER_V2_SCALE),melee?pose:null);
+ArcadeJetpackRenderer.draw(c,p,[],'front');if(pose.armed)ArcadeWeaponRenderer.draw(c,p,e);c.restore();}requestAnimationFrame(frame);}
+Promise.all(Object.entries({soldier:'soldado-v2.png',melee:'soldado-cuchillo-hacha-v1.png'}).map(([key,name])=>new Promise(resolve=>{const img=new Image();img.onload=()=>{images[key]=key==='melee'?prepareWhiteDeath(img):img;resolve();};img.src='../assets/sprites/'+name;}))).then(()=>requestAnimationFrame(frame));

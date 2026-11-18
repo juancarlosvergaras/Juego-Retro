@@ -1,0 +1,527 @@
+tests\zombie-idle.test.cjs
+TAP version 13
+# Subtest: zombie alternates hand gag and full head turn after uninterrupted rest, with quiet gaps
+ok 1 - zombie alternates hand gag and full head turn after uninterrupted rest, with quiet gaps
+  ---
+  duration_ms: 1.2368
+  type: 'test'
+  ...
+# Subtest: movement, attacks, burrow, damage and traversal cancel zombie idle immediately
+ok 2 - movement, attacks, burrow, damage and traversal cancel zombie idle immediately
+  ---
+  duration_ms: 0.3725
+  type: 'test'
+  ...
+# Subtest: idle is cosmetic, excludes the Heraldo and resets when transforming
+ok 3 - idle is cosmetic, excludes the Heraldo and resets when transforming
+  ---
+  duration_ms: 0.1845
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6.8672
+
+tests\idle.test.cjs
+TAP version 13
+# Subtest: idle gesture requires uninterrupted rest and cycles through eight frames
+ok 1 - idle gesture requires uninterrupted rest and cycles through eight frames
+  ---
+  duration_ms: 0.5559
+  type: 'test'
+  ...
+# Subtest: actions, damage and being airborne cancel idle gestures immediately
+ok 2 - actions, damage and being airborne cancel idle gestures immediately
+  ---
+  duration_ms: 0.2196
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5.3709
+
+tests\wolf-idle-v2.test.cjs
+TAP version 13
+# Subtest: wolf rests before howling and hopping, without changing physics
+ok 1 - wolf rests before howling and hopping, without changing physics
+  ---
+  duration_ms: 0.8881
+  type: 'test'
+  ...
+# Subtest: movement, attacks, hurt, air and climbing immediately interrupt idle gestures
+ok 2 - movement, attacks, hurt, air and climbing immediately interrupt idle gestures
+  ---
+  duration_ms: 0.2256
+  type: 'test'
+  ...
+# Subtest: howl audio is emitted once rather than on every animation frame
+ok 3 - howl audio is emitted once rather than on every animation frame
+  ---
+  duration_ms: 3.7286
+  type: 'test'
+  ...
+# Subtest: new idle and kick crops stay separate, share ground baselines and retain body scale
+ok 4 - new idle and kick crops stay separate, share ground baselines and retain body scale
+  ---
+  duration_ms: 0.5549
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10.1645
+
+tests\zombie-form.test.cjs
+TAP version 13
+# Subtest: three forms cycle with ten-second cooldown and preserve health and inventory
+ok 1 - three forms cycle with ten-second cooldown and preserve health and inventory
+  ---
+  duration_ms: 0.8559
+  type: 'test'
+  ...
+# Subtest: zombie resists twice as much damage and burrowing blocks hits and falls without spending shield
+ok 2 - zombie resists twice as much damage and burrowing blocks hits and falls without spending shield
+  ---
+  duration_ms: 1.0612
+  type: 'test'
+  ...
+# Subtest: burrow lasts three seconds, moves underground and needs a released down key to repeat
+ok 3 - burrow lasts three seconds, moves underground and needs a released down key to repeat
+  ---
+  duration_ms: 15.8731
+  type: 'test'
+  ...
+# Subtest: platform crouch never tunnels or grants immunity and zombie cannot activate jetpack
+ok 4 - platform crouch never tunnels or grants immunity and zombie cannot activate jetpack
+  ---
+  duration_ms: 0.9164
+  type: 'test'
+  ...
+# Subtest: rays are unlimited, aimed, stopped by solid geometry, and do not spend gun ammunition
+ok 5 - rays are unlimited, aimed, stopped by solid geometry, and do not spend gun ammunition
+  ---
+  duration_ms: 9.3857
+  type: 'test'
+  ...
+# Subtest: plasma sticks, slows enemy simulation, damages over time and expires
+ok 6 - plasma sticks, slows enemy simulation, damages over time and expires
+  ---
+  duration_ms: 38.1725
+  type: 'test'
+  ...
+# Subtest: both combat runtimes refuse zombie weapons while allowing native attacks
+ok 7 - both combat runtimes refuse zombie weapons while allowing native attacks
+  ---
+  duration_ms: 6.5341
+  type: 'test'
+  ...
+# Subtest: zombie can use purchased powers except flame, and none can fire underground
+ok 8 - zombie can use purchased powers except flame, and none can fire underground
+  ---
+  duration_ms: 0.2558
+  type: 'test'
+  ...
+# Subtest: storm mini boss is slightly taller than wolf, telegraphs and cycles three attacks, persists health
+ok 9 - storm mini boss is slightly taller than wolf, telegraphs and cycles three attacks, persists health
+  ---
+  duration_ms: 2.7717
+  type: 'test'
+  ...
+# Subtest: zombie unlock survives progression storage and applies in any mission
+ok 10 - zombie unlock survives progression storage and applies in any mission
+  ---
+  duration_ms: 1.6797
+  type: 'test'
+  ...
+# Subtest: native lightning preserves the first mission final boss mutation
+ok 11 - native lightning preserves the first mission final boss mutation
+  ---
+  duration_ms: 1.8247
+  type: 'test'
+  ...
+# Subtest: burrow emerges on clear ground rather than inside a solid car or on its roof
+ok 12 - burrow emerges on clear ground rather than inside a solid car or on its roof
+  ---
+  duration_ms: 0.4733
+  type: 'test'
+  ...
+# Subtest: zombie transformations blend from and to the actual soldier or wolf portrait
+ok 13 - zombie transformations blend from and to the actual soldier or wolf portrait
+  ---
+  duration_ms: 0.3491
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 87.1501
+
+tests\zombie-soldier.test.cjs
+TAP version 13
+# Subtest: burial sinks progressively and completely hides the player during underground travel
+ok 1 - burial sinks progressively and completely hides the player during underground travel
+  ---
+  duration_ms: 1.1022
+  type: 'test'
+  ...
+# Subtest: native attack origin mirrors the extended hand and both attacks use it
+ok 2 - native attack origin mirrors the extended hand and both attacks use it
+  ---
+  duration_ms: 1.2559
+  type: 'test'
+  ...
+# Subtest: plasma liquid trails remain bounded throughout flight and stop producing effects when buried
+ok 3 - plasma liquid trails remain bounded throughout flight and stop producing effects when buried
+  ---
+  duration_ms: 9.4722
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16.3747
+
+tests\mission-two-arrival.test.cjs
+TAP version 13
+# Subtest: parachute settles on the walking plane without a position discontinuity
+ok 1 - parachute settles on the walking plane without a position discontinuity
+  ---
+  duration_ms: 2.4948
+  type: 'test'
+  ...
+# Subtest: campaign transfers score, ammunition and remaining supplies without mutating the first mission
+ok 2 - campaign transfers score, ammunition and remaining supplies without mutating the first mission
+  ---
+  duration_ms: 0.3035
+  type: 'test'
+  ...
+# Subtest: mission two includes twenty zombies and remembers their defeat separately from soldiers
+ok 3 - mission two includes twenty zombies and remembers their defeat separately from soldiers
+  ---
+  duration_ms: 104.5813
+  type: 'test'
+  ...
+# Subtest: mission two advances wolf idle gestures and maps sprint plus L to the same ram
+ok 4 - mission two advances wolf idle gestures and maps sprint plus L to the same ram
+  ---
+  duration_ms: 207.428
+  type: 'test'
+  ...
+# Subtest: mausoleum enemies and both boss phases persist, pause, and award completion once
+ok 5 - mausoleum enemies and both boss phases persist, pause, and award completion once
+  ---
+  duration_ms: 249.8467
+  type: 'test'
+  ...
+# Subtest: arrival blocks action keys, lands, and unlocks both forms with T
+ok 6 - arrival blocks action keys, lands, and unlocks both forms with T
+  ---
+  duration_ms: 2009.3356
+  type: 'test'
+  ...
+# Subtest: pause freezes the arrival and resume preserves form and checkpoint
+ok 7 - pause freezes the arrival and resume preserves form and checkpoint
+  ---
+  duration_ms: 574.949
+  type: 'test'
+  ...
+# Subtest: real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+ok 8 - real second-mission runtime saves ammunition, equipped powers and cooldowns across reload
+  ---
+  duration_ms: 175.3713
+  type: 'test'
+  ...
+# Subtest: new missions refill upgraded health, while resuming keeps saved damage even during arrival
+ok 9 - new missions refill upgraded health, while resuming keeps saved damage even during arrival
+  ---
+  duration_ms: 14.1871
+  type: 'test'
+  ...
+# Subtest: city kills award points once and stay defeated after continuing
+ok 10 - city kills award points once and stay defeated after continuing
+  ---
+  duration_ms: 175.9722
+  type: 'test'
+  ...
+# Subtest: high fall kills in mission two and retry returns alive to the entrance
+ok 11 - high fall kills in mission two and retry returns alive to the entrance
+  ---
+  duration_ms: 358.1086
+  type: 'test'
+  ...
+# Subtest: mission runtime saves randomized loot and tank defeat without awarding them twice
+ok 12 - mission runtime saves randomized loot and tank defeat without awarding them twice
+  ---
+  duration_ms: 181.1027
+  type: 'test'
+  ...
+# Subtest: shared main menu pauses and resumes mission two without losing its loadout
+ok 13 - shared main menu pauses and resumes mission two without losing its loadout
+  ---
+  duration_ms: 178.4999
+  type: 'test'
+  ...
+# Subtest: mission two settings preserve boss damage and show the shared health bar only near the tank
+ok 14 - mission two settings preserve boss damage and show the shared health bar only near the tank
+  ---
+  duration_ms: 783.7949
+  type: 'test'
+  ...
+# Subtest: mission two arrow chords fire all four diagonals with navigation and keypad events
+ok 15 - mission two arrow chords fire all four diagonals with navigation and keypad events
+  ---
+  duration_ms: 3505.832
+  type: 'test'
+  ...
+# Subtest: arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+ok 16 - arrow-up aiming while firing does not grab a nearby ladder and repeat restores held controls
+  ---
+  duration_ms: 17.2257
+  type: 'test'
+  ...
+# Subtest: a quick diagonal tap preserves its aim and fires once even with numpad zero
+ok 17 - a quick diagonal tap preserves its aim and fires once even with numpad zero
+  ---
+  duration_ms: 173.7439
+  type: 'test'
+  ...
+# Subtest: cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+ok 18 - cemetery ground permits sustained arrow diagonal shots with every ranged weapon
+  ---
+  duration_ms: 3450.7408
+  type: 'test'
+  ...
+# Subtest: a diagonal J tap just before the weapon is ready is not discarded
+ok 19 - a diagonal J tap just before the weapon is ready is not discarded
+  ---
+  duration_ms: 328.8098
+  type: 'test'
+  ...
+# Subtest: pausing cancels a pending diagonal shot before continuing
+ok 20 - pausing cancels a pending diagonal shot before continuing
+  ---
+  duration_ms: 68.9315
+  type: 'test'
+  ...
+# Subtest: releasing J and one arrow before the next frame preserves the requested diagonal
+ok 21 - releasing J and one arrow before the next frame preserves the requested diagonal
+  ---
+  duration_ms: 27.7504
+  type: 'test'
+  ...
+# Subtest: X fires diagonally when its key events arrive, including held fire
+ok 22 - X fires diagonally when its key events arrive, including held fire
+  ---
+  duration_ms: 488.8709
+  type: 'test'
+  ...
+# Subtest: mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+ok 23 - mouse fires every arrow diagonal without any keyboard trigger and releases cleanly
+  ---
+  duration_ms: 2094.9067
+  type: 'test'
+  ...
+# Subtest: mouse trigger tracks direction, coexists with J and clears on pause
+ok 24 - mouse trigger tracks direction, coexists with J and clears on pause
+  ---
+  duration_ms: 236.0185
+  type: 'test'
+  ...
+# Subtest: mouse tap keeps diagonal aim and arrival rejects pointer fire
+ok 25 - mouse tap keeps diagonal aim and arrival rejects pointer fire
+  ---
+  duration_ms: 242.7082
+  type: 'test'
+  ...
+# Subtest: single-key diagonals in mission two match mission one without a three-key chord
+ok 26 - single-key diagonals in mission two match mission one without a three-key chord
+  ---
+  duration_ms: 1176.6545
+  type: 'test'
+  ...
+# Subtest: Heraldo blocks the mausoleum, unlocks zombie permanently and keeps ten-second form cooldown on resume
+ok 27 - Heraldo blocks the mausoleum, unlocks zombie permanently and keeps ten-second form cooldown on resume
+  ---
+  duration_ms: 272.398
+  type: 'test'
+  ...
+# Subtest: entering just after the Heraldo falls cannot skip the permanent reward
+ok 28 - entering just after the Heraldo falls cannot skip the permanent reward
+  ---
+  duration_ms: 55.705
+  type: 'test'
+  ...
+# Subtest: scene change clears projectiles, lingering impacts and unfinished melee actions
+ok 29 - scene change clears projectiles, lingering impacts and unfinished melee actions
+  ---
+  duration_ms: 13.2521
+  type: 'test'
+  ...
+# Subtest: partial old saves with malformed optional collections still load a playable mission
+ok 30 - partial old saves with malformed optional collections still load a playable mission
+  ---
+  duration_ms: 51.6223
+  type: 'test'
+  ...
+1..30
+# tests 30
+# suites 0
+# pass 30
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17226.29
+
+tests\physics.test.cjs
+TAP version 13
+# Subtest: ground support remains stable and running is faster than walking
+ok 1 - ground support remains stable and running is faster than walking
+  ---
+  duration_ms: 5.4204
+  type: 'test'
+  ...
+# Subtest: double jump adds height, third jump is ignored
+ok 2 - double jump adds height, third jump is ignored
+  ---
+  duration_ms: 0.3699
+  type: 'test'
+  ...
+# Subtest: one-way platform passes from below and catches descending feet
+ok 3 - one-way platform passes from below and catches descending feet
+  ---
+  duration_ms: 0.5591
+  type: 'test'
+  ...
+# Subtest: fast falls land on first platform instead of tunneling
+ok 4 - fast falls land on first platform instead of tunneling
+  ---
+  duration_ms: 0.1342
+  type: 'test'
+  ...
+# Subtest: sliding is finite and a held key cannot restart it
+ok 5 - sliding is finite and a held key cannot restart it
+  ---
+  duration_ms: 1.3605
+  type: 'test'
+  ...
+# Subtest: world boundaries contain the character
+ok 6 - world boundaries contain the character
+  ---
+  duration_ms: 7.2985
+  type: 'test'
+  ...
+# Subtest: geometry keeps real gaps and all hook anchors touch solid undersides
+ok 7 - geometry keeps real gaps and all hook anchors touch solid undersides
+  ---
+  duration_ms: 0.8241
+  type: 'test'
+  ...
+# Subtest: simulation finds a route to the boss with double jumps and ladders across the new gaps
+ok 8 - simulation finds a route to the boss with double jumps and ladders across the new gaps
+  ---
+  duration_ms: 79.3168
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 102.0451
+
+tests\combat-polish.test.cjs
+TAP version 13
+# Subtest: both minibosses wait while outside the visible viewport, then telegraph their first shot
+ok 1 - both minibosses wait while outside the visible viewport, then telegraph their first shot
+  ---
+  duration_ms: 2.2233
+  type: 'test'
+  ...
+# Subtest: climbing above a miniboss interrupts attacks until the boss is visible again
+ok 2 - climbing above a miniboss interrupts attacks until the boss is visible again
+  ---
+  duration_ms: 0.1495
+  type: 'test'
+  ...
+# Subtest: tank wall blocks running, high jumps, jetpack and underground crossing
+ok 3 - tank wall blocks running, high jumps, jetpack and underground crossing
+  ---
+  duration_ms: 0.1371
+  type: 'test'
+  ...
+# Subtest: tank wall geometry is idempotent and is removed after defeat including saved defeats
+ok 4 - tank wall geometry is idempotent and is removed after defeat including saved defeats
+  ---
+  duration_ms: 0.1034
+  type: 'test'
+  ...
+# Subtest: existing saves beyond the tank are not teleported back across the level
+ok 5 - existing saves beyond the tank are not teleported back across the level
+  ---
+  duration_ms: 0.1243
+  type: 'test'
+  ...
+# Subtest: player plasma spreads into a temporary floor pool that slows and gradually damages enemies
+ok 6 - player plasma spreads into a temporary floor pool that slows and gradually damages enemies
+  ---
+  duration_ms: 69.874
+  type: 'test'
+  ...
+# Subtest: plasma stays on the surface it hit rather than leaking through a platform
+ok 7 - plasma stays on the surface it hit rather than leaking through a platform
+  ---
+  duration_ms: 3.2266
+  type: 'test'
+  ...
+# Subtest: level loader tracks completed assets, reports preparation and retains a recoverable failure
+ok 8 - level loader tracks completed assets, reports preparation and retains a recoverable failure
+  ---
+  duration_ms: 0.6385
+  type: 'test'
+  ...
+# Subtest: both entry pages include the visible loading panel before the loading controller
+ok 9 - both entry pages include the visible loading panel before the loading controller
+  ---
+  duration_ms: 1.2048
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 84.5886

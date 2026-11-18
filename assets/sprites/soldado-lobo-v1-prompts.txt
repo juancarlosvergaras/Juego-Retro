@@ -1,0 +1,25 @@
+Tool: built-in image_gen
+Main reference: soldado-v1.png
+Main prompt:
+Use case: stylized-concept.
+Create a pixel art animation sprite sheet for a 2D arcade platformer: the reference SOLDIER transforms into a TALL BIPEDAL WEREWOLF with combat and movement animations.
+Reference is the human character identity and 16-bit pixel art style. Human soldier has olive helmet/uniform, tan face, brown boots. Werewolf is visibly 1.5 times human standing height at the SAME pixel scale, muscular upright anthropomorphic gray wolf with long muzzle, pointed ears, amber eyes, clawed hands and feet, gray tail, torn olive trousers and open torn olive vest linking him to the soldier. No helmet on fully transformed wolf. Keep this wolf design consistent throughout.
+Layout: exactly EIGHT rows and EIGHT columns, 64 complete isolated frames on a square canvas, truly transparent background. Equal square cells, generous padding, no grid lines, labels or text. All bodies and effects fit inside cells. All face RIGHT, consistent scale, grounded foot baseline within each row. Wolf about 65% of cell height standing, human about 43% of cell height. Crisp square pixel art, limited palette, dark outlines, no blur or gradients, no painted illustration.
+Each row is one animation, progressing left to right in EIGHT clearly distinct poses:
+ROW 1 TRANSFORMATION: original human soldier standing; doubles over; shoulders grow and gray fur sprouts; hands lengthen to claws as helmet slips off; muzzle and ears emerge and trousers tear; torso and legs grow visibly taller; full wolf straightens and howls; full tall wolf combat ready. Progressive readable non-gory metamorphosis. Human only in beginning of this row.
+ROW 2 CLAW SLASH: wolf ready; draw claw arm back; windup; first forward slash; extended swipe with small white pixel claw arcs; opposite arm follow-through; retract; ready.
+ROW 3 HIGH JUMP: wolf ready; deep crouch; explosive push-off; ascending arms raised; airborne knees tucked at apex; extending to descend; light landing; standing recovery. Whole sprite stays within cell.
+ROW 4 FALL AND HEAVY LANDING: wolf falling upright; falling faster arms swept up; spread limbs to brace; feet reaching down; contact; deep landing crouch with tiny dust puffs; rising; ready.
+ROW 5 CLIMB: eight alternating phases of clawed hands reaching and pulling upward on an implied wall to the right, one knee then opposite knee lifting, strong climbing silhouettes. No actual wall or ladder.
+ROW 6 STANDING KICK: guard; shift weight to rear leg; raise front knee; extend powerful front kick RIGHT; fully extended kick at torso height; retract knee; lower foot; guard. Clear kick distinct from claw attack.
+ROW 7 FLYING KICK: crouch; launch; airborne knee chamber; extend lead leg forward RIGHT with rear leg bent; horizontal flying kick fully extended; retract airborne; land crouched; recover. Wolf fully airborne in middle frames.
+ROW 8 EATING: wolf holding a small cooked meat drumstick; lift toward muzzle; open mouth; take bite; chew; second bite; swallow and lower hand; satisfied idle. Friendly readable eating action, no blood, carcasses or gore.
+All 64 cells must contain the same complete character appropriate to that phase, including entire tail and feet. Never substitute equipment-only cells. Every requested row must appear, especially last row eating. No background scene. Professional consistent sprite sheet matching reference arcade style.
+
+Complementary kicks prompt:
+Create a complementary pixel art sprite sheet using the WEREWOLF in the attached image as exact character reference. Same tall muscular gray bipedal wolf, amber eyes, long muzzle, pointed ears, tail, torn olive vest and trousers, clawed feet, crisp dark outlines, same arcade pixel art. No human sprites.
+Exactly TWO rows and EIGHT columns, 16 full-body poses, landscape canvas, transparent background. Generous equal cell padding, entire tail and kicking foot inside each cell, same scale, facing RIGHT, no text or grid.
+TOP ROW = STANDING FRONT KICK animation in 8 frames: combat guard; shift weight; lift front knee; partially extend leg forward; fully extend front kick to right at waist height; retract knee; lower foot; guard. The supporting foot stays planted at EXACTLY SAME BASELINE in ALL 8 frames; this is NOT a jump kick.
+BOTTOM ROW = FLYING KICK animation in 8 frames: deep crouch; launch upward; airborne raised knee; extend forward leading leg with rear knee tucked; fully airborne horizontal flying kick traveling right; retract both knees while still airborne; crouched landing with small dust; rise into guard. Airborne frames clearly different from top row. No motion streak obscures legs. Preserve exact reference wolf identity and pixel style. Both rows contain eight complete wolf sprites.
+
+Observed main sheet: 7 rows x 8 frames, rather than requested 8 rows. Transformation, claws, high jump, falling, climbing, combined kick movement, eating. Supplement: 2 rows x 8 frames, standing kick and flying kick. Visual assets only; normalize scale between sheets, frame alignment and animation timing before engine integration.

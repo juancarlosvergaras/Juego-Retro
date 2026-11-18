@@ -1,0 +1,14 @@
+<!doctype html><meta charset="utf-8"><title>Cabezazo del lobo · Revisión</title>
+<style>body{margin:24px;background:#26333b;color:#e9e1c8;font:16px system-ui}canvas{width:100%;max-width:1100px;image-rendering:pixelated}h1{font-size:24px}</style>
+<h1>Cabezazo · preparación, impulso, impacto y recuperación</h1><canvas width="1100" height="460"></canvas>
+<script src="/soldier-animation.js"></script><script src="/wolf-sprint-atlas.js"></script>
+<script>
+const c=document.querySelector('canvas'),ctx=c.getContext('2d'),ram=new Image(),run=new Image(),A=ArcadeSoldierAnimation;
+ram.src='/assets/sprites/lobo-cabezazo-v1.png';run.src='/assets/sprites/lobo-carrera-cuatro-patas-v1.png';
+function draw(img,f,scale,x,y,dir=1){ctx.save();ctx.translate(x,y);ctx.scale(dir,1);ctx.drawImage(img,...f.slice(0,4),-(f[5]??f[2]/2)*scale,-f[3]*scale,f[2]*scale,f[3]*scale);ctx.restore()}
+Promise.all([ram.decode(),run.decode()]).then(()=>{function paint(t){ctx.clearRect(0,0,c.width,c.height);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#a3b1a5';ctx.fillRect(0,150,1100,2);ctx.fillRect(0,340,1100,2);ctx.font='14px system-ui';
+A.wolfRamFrames[0].forEach((f,i)=>{draw(ram,f,A.wolfRamScale*1.5,95+i*180,150);ctx.fillText(['Preparación','Cabeza baja','Impulso','Impacto','Continuación','Recuperación'][i],45+i*180,180)});
+const time=(t/1000)%1.2,charging=time>.42&&time<.78,pose=A.wolfRamPose({form:'wolf',ram:charging?{remaining:.78-time}:null});
+for(const dir of [-1,1]){const x=dir===1?340:760;if(pose)draw(ram,A.wolfRamFrames[0][pose.frame],A.wolfRamScale*2,x,340,dir);else draw(run,WOLF_SPRINT_FRAMES[0][Math.floor(t/70)%8],WOLF_SPRINT_SCALE*2,x,340,dir)}
+ctx.fillText('Carrera → cabezazo → carrera · ambos sentidos',375,390);requestAnimationFrame(paint)}requestAnimationFrame(paint)});
+</script>

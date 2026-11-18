@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: touch stick supports all eight movement and firing directions
+ok 1 - touch stick supports all eight movement and firing directions
+  ---
+  duration_ms: 0.9107
+  type: 'test'
+  ...
+# Subtest: stick deadzone prevents drift, outer ring sprints and boosts vertical jet flight
+ok 2 - stick deadzone prevents drift, outer ring sprints and boosts vertical jet flight
+  ---
+  duration_ms: 0.4426
+  type: 'test'
+  ...
+# Subtest: three fingers can move, jump and fire; releasing one does not clear another or the keyboard
+ok 3 - three fingers can move, jump and fire; releasing one does not clear another or the keyboard
+  ---
+  duration_ms: 0.3335
+  type: 'test'
+  ...
+# Subtest: cancel, lost capture and orientation cleanup release each contact exactly once
+ok 4 - cancel, lost capture and orientation cleanup release each contact exactly once
+  ---
+  duration_ms: 0.193
+  type: 'test'
+  ...
+# Subtest: introduction blocks road progress and combat for five active seconds
+ok 5 - introduction blocks road progress and combat for five active seconds
+  ---
+  duration_ms: 1.8195
+  type: 'test'
+  ...
+# Subtest: turbo increases progress, lanes clamp, and jumps land on their road lane
+ok 6 - turbo increases progress, lanes clamp, and jumps land on their road lane
+  ---
+  duration_ms: 0.9807
+  type: 'test'
+  ...
+# Subtest: road contains all motorized enemy types and stops distance at boss without skipping it
+ok 7 - road contains all motorized enemy types and stops distance at boss without skipping it
+  ---
+  duration_ms: 1.2941
+  type: 'test'
+  ...
+# Subtest: boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+ok 8 - boss warns, shoots, drops mines, charges, loses two armor sections and ends only at zero HP
+  ---
+  duration_ms: 11.5741
+  type: 'test'
+  ...
+# Subtest: wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+ok 9 - wolf hits adjacent overlapping vehicles and zombie plasma slows and poisons a vehicle
+  ---
+  duration_ms: 1.2252
+  type: 'test'
+  ...
+# Subtest: robot fires two owned guns with independent rates and spends actual ammo
+ok 10 - robot fires two owned guns with independent rates and spends actual ammo
+  ---
+  duration_ms: 1.4062
+  type: 'test'
+  ...
+# Subtest: red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+ok 11 - red bullets and vehicle collisions damage once per grace window; zombie takes half damage
+  ---
+  duration_ms: 0.1718
+  type: 'test'
+  ...
+# Subtest: swept collision detects fast shots crossing the whole enemy between frames
+ok 12 - swept collision detects fast shots crossing the whole enemy between frames
+  ---
+  duration_ms: 0.0632
+  type: 'test'
+  ...
+# Subtest: checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+ok 13 - checkpoints retry at the last post, retaining awarded identities and resetting unfinished boss
+  ---
+  duration_ms: 0.1625
+  type: 'test'
+  ...
+# Subtest: mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+ok 14 - mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout
+  ---
+  duration_ms: 0.204
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 64.0276

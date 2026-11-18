@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>Hacha · objeto recogible</title>
+<style>body{background:#18232d;color:#e9d5ac;font:16px sans-serif;margin:32px}canvas{image-rendering:pixelated;width:640px;height:320px;max-width:100%}</style>
+<p>Hacha recogible · silueta y tamaño en el escenario</p>
+<canvas width="320" height="160"></canvas><script src="/weapon-renderer.js"></script><script>
+const c=document.querySelector('canvas').getContext('2d');c.imageSmoothingEnabled=false;
+function item(x,y,scale){c.save();c.translate(x,y);c.scale(scale,scale);c.fillStyle='#111b28';c.fillRect(-22,-17,44,34);c.strokeStyle='#b59855';c.lineWidth=1;c.strokeRect(-22.5,-17.5,45,35);ArcadeWeaponRenderer.pickup(c,2,0,0);c.fillStyle='#ffe1a1';c.font='bold 8px monospace';c.fillText('2',-2,-18);c.restore();}
+item(78,80,3);item(234,80,1);c.fillStyle='#e9d5ac';c.font='10px sans-serif';c.fillText('Detalle ampliado',30,150);c.fillText('Tamaño del juego',197,115);
+</script>

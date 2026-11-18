@@ -1,0 +1,11 @@
+# Zombi: caída y lanzamiento dirigido
+
+- Inmunidad al daño de caída en el sistema de combate compartido, conservando el daño de caída del soldado y la resistencia habitual del zombi a ataques.
+- Doce poses de lanzamiento del zombi soldado; escala basada en casco y botas, sin encoger el cuerpo al elevar el brazo. Recortes medidos para preservar la mano completa.
+- Coordenadas de la palma compartidas por dibujo, plasma y colisión de rayos. La pose de lanzamiento tiene prioridad sobre salto/caída y mantiene la orientación durante el disparo. El efecto sigue la palma mientras se mueve el jugador.
+- Asset: `assets/sprites/zombi-disparo-direcciones-v1.png` (1086 × 1448, RGBA). Generado con la herramienta integrada image_gen, usando `zombi-soldado-v1.png` como referencia. Se conserva el original.
+- Revisión visual: `tests/zombie-cast-preview.html`. Pruebas de píxeles reales, recortes, anclajes, ambas orientaciones, disparos aéreos y salud tras caídas.
+
+## Prompt final
+
+Create a new production sprite sheet using the attached zombie soldier as strict character and pixel art style reference. Transparent RGBA background, no shadows, no labels or effects. Exactly 12 separate full-body sprites arranged 3 columns by 4 rows in uniform spacious cells, no overlap. Same olive helmet, backpack, torn olive uniform, gray-green skin, cyan eyes, heavy boots, same side-view facing RIGHT. Same body size in every cell, boots aligned per row. Four aiming directions, one per row: top row arm extended straight UP (90 degrees), row 2 arm aiming diagonally UP-RIGHT (45 degrees), row 3 arm extended horizontally RIGHT, row 4 arm aiming diagonally DOWN-RIGHT (45 degrees below horizontal). In all sprites the forward casting arm and open palm clearly point in requested direction; offhand stays near chest, no weapons, no glow, no lightning in image. Three animation frames left to right per row: wind-up while raising casting arm, fully extended casting palm, small recoil with palm still aiming same direction. Keep both boots planted and knees flexed. Detailed crisp game pixel art like reference, clear anatomy, no blurring. Include entire raised hand with large padding above helmet in every cell, identical head-to-boot height; this is for an existing side-scrolling game.

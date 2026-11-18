@@ -1,0 +1,438 @@
+TAP version 13
+# Subtest: three broad floors and roof use actual platforms, with finite soldier timers
+ok 1 - three broad floors and roof use actual platforms, with finite soldier timers
+  ---
+  duration_ms: 1.3457
+  type: 'test'
+  ...
+# Subtest: escalators take five seconds, clear old combat and save each floor checkpoint
+ok 2 - escalators take five seconds, clear old combat and save each floor checkpoint
+  ---
+  duration_ms: 1.3573
+  type: 'test'
+  ...
+# Subtest: Arcade entry requires proximity, ground and no burrow; mid-ride resume returns safely to base
+ok 3 - Arcade entry requires proximity, ground and no burrow; mid-ride resume returns safely to base
+  ---
+  duration_ms: 0.169
+  type: 'test'
+  ...
+# Subtest: giant waits for rooftop arrival, remains stationary and ignores generic contact AI
+ok 4 - giant waits for rooftop arrival, remains stationary and ignores generic contact AI
+  ---
+  duration_ms: 0.9625
+  type: 'test'
+  ...
+# Subtest: giant cycles telegraphed attacks; jumping avoids a ground wave
+ok 5 - giant cycles telegraphed attacks; jumping avoids a ground wave
+  ---
+  duration_ms: 1.7863
+  type: 'test'
+  ...
+# Subtest: shared bullets, fighter melee and wolf ram can damage stationary torso
+ok 6 - shared bullets, fighter melee and wolf ram can damage stationary torso
+  ---
+  duration_ms: 6.5802
+  type: 'test'
+  ...
+# Subtest: defeat is rewarded once and final resumes without resurrecting boss
+ok 7 - defeat is rewarded once and final resumes without resurrecting boss
+  ---
+  duration_ms: 0.3749
+  type: 'test'
+  ...
+# Subtest: checkpoint retry keeps defeated enemies, loot and stars but resets giant encounter
+ok 8 - checkpoint retry keeps defeated enemies, loot and stars but resets giant encounter
+  ---
+  duration_ms: 0.1575
+  type: 'test'
+  ...
+# Subtest: mission six transfer retains loadout and forms
+ok 9 - mission six transfer retains loadout and forms
+  ---
+  duration_ms: 0.3295
+  type: 'test'
+  ...
+# Subtest: original maze has reachable circuits, winning and collision defeat
+ok 10 - original maze has reachable circuits, winning and collision defeat
+  ---
+  duration_ms: 0.6939
+  type: 'test'
+  ...
+# Subtest: pinball launching, bumper scoring, independent flippers and draining three balls
+ok 11 - pinball launching, bumper scoring, independent flippers and draining three balls
+  ---
+  duration_ms: 0.236
+  type: 'test'
+  ...
+# Subtest: racer steering, collision invulnerability and finish line
+ok 12 - racer steering, collision invulnerability and finish line
+  ---
+  duration_ms: 0.1694
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 23.0481
+TAP version 13
+# Subtest: mall defers loading and entering from campaign heals to maximum
+ok 1 - mall defers loading and entering from campaign heals to maximum
+  ---
+  duration_ms: 25.4132
+  type: 'test'
+  ...
+# Subtest: floor checkpoint saves after stairs, resumes there and defeat retries there
+ok 2 - floor checkpoint saves after stairs, resumes there and defeat retries there
+  ---
+  duration_ms: 36.744
+  type: 'test'
+  ...
+# Subtest: real runtime giant defeat credits once and resumes final
+ok 3 - real runtime giant defeat credits once and resumes final
+  ---
+  duration_ms: 12.9932
+  type: 'test'
+  ...
+# Subtest: mission five completion transfers to six without late pagehide overwriting destination
+ok 4 - mission five completion transfers to six without late pagehide overwriting destination
+  ---
+  duration_ms: 3.1478
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 81.3563
+TAP version 13
+# Subtest: running wolf charges through overlapping soldiers and zombies once per target in both missions
+ok 1 - running wolf charges through overlapping soldiers and zombies once per target in both missions
+  ---
+  duration_ms: 37.2632
+  type: 'test'
+  ...
+# Subtest: ram respects solid barricades, other floors, buried zombies and enemies behind
+ok 2 - ram respects solid barricades, other floors, buried zombies and enemies behind
+  ---
+  duration_ms: 4.3693
+  type: 'test'
+  ...
+# Subtest: standing attacks stay claws; charge requires another J press after cooldown
+ok 3 - standing attacks stay claws; charge requires another J press after cooldown
+  ---
+  duration_ms: 19.1836
+  type: 'test'
+  ...
+# Subtest: defeated ram targets land and fade; survivors recover instead of floating
+ok 4 - defeated ram targets land and fade; survivors recover instead of floating
+  ---
+  duration_ms: 30.0671
+  type: 'test'
+  ...
+# Subtest: leftward ram hits a close group but never damages the same enemy twice
+ok 5 - leftward ram hits a close group but never damages the same enemy twice
+  ---
+  duration_ms: 6.0514
+  type: 'test'
+  ...
+# Subtest: all four impact sprite sequences stay within the atlas and use consistent scale
+ok 6 - all four impact sprite sequences stay within the atlas and use consistent scale
+  ---
+  duration_ms: 1.105
+  type: 'test'
+  ...
+# Subtest: L charges once per press, including leftward; standing L remains a kick
+ok 7 - L charges once per press, including leftward; standing L remains a kick
+  ---
+  duration_ms: 39.331
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 143.0171
+TAP version 13
+# Subtest: both missions chain three claws, kicks and mixed attacks with one timed hit per stage
+ok 1 - both missions chain three claws, kicks and mixed attacks with one timed hit per stage
+  ---
+  duration_ms: 350.8763
+  type: 'test'
+  ...
+# Subtest: one buffered press links during recovery; holding a button never builds automatic combos
+ok 2 - one buffered press links during recovery; holding a button never builds automatic combos
+  ---
+  duration_ms: 49.8247
+  type: 'test'
+  ...
+# Subtest: hurt, transformation and climbing cancel a queued combo, and a late press starts stage one
+ok 3 - hurt, transformation and climbing cancel a queued combo, and a late press starts stage one
+  ---
+  duration_ms: 20.0374
+  type: 'test'
+  ...
+# Subtest: combo sprites have six phases, fixed scale, correct attack row and bounded source frames
+ok 4 - combo sprites have six phases, fixed scale, correct attack row and bounded source frames
+  ---
+  duration_ms: 2.6318
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 428.5384
+TAP version 13
+# Subtest: three additional soldiers stand on left decks while the first remains on floor two
+ok 1 - three additional soldiers stand on left decks while the first remains on floor two
+  ---
+  duration_ms: 1.6144
+  type: 'test'
+  ...
+# Subtest: enemy pursues and fires without jumping at an airborne player
+ok 2 - enemy pursues and fires without jumping at an airborne player
+  ---
+  duration_ms: 52.183
+  type: 'test'
+  ...
+# Subtest: three pistol hits defeat enemy and stop its attacks
+ok 3 - three pistol hits defeat enemy and stop its attacks
+  ---
+  duration_ms: 23.9223
+  type: 'test'
+  ...
+# Subtest: wolf claws and explosive blasts hurt the weak soldier
+ok 4 - wolf claws and explosive blasts hurt the weak soldier
+  ---
+  duration_ms: 9.2541
+  type: 'test'
+  ...
+# Subtest: missiles collide with soldier and kill with area damage
+ok 5 - missiles collide with soldier and kill with area damage
+  ---
+  duration_ms: 9.9902
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 102.6338
+TAP version 13
+# Subtest: Xbox selects a valid menu option when focus is absent and A activates it once
+ok 1 - Xbox selects a valid menu option when focus is absent and A activates it once
+  ---
+  duration_ms: 3.1452
+  type: 'test'
+  ...
+# Subtest: D-pad and stick navigate enabled visible options and wrap in both directions
+ok 2 - D-pad and stick navigate enabled visible options and wrap in both directions
+  ---
+  duration_ms: 1.4226
+  type: 'test'
+  ...
+# Subtest: replacing the selected shop button restores selection to a purchasable option
+ok 3 - replacing the selected shop button restores selection to a purchasable option
+  ---
+  duration_ms: 0.8761
+  type: 'test'
+  ...
+# Subtest: B returns from the submenu and from the shop before resuming gameplay
+ok 4 - B returns from the submenu and from the shop before resuming gameplay
+  ---
+  duration_ms: 1.8669
+  type: 'test'
+  ...
+# Subtest: loading blocks menu activation, while Start resumes only once after returning to pause
+ok 5 - loading blocks menu activation, while Start resumes only once after returning to pause
+  ---
+  duration_ms: 0.8889
+  type: 'test'
+  ...
+# Subtest: selection highlight is cleared after disconnecting the controller
+ok 6 - selection highlight is cleared after disconnecting the controller
+  ---
+  duration_ms: 0.7064
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14.7591
+TAP version 13
+# Subtest: Xbox defaults allow running, diagonal aim, fire and jump simultaneously
+ok 1 - Xbox defaults allow running, diagonal aim, fire and jump simultaneously
+  ---
+  duration_ms: 1.1328
+  type: 'test'
+  ...
+# Subtest: sticks ignore drift and aiming includes all eight directions without movement
+ok 2 - sticks ignore drift and aiming includes all eight directions without movement
+  ---
+  duration_ms: 1.0905
+  type: 'test'
+  ...
+# Subtest: custom keyboard bindings replace defaults while Esc remains a recovery key
+ok 3 - custom keyboard bindings replace defaults while Esc remains a recovery key
+  ---
+  duration_ms: 0.702
+  type: 'test'
+  ...
+# Subtest: numpad navigation with Num Lock off remains movement rather than weapon selection
+ok 4 - numpad navigation with Num Lock off remains movement rather than weapon selection
+  ---
+  duration_ms: 0.0986
+  type: 'test'
+  ...
+# Subtest: custom Xbox assignments, unassignment, analog triggers and disconnected pads
+ok 5 - custom Xbox assignments, unassignment, analog triggers and disconnected pads
+  ---
+  duration_ms: 0.1649
+  type: 'test'
+  ...
+# Subtest: rebinding an occupied Xbox button swaps actions rather than leaving two attacks on one button
+ok 6 - rebinding an occupied Xbox button swaps actions rather than leaving two attacks on one button
+  ---
+  duration_ms: 0.2523
+  type: 'test'
+  ...
+# Subtest: input sources overlap without repeated attacks or stuck releases
+ok 7 - input sources overlap without repeated attacks or stuck releases
+  ---
+  duration_ms: 0.3321
+  type: 'test'
+  ...
+# Subtest: invalid saved controls cannot break input or persist reserved bindings
+ok 8 - invalid saved controls cannot break input or persist reserved bindings
+  ---
+  duration_ms: 0.2639
+  type: 'test'
+  ...
+# Subtest: held controls survive the arrival input clear without repeating jump or transform
+ok 9 - held controls survive the arrival input clear without repeating jump or transform
+  ---
+  duration_ms: 0.3425
+  type: 'test'
+  ...
+# Subtest: 60/120/144 Hz displays retain native animation rate and update HUD near 20 Hz
+ok 10 - 60/120/144 Hz displays retain native animation rate and update HUD near 20 Hz
+  ---
+  duration_ms: 1.6927
+  type: 'test'
+  ...
+# Subtest: paused and hidden scenes stop rendering and resume or resize repaint immediately
+ok 11 - paused and hidden scenes stop rendering and resume or resize repaint immediately
+  ---
+  duration_ms: 0.178
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13.5097
+TAP version 13
+# Subtest: mission five only loads after play and a fresh campaign begins at full health with the mini submarine
+ok 1 - mission five only loads after play and a fresh campaign begins at full health with the mini submarine
+  ---
+  duration_ms: 25.1374
+  type: 'test'
+  ...
+# Subtest: mission four rewards tank, saves it, and transfers to five without late-save destination regression
+ok 2 - mission four rewards tank, saves it, and transfers to five without late-save destination regression
+  ---
+  duration_ms: 15.214
+  type: 'test'
+  ...
+# Subtest: captain reward persists through menu, resume and no second points award
+ok 3 - captain reward persists through menu, resume and no second points award
+  ---
+  duration_ms: 14.6617
+  type: 'test'
+  ...
+# Subtest: tank input consumes no gun ammunition and player form plus checkpoint survive resume
+ok 4 - tank input consumes no gun ammunition and player form plus checkpoint survive resume
+  ---
+  duration_ms: 10.9999
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 69.2353
+TAP version 13
+# Subtest: mission selection inherits the last played first-mission inventory instead of resetting it
+ok 1 - mission selection inherits the last played first-mission inventory instead of resetting it
+  ---
+  duration_ms: 1.2246
+  type: 'test'
+  ...
+# Subtest: permanent jumps, fuel capacity, health and purchased powers carry into mission two
+ok 2 - permanent jumps, fuel capacity, health and purchased powers carry into mission two
+  ---
+  duration_ms: 0.4218
+  type: 'test'
+  ...
+# Subtest: all inherited ranged weapons consume their own ammo; melee and locked weapons do not grant ammo
+ok 3 - all inherited ranged weapons consume their own ammo; melee and locked weapons do not grant ammo
+  ---
+  duration_ms: 8.3752
+  type: 'test'
+  ...
+# Subtest: missiles travel beyond the first mission width and grenades bounce on actual mission floors
+ok 4 - missiles travel beyond the first mission width and grenades bounce on actual mission floors
+  ---
+  duration_ms: 28.6572
+  type: 'test'
+  ...
+# Subtest: purchased powers use real cooldowns and a drone without a target does not consume its cooldown
+ok 5 - purchased powers use real cooldowns and a drone without a target does not consume its cooldown
+  ---
+  duration_ms: 0.9259
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 46.4538

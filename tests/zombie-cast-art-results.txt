@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: all twelve cast frames have opaque palms at the exact ray anchors and transparent cell boundaries
+ok 1 - all twelve cast frames have opaque palms at the exact ray anchors and transparent cell boundaries
+  ---
+  duration_ms: 2.1946
+  type: 'test'
+  ...
+# Subtest: cast rendering and its origin use identical anchors throughout recovery and while airborne
+ok 2 - cast rendering and its origin use identical anchors throughout recovery and while airborne
+  ---
+  duration_ms: 67.5416
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 74.0925

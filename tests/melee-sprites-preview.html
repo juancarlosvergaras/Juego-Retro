@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>Cuchillo y hacha · animaciones</title>
+<style>body{background:#263642;color:#ffe2a4;font:15px sans-serif}canvas{image-rendering:pixelated;width:min(1100px,100%)}</style>
+<p>Cuchillo: guardia, preparación, impacto, recuperación · Hacha: alzada y golpe descendente</p>
+<canvas width="1000" height="640"></canvas><script src="/melee-atlas.js"></script><script src="/soldier-animation.js"></script><script>
+const image=new Image(),c=document.querySelector('canvas').getContext('2d');image.onload=()=>{
+ const clean=document.createElement('canvas');clean.width=image.width;clean.height=image.height;const cc=clean.getContext('2d');cc.drawImage(image,0,0);const pixels=cc.getImageData(0,0,image.width,image.height);for(let i=3;i<pixels.data.length;i+=4)pixels.data[i]=pixels.data[i]>=200?255:0;cc.putImageData(pixels,0,0);
+ function sprite(row,frame,x,y,facing=1){const [sx,sy,w,h,,anchor]=MELEE_FRAMES[row][frame];c.save();c.translate(x,y);c.scale(facing*2.6,2.6);c.drawImage(clean,sx,sy,w,h,-anchor*MELEE_SCALE,-h*MELEE_SCALE,w*MELEE_SCALE,h*MELEE_SCALE);c.restore();}
+ function render(t){c.clearRect(0,0,1000,640);c.imageSmoothingEnabled=false;c.fillStyle='#ffe2a4';c.font='14px sans-serif';for(let row=0;row<2;row++){c.fillText(row?'HACHA':'CUCHILLO',12,20+row*205);for(let i=0;i<5;i++){const frame=[0,2,3,4,6][i];sprite(row,frame,75+i*190,185+row*205);c.fillText(['Guardia','Preparación','Impacto','Continuación','Recuperación'][i],30+i*190,40+row*205);}}
+  for(let i=0;i<4;i++){const slot=i<2?1:2,age=(t/1000)%1.7,frame=ArcadeSoldierAnimation.meleeFrame({slot,age,duration:1.15},slot);sprite(slot-1,frame,100+i*230,625,i%2?-1:1);}requestAnimationFrame(render);
+ }requestAnimationFrame(render);
+};image.src='/assets/sprites/soldado-cuchillo-hacha-v1.png';
+</script>

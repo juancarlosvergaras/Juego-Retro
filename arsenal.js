@@ -78,7 +78,11 @@
     const x=y?(horizontal||(diagonal?facing:0)):(horizontal||facing),length=Math.hypot(x,y)||1;
     return{x:x/length,y:y/length};
   }
-  function robotMuzzle(p,arm=0){const a=p.aim||{x:p.facing||1,y:0},k=p.onMotorcycle?.8:1;return{x:p.x+(p.onMotorcycle?(p.facing||1)*12:0)+a.x*(54+arm*8)*k,y:p.y-(p.onMotorcycle?64:p.swimming?22:p.crouching?23:35)+arm*8*k+a.y*(54+arm*8)*k};}
+  // Shots leave from the barrel of the gun each fist is holding.
+  function robotMuzzle(p,arm=0){
+    const R=typeof module!=='undefined'&&module.exports?require('./robot-form.js'):root.ArcadeRobotForm;
+    if(R?.hands&&!p.onMotorcycle&&!p.swimming){const a=p.aim||{x:p.facing||1,y:0},fists=R.hands(p),f=fists[arm]||fists[0],facing=p.facing||1,reach=13;return{x:p.x+facing*f.x+a.x*reach,y:p.y+f.y+a.y*reach};}
+    const a=p.aim||{x:p.facing||1,y:0},k=p.onMotorcycle?.8:1;return{x:p.x+(p.onMotorcycle?(p.facing||1)*12:0)+a.x*(54+arm*8)*k,y:p.y-(p.onMotorcycle?64:p.swimming?22:p.crouching?23:35)+arm*8*k+a.y*(54+arm*8)*k};}
   function muzzle(p,slot=3){
     const A=typeof module!=='undefined'&&module.exports?require('./soldier-animation.js'):root.ArcadeSoldierAnimation;
     const a=p.aim||{x:p.facing,y:0},hand=A.grip(p,{}, {inventory:{selected:slot},weaponAction:{slot,age:0}}),grip=A.weaponGrip(slot),angle=Math.atan2(a.y,a.x*p.facing),dx=(slot===7?32:26)-grip.x,dy=-grip.y;

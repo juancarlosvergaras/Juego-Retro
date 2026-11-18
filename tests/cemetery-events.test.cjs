@@ -18,12 +18,10 @@ test('tombs are reachable one-way platforms clear of zombies, barricades and che
  const p=player({x:tombs[1].x+20});for(let i=0;i<200;i++)P.step(p,{jumpPressed:i===0,jumpHeld:true},1/120,[geo.platforms[0],...tombs]);
  assert.equal(p.ground,tombs[1],'the tall tomb is landed on from a standing jump');
 });
-test('souls are collected once, counted, and survive a save',()=>{
- const s=C.create(),first=s.souls[0],p=player({x:first.x,y:first.y+23}),ctx=world(s,{player:p});
- const events=run(s,ctx,.1).filter(e=>e.type==='soul');assert.equal(events.length,1);assert.equal(events[0].count,1);assert.equal(events[0].total,s.souls.length);
- assert.ok(s.souls.length>=14);assert.equal(new Set(s.souls.map(x=>x.id)).size,s.souls.length);
- const again=C.create(JSON.parse(JSON.stringify(C.snapshot(s))));assert.equal(again.souls.filter(x=>x.taken).length,1);
- assert.equal(run(again,world(again,{player:p}),.1).filter(e=>e.type==='soul').length,0);
+test('no collectible orbs remain in the cemetery and old saves that had them still load',()=>{
+ const s=C.create({souls:[0,3],stones:[1],pit:'done'});assert.equal(s.souls,undefined);assert.equal(C.soulSpots,undefined);
+ assert.deepEqual(C.snapshot(s),{stones:[1],pit:'done'});
+ const p=player({x:C.TOMBS[0][0]+45,y:620-C.TOMBS[0][2]-20,grounded:false});assert.equal(run(s,world(s,{player:p}),.5).filter(e=>e.type==='soul').length,0);
 });
 test('headstones break under bullets, blasts and melee and always drop something',()=>{
  const s=C.create(),stone=s.stones[0],p=player({x:stone.x-200}),stats={bullets:[{x:stone.x,y:600,life:1,damage:1,enemy:false}],explosions:[]},ctx=world(s,{player:p,stats});
@@ -69,10 +67,10 @@ test('leaving the pit by air opens it without a reward',()=>{
  p.x=C.PIT.right+C.PIT.leave+10;const events=run(s,ctx,.1);assert.ok(events.some(e=>e.type==='pitAbort'));assert.ok(!events.some(e=>e.type==='pitEnd'));
  assert.equal(platforms.length,0);assert.ok(enemies.every(n=>n.hp===0));assert.equal(s.pit.state,'idle');assert.equal(C.snapshot(s).pit,'idle');
 });
-test('lanterns, souls and the bolt light the scene; everything draws on whole pixels',()=>{
+test('lanterns and the bolt light the scene; everything draws on whole pixels',()=>{
  const s=C.create(),view={left:10200,right:11200,top:200,bottom:700};
- const lights=C.lights(s,view);assert.ok(lights.length>=3);for(const l of lights)assert.ok([l.x,l.y,l.r,l.a].every(Number.isFinite));
+ const lights=C.lights(s,view);assert.ok(lights.length>=1);assert.ok(lights.every(l=>l.glow==='255,196,110'),'only lanterns glow while no bolt is falling');for(const l of lights)assert.ok([l.x,l.y,l.r,l.a].every(Number.isFinite));
  const rects=[],c={fillRect(...r){rects.push(r);},fillStyle:''};s.strike={x:10700,age:.5,hit:false,seed:1};s.time=3;
  C.drawBack(c,s,view);C.drawFront(c,s,view);s.strike={x:10700,age:C.STRIKE.warn+.1,hit:true,seed:1};C.drawFront(c,s,view);C.fog(c,s,{x:10200,y:200},890,424,1);
- assert.ok(rects.length>300);assert.ok(rects.every(r=>r.every(Number.isInteger)),'hard pixels only');
+ assert.ok(rects.length>250);assert.ok(rects.every(r=>r.every(Number.isInteger)),'hard pixels only');
 });

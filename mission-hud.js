@@ -28,9 +28,17 @@ function create({player,encounter,profile,powers,canvas,score,audio,onSelect,onP
     }
     for(const card of wheel.querySelectorAll('.power-card')){const id=card.dataset.power;let offset=(list.indexOf(id)-list.indexOf(profile.equipped)+list.length)%list.length;if(offset>list.length/2)offset-=list.length;card.style.setProperty('--offset',offset);card.style.zIndex=String(10-Math.abs(offset));card.hidden=Math.abs(offset)>2;card.classList.toggle('front',offset===0);card.tabIndex=offset===0?0:-1;card.setAttribute('aria-pressed',offset===0?'true':'false');const c=ArcadeProgression.catalog.find(c=>c.id===id),wait=powers.cooldowns[id]||0;card.querySelector('.power-wait').textContent=id==='shield'?player.shield+'/10 · ACTIVO':id==='flame'&&(player.form==='wolf'||player.form==='zombie')?'SOLO SOLDADO':wait?wait.toFixed(1)+' s':'LISTO';card.querySelector('.power-ready').style.width=(id==='shield'?player.shield*10:100*(1-wait/(c.cooldown||1)))+'%';card.classList.toggle('cooling',wait>0);}
   }
+  let shopFlash=null;
   function drawShop(){
     document.getElementById('shop-balance').textContent=profile.wallet.toLocaleString('es-CO')+' puntos disponibles';
     document.getElementById('score-value').textContent=profile.wallet.toLocaleString('es-CO');
+    // Missions that load the illustrated shop share mission one's tabs, cards and armoury.
+    if(root.ArcadeShopUI&&root.ArcadeArmory){const say=text=>{document.getElementById('shop-message').textContent=text;};
+      root.ArcadeShopUI.render(document.getElementById('shop-list'),{profile,inventory:encounter.inventory,catalog:ArcadeProgression.catalog,flash:shopFlash,
+        onEquip(id){profile.equipped=id;persist();shopFlash=null;drawShop();},
+        onBuy(id){const result=ArcadeProgression.buy(profile,id);say(result.message);if(result.ok){ArcadeProgression.apply(profile,player,encounter);persist();audio?.play('pickup',{gain:.5});shopFlash=id;}drawShop();},
+        onBuyWeapon(slot){const result=root.ArcadeArmory.buy(profile,encounter.inventory,slot);say(result.message);if(result.ok){persist();audio?.play('pickup',{gain:.5});shopFlash='w'+slot;}drawShop();}});
+      shopFlash=null;return;}
     const list=document.getElementById('shop-list');list.replaceChildren();
     for(const c of ArcadeProgression.catalog){
       const row=document.createElement('article'),title=document.createElement('strong'),desc=document.createElement('p'),availability=document.createElement('small'),button=document.createElement('button');

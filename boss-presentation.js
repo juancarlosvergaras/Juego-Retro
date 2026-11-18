@@ -4,6 +4,8 @@
   // derrota. No decide nada del combate; solo marca el ritmo (pausa breve,
   // cámara lenta, destello, temblor) y muestra el rótulo.
   const CUES={
+    // A mission's own name: no pause, just the card.
+    title:{freeze:0,slow:0,scale:1,flash:0,shake:0,banner:3.2,tone:'title'},
     intro:{freeze:.55,slow:0,scale:1,flash:0,shake:.5,banner:2.6,tone:'intro'},
     phase:{freeze:.25,slow:.9,scale:.35,flash:.45,shake:.8,banner:2.4,tone:'phase'},
     defeat:{freeze:.12,slow:1.4,scale:.3,flash:.6,shake:.6,banner:2.6,tone:'defeat'}
@@ -11,10 +13,10 @@
   // Estado puro y comprobable; `create` lo conecta al documento.
   function timeline(){
     const s={freeze:0,slow:0,scale:1,flash:0,flashTotal:0,shake:0,banner:0,bars:0,cue:null,queue:[]};
-    function start(kind,title,subtitle){const cue=CUES[kind];if(!cue)return null;s.cue={kind,title,subtitle:subtitle||'',tone:cue.tone};s.freeze=cue.freeze;s.slow=cue.slow;s.scale=cue.scale;s.flash=s.flashTotal=cue.flash;s.shake=cue.shake;s.banner=cue.banner;return s.cue;}
+    function start(kind,title,subtitle,kicker){const cue=CUES[kind];if(!cue)return null;s.cue={kind,title,subtitle:subtitle||'',kicker:kicker||'',tone:cue.tone};s.freeze=cue.freeze;s.slow=cue.slow;s.scale=cue.scale;s.flash=s.flashTotal=cue.flash;s.shake=cue.shake;s.banner=cue.banner;return s.cue;}
     return{state:s,
       // Un segundo aviso espera a que termine el primero en lugar de pisarlo.
-      cue(kind,title,subtitle){if(s.banner>0){s.queue.push([kind,title,subtitle]);return null;}return start(kind,title,subtitle);},
+      cue(kind,title,subtitle,kicker){if(s.banner>0){s.queue.push([kind,title,subtitle,kicker]);return null;}return start(kind,title,subtitle,kicker);},
       // Devuelve el factor de tiempo para la simulación de este fotograma.
       tick(dt){
         let factor=1;
@@ -40,6 +42,7 @@
       if(root.MutationObserver)new root.MutationObserver(()=>{const next=parseFloat(fill.style.width)||0,now=parseFloat(ghost.style.width)||0;ghost.style.transitionDelay=next<now?'.28s':'0s';ghost.style.width=next+'%';fill.parentElement.classList.toggle('boss-hit',next<now);}).observe(fill,{attributes:true,attributeFilter:['style']});}
     const labels={intro:'AMENAZA DETECTADA',phase:'EL COMBATE CAMBIA',defeat:'OBJETIVO ABATIDO'};
     return{timeline:line,
+      title:(kicker,name,subtitle)=>line.cue('title',name,subtitle,kicker),
       intro:(name,subtitle)=>line.cue('intro',name,subtitle),
       phase:(name,subtitle)=>line.cue('phase',name,subtitle),
       defeat:(name,subtitle)=>line.cue('defeat',name,subtitle),
@@ -48,7 +51,7 @@
       draw(c,w,h){
         if(s.bars>.01){const bar=Math.round(h*.085*s.bars);c.fillStyle='#05080d';c.fillRect(0,0,w,bar);c.fillRect(0,h-bar,w,bar);}
         const a=line.flashAlpha();if(a>.01){c.fillStyle='rgba(255,246,228,'+a.toFixed(3)+')';c.fillRect(0,0,w,h);}
-        const cue=s.cue;if(cue!==shown){shown=cue;banner.hidden=!cue;if(cue){banner.className='tone-'+cue.tone;kicker.textContent=labels[cue.kind];title.textContent=cue.title;sub.textContent=cue.subtitle;}}
+        const cue=s.cue;if(cue!==shown){shown=cue;banner.hidden=!cue;if(cue){banner.className='tone-'+cue.tone;kicker.textContent=cue.kicker||labels[cue.kind]||'';title.textContent=cue.title;sub.textContent=cue.subtitle;}}
         if(cue)banner.classList.toggle('leaving',s.banner<.4);
         canvas?.classList.toggle('boss-shake',s.shake>0);
       }

@@ -17,3 +17,6 @@
 .mission-four #context-two{bottom:8px;padding:5px 9px;font-size:9px}
 .mission-four .touch-two [data-key="KeyE"],.mission-four .touch-two [data-key="KeyF"]{display:none}
 @media(max-width:700px){.mission-four #context-two{max-width:58%;font-size:8px}.mission-four #boss-title{font-size:9px}}
+/* Con cabecera y pie ocultos la escena aprovecha todo el alto disponible. */
+:root:not(.mobile-play) .mission-four .game-card{max-width:calc(var(--scene-height,calc(100dvh - 270px))*16/9)}
+:root:not(.mobile-play) .mission-four .game-footer{display:none}

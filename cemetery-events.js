@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
   // El cementerio como tramo con ritmo propio: altura (tumbas a las que subir),
-  // recompensa por explorar (almas y lápidas), peligro que se puede leer y usar
+  // recompensa por explorar (lápidas), peligro que se puede leer y usar
   // (rayos), terreno que frena (manos) y un combate cerrado a mitad de camino.
   const common=typeof module!=='undefined'&&module.exports;
   const P=common?require('./physics'):root.ArcadePhysics,Z=common?require('./cemetery-zombies'):root.ArcadeCemeteryZombies;
@@ -15,18 +15,12 @@
   const hash=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);};
   function platforms(){return TOMBS.map(([x,w,h],i)=>({id:6000+i,x,y:GROUND-h,w,kind:'deck',thickness:10,tomb:true}));}
   function gates(){return [PIT.left,PIT.right].map((x,i)=>({id:6100+i,x,y:GROUND-PIT.height,w:PIT.gate,kind:'barricade',solid:true,thickness:PIT.height,gate:true}));}
-  // Las almas flotan sobre cada tumba y en arcos entre las que quedan cerca.
-  function soulSpots(){
-    const list=TOMBS.map(([x,w,h],i)=>({id:i,x:x+w/2,y:GROUND-h-40}));
-    for(const [a,b] of [[0,1],[3,4],[6,7],[8,9]]){const A=list[a],B=list[b];for(const t of [.33,.66])list.push({id:list.length,x:A.x+(B.x-A.x)*t,y:Math.min(A.y,B.y)-34-Math.sin(t*Math.PI)*18});}
-    return list;
-  }
   function create(saved={}){
-    const taken=new Set(Array.isArray(saved.souls)?saved.souls:[]),broken=new Set(Array.isArray(saved.stones)?saved.stones:[]);
-    return{souls:soulSpots().map(s=>({...s,taken:taken.has(s.id)})),stones:STONES.map((x,id)=>({id,x,y:GROUND,hp:broken.has(id)?0:2,shake:0})),
+    const broken=new Set(Array.isArray(saved.stones)?saved.stones:[]);
+    return{stones:STONES.map((x,id)=>({id,x,y:GROUND,hp:broken.has(id)?0:2,shake:0})),
       pit:{state:saved.pit==='done'?'done':'idle',wave:0,spawned:[],gateRise:0,age:0},strike:null,strikeWait:4,strikes:0,debris:[],crows:TOMBS.filter((_,i)=>i%2===0).map(([x,w,h],id)=>({id,x:x+w*.3,y:GROUND-h,vx:0,vy:0,flying:false,gone:false})),time:0,platforms:platforms(),gates:gates()};
   }
-  function snapshot(s){return{souls:s.souls.filter(x=>x.taken).map(x=>x.id),stones:s.stones.filter(x=>x.hp<=0).map(x=>x.id),pit:s.pit.state==='done'?'done':'idle'};}
+  function snapshot(s){return{stones:s.stones.filter(x=>x.hp<=0).map(x=>x.id),pit:s.pit.state==='done'?'done':'idle'};}
   function inZone(p,inside){return !inside&&p.x>ZONE.from&&p.x<ZONE.to;}
   // Factor de velocidad: las manos frenan solo a quien pisa el suelo entre ellas.
   function slow(s,p,inside){if(inside||!p.grounded||p.jetpack||p.burrow||Math.abs(p.y-GROUND)>3)return 1;return HANDS.some(h=>p.x>h.x&&p.x<h.x+h.w)?.55:1;}
@@ -41,7 +35,6 @@
     for(const d of s.debris){d.life-=dt;d.vy+=520*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;if(d.y>GROUND){d.y=GROUND;d.vy*=-.3;d.vx*=.5;}}s.debris=s.debris.filter(d=>d.life>0);
     for(const c of s.crows){if(c.gone)continue;if(!c.flying&&!inside&&Math.hypot(p.x-c.x,p.y-c.y)<120){c.flying=true;c.vx=(c.x<p.x?-1:1)*(70+hash(c.id)*40);c.vy=-90;events.push({type:'crow',x:c.x,y:c.y});}if(c.flying){c.vy-=30*dt;c.x+=c.vx*dt;c.y+=c.vy*dt;if(c.y<GROUND-700)c.gone=true;}}
     if(inside)return events;
-    for(const soul of s.souls)if(!soul.taken&&Math.hypot(p.x-soul.x,p.y-(p.h||46)/2-soul.y)<26){soul.taken=true;events.push({type:'soul',soul,count:s.souls.filter(x=>x.taken).length,total:s.souls.length});}
     // Lápidas: ceden ante balas, explosiones y golpes cuerpo a cuerpo.
     for(const stone of s.stones){
       if(stone.hp<=0)continue;stone.shake=Math.max(0,stone.shake-dt);let hits=0;
@@ -86,7 +79,6 @@
   // Luces de faroles y del rayo para el mapa de luz de la escena.
   function lights(s,view){
     const list=[];for(const x of LANTERNS)if(x>view.left-200&&x<view.right+200)list.push({x,y:GROUND-52,r:120,a:.75,glow:'255,196,110',ga:.12});
-    for(const soul of s.souls)if(!soul.taken&&soul.x>view.left-60&&soul.x<view.right+60)list.push({x:soul.x,y:soul.y,r:38,a:.6,glow:'150,235,255',ga:.14});
     if(s.strike?.hit)list.push({x:s.strike.x,y:GROUND-120,r:520,a:1,glow:'205,225,255',ga:.3*(1-(s.strike.age-STRIKE.warn)/STRIKE.flash)});
     return list;
   }
@@ -121,9 +113,6 @@
   }
   function drawFront(c,s,view){
     const seen=x=>x>view.left-140&&x<view.right+140;
-    for(const soul of s.souls){if(soul.taken||!seen(soul.x))continue;const bob=Math.sin(s.time*2.4+soul.id)*3,x=Math.round(soul.x),y=Math.round(soul.y+bob),f=Math.floor(s.time*8+soul.id)%2;
-      c.fillStyle='#2f7fa0';c.fillRect(x-4,y-4,8,8);c.fillStyle='#8fe6ff';c.fillRect(x-3,y-5,6,10);c.fillRect(x-5,y-3,10,6);c.fillStyle='#eaffff';c.fillRect(x-2,y-2,3,3);
-      c.fillStyle='#8fe6ff';c.fillRect(x-1+(f?1:-1),y+6,2,3);c.fillRect(x+(f?-2:2),y+9,1,3);}
     for(const h of HANDS){if(!seen(h.x)&&!seen(h.x+h.w))continue;
       for(let k=0;k<6;k++){const hx=Math.round(h.x+8+k*(h.w-16)/5),reach=7+Math.round((Math.sin(s.time*2.2+k*1.7+h.x)*.5+.5)*11),lean=Math.round(Math.sin(s.time*1.6+k)*2);
         c.fillStyle='#3f5a3c';c.fillRect(hx,GROUND-reach,3,reach);c.fillStyle='#5f8456';c.fillRect(hx+lean,GROUND-reach-3,3,3);c.fillRect(hx+lean-2,GROUND-reach-5,1,3);c.fillRect(hx+lean+1,GROUND-reach-6,1,3);c.fillRect(hx+lean+4,GROUND-reach-5,1,3);}
@@ -153,6 +142,6 @@
     for(let band=0;band<4;band++){const y=Math.round(base-6-band*9),speed=10+band*7,offset=(s.time*speed+band*90+camera.x*(.9+band*.05))%64;c.fillStyle='rgba(190,204,214,'+(amount*(.2-band*.04)).toFixed(3)+')';
       for(let x=-64-offset;x<width+64;x+=64){c.fillRect(Math.round(x),y,38,3);c.fillRect(Math.round(x+18+band*5),y-3,26,3);}}
   }
-  const api={GROUND,ZONE,TOMBS,STONES,LANTERNS,HANDS,PIT,STRIKE,platforms,gates,soulSpots,create,snapshot,inZone,slow,drop,update,lights,drawBack,drawFront,fog};
+  const api={GROUND,ZONE,TOMBS,STONES,LANTERNS,HANDS,PIT,STRIKE,platforms,gates,create,snapshot,inZone,slow,drop,update,lights,drawBack,drawFront,fog};
   if(common)module.exports=api;else root.ArcadeCemeteryEvents=api;
 })(typeof window!=='undefined'?window:globalThis);

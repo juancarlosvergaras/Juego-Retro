@@ -95,7 +95,18 @@
   }
   function draw(ctx,p,e,body,frames,row,frame,scale){
     if(p.form==='tank'||p.form==='fighter')return;
-    if(p.form==='robot'&&!e.robotArm){const slots=[e.inventory.selected,root.ArcadeRobotForm?.secondary(e.inventory)];for(let i=0;i<slots.length;i++){const slot=slots[i];if(slot<3||!slot)continue;const a=p.aim||{x:p.facing,y:0};ctx.save();const k=p.onMotorcycle?.8:1;ctx.translate(p.x+(p.onMotorcycle?p.facing*12:0)+a.x*i*8*k,p.y-(p.onMotorcycle?64:p.swimming?22:p.crouching?23:35)+(i*8+a.y*i*8)*k);ctx.scale(p.facing*k,k);ctx.rotate(Math.atan2(a.y,a.x*p.facing));ctx.drawImage(itemSprite(slot),10,-17,44,34);ctx.fillStyle='#a7b3b3';ctx.fillRect(4,-2,14,4);if(e.flash>0){ctx.fillStyle='#ffdd83';ctx.fillRect(49,-2,6,4);}ctx.restore();}return;}
+    if(p.form==='robot'&&!e.robotArm){
+      const R=root.ArcadeRobotForm,inv=e.inventory;
+      // On a motorcycle or in the water the body is a different drawing; keep the simple mount there.
+      if(!R?.hands||p.onMotorcycle||p.swimming){const slots=[inv.selected,R?.secondary(inv)];for(let i=0;i<slots.length;i++){const slot=slots[i];if(slot<3||!slot)continue;const a=p.aim||{x:p.facing,y:0};ctx.save();const k=p.onMotorcycle?.8:1;ctx.translate(p.x+(p.onMotorcycle?p.facing*12:0)+a.x*i*8*k,p.y-(p.onMotorcycle?64:p.swimming?22:p.crouching?23:35)+(i*8+a.y*i*8)*k);ctx.scale(p.facing*k,k);ctx.rotate(Math.atan2(a.y,a.x*p.facing));ctx.drawImage(itemSprite(slot),10,-17,44,34);ctx.fillStyle='#a7b3b3';ctx.fillRect(4,-2,14,4);if(e.flash>0){ctx.fillStyle='#ffdd83';ctx.fillRect(49,-2,6,4);}ctx.restore();}return;}
+      // Each fist holds a real weapon by its grip and turns it at the wrist. The
+      // far arm is drawn first so the near one overlaps it, as the body does.
+      const fists=R.hands(p,e),slots=[inv.selected,R.secondary(inv)],motion=R.motion(p,e);
+      for(const arm of [1,0]){const slot=slots[arm];if(!slot||slot<3||!fists[arm])continue;
+        const action=e.weaponAction&&e.weaponAction.age<.5?{...e.weaponAction,slot}:null;
+        draw(ctx,{...p,form:'soldier',y:p.y+(motion.bob||0)},{inventory:{...inv,selected:slot},weaponAction:action,robotArm:arm+1,hand:{x:fists[arm].x-(motion.kick||0)*1.5,y:fists[arm].y*(motion.stretch||1)},chrome:true});}
+      return;
+    }
     const slot=e.inventory.selected,active=e.weaponAction&&e.weaponAction.slot===slot?e.weaponAction:null;
     const age=active?active.age:10,rate=active?active.duration:1;
     const facing=p.facing,aim=p.aim||{x:facing,y:0};
@@ -110,7 +121,7 @@
     if(slot===9)actionAngle=age<.35?angle-.65*(1-age/.35):angle+.25;
     let supportX=slot===7?19:slot===6?14:18;
     if(slot===4&&age>.14&&age<.5)supportX-=Math.sin((age-.14)/.36*Math.PI)*6;
-    const hand=e.pickup?{x:0,y:0}:root.ArcadeSoldierAnimation.grip(p,{},e),grip=e.pickup?{x:slot<=2?22:slot===7?20:slot===9?16:13,y:0}:root.ArcadeSoldierAnimation.weaponGrip(slot);
+    const hand=e.pickup?{x:0,y:0}:e.hand||root.ArcadeSoldierAnimation.grip(p,{},e),grip=e.pickup?{x:slot<=2?22:slot===7?20:slot===9?16:13,y:0}:root.ArcadeSoldierAnimation.weaponGrip(slot);
     if(e.pickup)actionAngle=0;
     if(slot===7&&!e.pickup){
       // Extend the support arm along the aiming direction, keeping the bow clear of the torso.
@@ -171,7 +182,10 @@
     }
     ctx.restore();
     // Fingers cover the handle, connecting it to the glove in the full-body sprite.
-    if(!e.pickup&&(slot!==9||age>.3)){rect(hand.x-2,hand.y-2,4,4,'#303421');rect(hand.x-1,hand.y-1,3,2,'#697047');rect(hand.x-1,hand.y-2,2,1,'#959365');}
+    if(!e.pickup&&(slot!==9||age>.3)){
+      // Steel knuckles for the robot, an olive glove for the soldier.
+      const [dark,mid,lit]=e.chrome?['#2c3338','#93a1a6','#e6eef0']:['#303421','#697047','#959365'];
+      rect(hand.x-2,hand.y-2,e.chrome?5:4,4,dark);rect(hand.x-1,hand.y-1,3,2,mid);rect(hand.x-1,hand.y-2,2,1,lit);}
     ctx.restore();
     return h+24;
   }

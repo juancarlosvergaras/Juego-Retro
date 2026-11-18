@@ -50,3 +50,26 @@ test('green splashes stop at ground, expire, and never apply explosion damage',(
  assert.equal(e.bullets.length,0);assert.equal(e.explosions[0].kind,'plasma');assert.equal(e.explosions[0].y,620);assert.equal(e.hp,hp);
  for(let i=0;i<180;i++)C.update(e,p,{},1/120,floor,powers,profile);assert.equal(e.explosions.length,0);assert.equal(e.hp,hp);
 });
+test('zombie roles differ: the runner closes in and lunges while the spitter keeps its distance',()=>{
+ const run=variant=>{const n=Z.create().find(n=>n.variant===variant);Object.assign(n,{x:1000,phase:'active',grounded:true,shot:99});const p={x:1300,y:620,h:46};let lunged=false,minGap=Infinity;for(let i=0;i<1200;i++){N.update([n],p,1/120,floor,[],E.segmentHit);lunged=lunged||n.lunge!==null;minGap=Math.min(minGap,Math.abs(p.x-n.x));}return{lunged,minGap,n};};
+ const spitter=run(0),runner=run(1),lurker=run(2);
+ assert.equal(spitter.lunged,false);assert.ok(spitter.minGap>=200&&spitter.minGap<215);
+ assert.equal(runner.lunged,true);assert.ok(runner.minGap<24,'the lunge reaches biting range: '+runner.minGap);
+ assert.ok(lurker.minGap>=105&&lurker.minGap<120);assert.equal(lurker.lunged,false);
+ assert.equal(Z.role(runner.n).name,'runner');
+});
+test('a lunge telegraphs before it lands and a hit interrupts it with a stagger',()=>{
+ const n=Z.create().find(n=>n.variant===1);Object.assign(n,{x:1000,phase:'active',grounded:true,shot:99});const p={x:1060,y:620,h:46};
+ N.update([n],p,1/120,floor,[],E.segmentHit);assert.equal(n.lunge,0);const start=n.x;
+ for(let i=0;i<30;i++)N.update([n],p,1/120,floor,[],E.segmentHit);assert.ok(Math.abs(n.x-start)<.01,'no movement during the wind-up');assert.equal(Z.pose(n).row,4);assert.ok(Z.motion(n).lean<0,'rears back first');
+ for(let i=0;i<20;i++)N.update([n],p,1/120,floor,[],E.segmentHit);assert.ok(n.x>start+10);assert.ok(Z.motion(n).lean>.2);
+ N.damage(n,1);N.update([n],p,1/120,floor,[],E.segmentHit);assert.equal(n.lunge,null);assert.ok(n.recoil>0);const hitX=n.x;
+ for(let i=0;i<20;i++)N.update([n],p,1/120,floor,[],E.segmentHit);assert.ok(n.x<hitX,'shoved away from the player');
+ for(let i=0;i<300;i++)N.update([n],{...p,x:n.x+400},1/120,floor,[],E.segmentHit);assert.equal(n.speedBonus,n.baseSpeed,'temporary speed changes never stick');
+});
+test('idle zombies sway and breathe, walkers bob with their stride, and dormant ones stay still',()=>{
+ const n=Z.create()[0];assert.deepEqual(Z.motion(n),{lean:0,bob:0,stretch:1,shake:0});
+ n.phase='active';const leans=new Set();for(let i=0;i<40;i++){n.anim=i*.2;const m=Z.motion(n);leans.add(m.lean.toFixed(3));assert.ok(Math.abs(m.lean)<=.031&&Math.abs(m.stretch-1)<=.015);}assert.ok(leans.size>10);
+ n.vx=40;n.runCycle=.25;assert.ok(Z.motion(n).bob<-1);n.runCycle=.5;assert.ok(Math.abs(Z.motion(n).bob)<.01);
+ n.phase='waking';n.wakeAge=.1;assert.notEqual(Z.motion(n).shake,0);
+});

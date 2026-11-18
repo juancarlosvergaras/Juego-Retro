@@ -46,6 +46,29 @@
     [[38,531,192,215,null,102],[296,527,171,219,null,104],[539,524,175,222,null,116],[788,524,239,222,null,122],[1059,530,181,216,null,106],[1312,530,189,216,null,108]],
     [[44,785,178,217,null,96],[293,775,223,227,null,107],[539,772,246,230,null,116],[806,774,168,228,null,104],[1053,789,173,213,null,112],[1310,789,189,213,null,110]]
   ];
+  // Weight and follow-through for the wolf, layered over its sprite frames:
+  // breathing at rest, a bob in the stride, a lunge into each blow, a squash on
+  // landing and a recoil when hurt. All of it pivots on the paws.
+  function wolfMotion(p,mode={}){
+    const still={lean:0,bob:0,stretch:1,dx:0};
+    if(p.form!=='wolf'||p.transform>0||p.ladder||p.rope)return still;
+    const t=p.anim||0,facing=p.facing||1;
+    if(p.hurt>0)return{lean:-.15*Math.min(1,p.hurt/.32),bob:0,stretch:1,dx:-facing*2*Math.min(1,p.hurt/.32)};
+    const a=p.wolfAttack;
+    if(a){const u=Math.max(0,Math.min(1,a.age/a.duration)),swing=Math.sin(Math.PI*u),windup=u<.25?-(1-u/.25)*.05:0;return{lean:windup+swing*(a.stage===3?.1:.07),bob:0,stretch:1,dx:facing*swing*(a.kind==='kick'?5:7)};}
+    if(p.ram)return{lean:.1,bob:0,stretch:1,dx:0};
+    if(!p.grounded)return{lean:Math.max(-.08,Math.min(.1,(p.vy||0)/5200)),bob:0,stretch:1+Math.max(-.03,Math.min(.05,-(p.vy||0)/9000)),dx:0};
+    if(p.landing>0){const k=Math.min(1,p.landing/.24);return{lean:.04*k,bob:0,stretch:1-.09*k,dx:0};}
+    if(mode.crouching)return still;
+    if(p.sprinting&&Math.abs(p.vx)>30)return{lean:0,bob:-Math.abs(Math.sin((p.sprintCycle||0)*Math.PI*2))*2.2,stretch:1,dx:0};
+    if(Math.abs(p.vx)>15){const step=(p.walkCycle||0)*Math.PI*2;return{lean:.035+Math.sin(step*2)*.012,bob:-Math.abs(Math.sin(step))*1.3,stretch:1,dx:0};}
+    return{lean:Math.sin(t*1.1)*.012,bob:0,stretch:1+Math.sin(t*2.3)*.014,dx:0};
+  }
+  // Applies the motion around the feet at (x,y); call inside save()/restore().
+  function applyWolfMotion(ctx,p,mode){
+    const m=wolfMotion(p,mode);if(!m.lean&&!m.bob&&m.stretch===1&&!m.dx)return m;
+    ctx.translate(p.x+m.dx,p.y+m.bob);ctx.rotate(m.lean*(p.facing||1));ctx.scale(1,m.stretch);ctx.translate(-p.x,-p.y);return m;
+  }
   function wolfIdlePose(p,mode={}){
     if(p.form!=='wolf'||!p.grounded||Math.abs(p.vx)>15||p.sprinting||p.ladder||p.rope||p.jetpack||p.transform>0||p.hurt>0||p.landing>0||p.claw>0||p.kick>0||p.slide>0||p.ram||p.wolfAttack||mode.crouching||mode.sliding)return null;
     const pose={row:0,frame:0,scale:wolfActionScale,lift:0};
@@ -116,20 +139,27 @@
     return{x,y};
   }
   function weaponGrip(slot){return slot<=2?{x:13,y:0}:slot===3?{x:18,y:3}:slot===7?{x:25,y:0}:slot===8?{x:12,y:3}:slot===9?{x:16,y:0}:{x:12,y:3};}
-  function gait(p,mode={}){
+  // The running row is a complete stride: drawing it whole gives a real run
+  // instead of walking legs under a running torso. Its frames are cropped to
+  // their own height, so each one is lifted to keep the helmet on one line and
+  // let the feet leave the ground during the flight phases.
+  const RUN_LIFT=[2.6,3.5,1.9,0,3.5,2.2];
+  function gait(p,mode={},encounter){
     if(p.ladder||p.rope||p.transform>0||p.form==='wolf')return null;
     if(p.jetpack)return{row:4,frame:0,split:21,bob:0,flight:true};
     if(!p.grounded||Math.abs(p.vx)<=15||p.landing>0||mode.crouching||mode.sliding)return null;
-    const phase=((p.walkCycle||0)%1+1)%1;
-    return{row:Math.abs(p.vx)>170?2:1,frame:Math.floor(phase*6),split:21,bob:-(Math.sin(phase*Math.PI*2)**2)*1.2};
+    const phase=((p.walkCycle||0)%1+1)%1,frame=Math.floor(phase*6),running=Math.abs(p.vx)>170;
+    if(running&&encounter){const torso=pose(p,mode,encounter);if(!torso.sheet&&torso.row===2)return{row:2,frame,split:21,bob:-RUN_LIFT[frame],full:true};}
+    return{row:running?2:1,frame,split:21,bob:-(Math.sin(phase*Math.PI*2)**2)*1.2};
   }
   function advanceWalk(p,dt){
-    if(p.grounded)p.walkCycle=(p.walkCycle||0)+Math.abs(p.vx)*dt/(p.form==='wolf'?110:Math.abs(p.vx)>170?82:52);
+    if(p.grounded)p.walkCycle=(p.walkCycle||0)+Math.abs(p.vx)*dt/(p.form==='wolf'?110:Math.abs(p.vx)>170?104:52);
   }
   // All missions compose the equipped torso over the same distance-driven feet.
   // In particular, a melee sheet must not bypass locomotion with its idle legs.
   function drawGait(ctx,p,steps,drawLegs,drawTorso,melee=null){
     if(!steps)return drawTorso(0);
+    if(steps.full)return drawTorso(steps.bob);
     ctx.save();ctx.beginPath();ctx.rect(p.x-80,p.y-steps.split,160,steps.split+3);ctx.clip();
     if(steps.flight){const sway=Math.max(-.08,Math.min(.08,(p.vx||0)/3500))+Math.sin((p.anim||0)*4)*.025;ctx.translate(p.x,p.y-steps.split);ctx.rotate(sway);ctx.translate(-p.x,-(p.y-steps.split));}
     drawLegs(steps.frame);ctx.restore();
@@ -148,6 +178,6 @@
     ctx.clip();
     const height=drawTorso(steps.bob);ctx.restore();return height;
   }
-  const api={wolfJumpFrames,pose,grip,weaponGrip,gait,advanceWalk,drawGait,meleeFrame,wolfIdlePose,wolfActionFrames,wolfActionScale,wolfAirPose,wolfComboPose,wolfComboFrames,wolfComboScale,wolfRamPose,wolfRamFrames,wolfRamScale,wolfSprintPose,wolfWalkPose,transformation,transformationFrames};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSoldierAnimation=api;
+  const api={RUN_LIFT,wolfMotion,applyWolfMotion,wolfJumpFrames,pose,grip,weaponGrip,gait,advanceWalk,drawGait,meleeFrame,wolfIdlePose,wolfActionFrames,wolfActionScale,wolfAirPose,wolfComboPose,wolfComboFrames,wolfComboScale,wolfRamPose,wolfRamFrames,wolfRamScale,wolfSprintPose,wolfWalkPose,transformation,transformationFrames};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSoldierAnimation=api;
 })(typeof window!=='undefined'?window:globalThis);
 

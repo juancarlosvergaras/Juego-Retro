@@ -63,6 +63,35 @@
     if(t<.07)return{endpoint:from,t};if(t>=.92)return{endpoint:to,t};
     const phase=Math.min(5,Math.floor((t-.07)/.85*6));return{row,frame:reverse?5-phase:phase,t};
   }
+  // Energy of the change itself: a rising column and ground ring behind the
+  // body, then sparks and a brief flash in front. The body stays opaque.
+  const TINTS={wolf:'255,226,170',zombie:'150,255,170',soldier:'170,230,255'};
+  function seeded(n){const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
+  function aura(c,p,t){
+    if(!c.createLinearGradient||!c.ellipse)return;
+    const tint=TINTS[p.form]||TINTS.soldier,power=Math.sin(Math.PI*Math.min(1,t/.9)),height=HEIGHTS[p.form]||60;
+    c.save();c.globalCompositeOperation='lighter';
+    const column=c.createLinearGradient(0,p.y-height-70,0,p.y);column.addColorStop(0,'rgba('+tint+',0)');column.addColorStop(.55,'rgba('+tint+','+(.26*power).toFixed(3)+')');column.addColorStop(1,'rgba('+tint+','+(.5*power).toFixed(3)+')');
+    c.fillStyle=column;const half=13+power*9;c.fillRect(Math.round(p.x-half),Math.round(p.y-height-70),Math.round(half*2),Math.round(height+70));
+    // Two rings spread along the floor, the second trailing the first.
+    c.lineWidth=2;for(const lag of [0,.22]){const u=Math.max(0,Math.min(1,(t-lag)/.7));if(u<=0||u>=1)continue;c.strokeStyle='rgba('+tint+','+((1-u)*.75).toFixed(3)+')';c.beginPath();c.ellipse(p.x,p.y-1,10+u*58,3+u*9,0,0,Math.PI*2);c.stroke();}
+    c.restore();
+  }
+  function burst(c,p,t){
+    const tint=TINTS[p.form]||TINTS.soldier,height=HEIGHTS[p.form]||60;
+    c.save();
+    // Sparks spiral up around the body and thin out as the change settles.
+    for(let i=0;i<16;i++){const u=(t*1.6+seeded(i))%1,angle=i*2.399+t*9,radius=(12+seeded(i+40)*20)*(1-u*.35);c.globalAlpha=(1-u)*Math.min(1,t*6)*Math.min(1,(1-t)*5);c.fillStyle=i%4===0?'#ffffff':'rgb('+tint+')';c.fillRect(Math.round(p.x+Math.cos(angle)*radius),Math.round(p.y-4-u*(height+18)),i%3?2:3,i%3?2:3);}
+    c.globalAlpha=1;
+    // Becoming the storm zombie arcs with electricity.
+    if((p.form==='zombie'||p.transformFrom==='zombie')&&c.lineTo&&t>.2&&t<.85){c.strokeStyle='rgba(205,255,225,.85)';c.lineWidth=1;const tick=Math.floor(t*26);for(let k=0;k<3;k++){let x=p.x+(seeded(tick+k*7)-.5)*34,y=p.y-height*(.2+seeded(tick+k*13)*.75);c.beginPath();c.moveTo(Math.round(x),Math.round(y));for(let j=0;j<4;j++){x+=(seeded(tick*3+k*5+j)-.5)*18;y+=(seeded(tick*5+k*3+j)-.5)*16;c.lineTo(Math.round(x),Math.round(y));}c.stroke();}}
+    // One white pulse at the instant the silhouette turns over.
+    const flash=Math.max(0,1-Math.abs(t-.5)/.09);
+    if(flash>0&&c.createRadialGradient){c.globalCompositeOperation='lighter';const cy=p.y-height*.5,glow=c.createRadialGradient(p.x,cy,2,p.x,cy,height*.95);glow.addColorStop(0,'rgba(255,255,255,'+(.85*flash).toFixed(3)+')');glow.addColorStop(.45,'rgba('+tint+','+(.4*flash).toFixed(3)+')');glow.addColorStop(1,'rgba('+tint+',0)');c.fillStyle=glow;c.fillRect(Math.round(p.x-height),Math.round(cy-height),Math.round(height*2),Math.round(height*2));}
+    c.restore();
+  }
+  // The body shudders before it turns and settles with a small overshoot.
+  function shudder(t){const build=t<.5?t/.5:0,settle=t>=.5?Math.max(0,1-(t-.5)/.35):0;return{stretch:1+Math.sin(t*38)*.035*build+Math.sin((t-.5)*22)*.07*settle};}
   function draw(c,p){
     if(p.swimming||p.onMotorcycle)return false;
     if(p.transform>0&&[p.form,p.transformFrom].some(id=>['tank','fighter','robot'].includes(id))){
@@ -70,14 +99,17 @@
       return compose(c,p,q=>{const f=endpoints[q.form],s=f.height/f.h;c.save();c.translate(Math.round(q.x),Math.round(q.y));c.scale(q.facing||1,1);c.drawImage(f.image,f.x,f.y,f.w,f.h,Math.round((f.x-f.pivot)*s),-Math.round(f.height),Math.round(f.w*s),Math.round(f.height));c.restore();});
     }
     const q=pose(p);if(!q||!atlas||!endpoints[p.form]||!endpoints[p.transformFrom||(p.form==='wolf'?'soldier':'wolf')])return false;
-    const f=q.endpoint?endpoints[q.endpoint]:atlas[q.row][q.frame],s=q.endpoint?f.height/f.h:f.scale;
+    const f=q.endpoint?endpoints[q.endpoint]:atlas[q.row][q.frame],s=q.endpoint?f.height/f.h:f.scale,move=shudder(q.t);
+    aura(c,p,q.t);
     c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(p.x),Math.round(p.y));c.scale(p.facing||1,1);
-    c.drawImage(f.image,f.x,f.y,f.w,f.h,Math.round((f.x-f.pivot)*s),-Math.round(f.h*s),Math.round(f.w*s),Math.round(f.h*s));
+    // The shudder stretches the body from the soles, so the feet never leave their spot.
+    const tall=Math.round(f.h*s*move.stretch);
+    c.drawImage(f.image,f.x,f.y,f.w,f.h,Math.round((f.x-f.pivot)*s),-tall,Math.round(f.w*s),tall);
     // A few crisp motes follow the change; the body stays fully opaque and readable.
     if(q.t>.22&&q.t<.82){const age=(q.t-.22)/.6,green=p.form==='zombie'||p.transformFrom==='zombie';
       for(let i=0;i<6;i++){const side=i%2?1:-1,r=15+age*12,y=-10-i*8-age*9;c.fillStyle=i%3===0?'#e7eed0':green?'#84cfa8':'#acbec7';c.fillRect(Math.round(side*r+Math.sin(i*5+age*8)*3),Math.round(y),i%3===0?2:1,2);}
     }
-    c.restore();return true;
+    c.restore();burst(c,p,q.t);return true;
   }
-  const api={DURATION,PAIRS,FORMS,pose,progress,formPose,compose,setEffects,setEndpoint,setSheet,draw};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeFormTransition=api;
+  const api={shudder,DURATION,PAIRS,FORMS,pose,progress,formPose,compose,setEffects,setEndpoint,setSheet,draw};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeFormTransition=api;
 })(typeof window!=='undefined'?window:globalThis);

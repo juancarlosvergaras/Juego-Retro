@@ -26,3 +26,11 @@ test('lightning produces a bounded six-frame electrocution effect on the hit tar
 test('zombie run frames advance with actual travel and stop against walls',()=>{
  const ground={x:0,y:620,w:18000,kind:'ground'},p=Object.assign(P.createPlayer(),{form:'zombie',x:100,y:620,grounded:true,ground});for(let i=0;i<100;i++)P.step(p,{right:true,run:true},1/120,[ground]);assert.ok(p.zombieStride>1);const wall={x:p.x+p.w/2,y:540,w:100,thickness:80,solid:true};for(let i=0;i<60;i++)P.step(p,{right:true,run:true},1/120,[ground,wall]);const stride=p.zombieStride;for(let i=0;i<60;i++)P.step(p,{right:true,run:true},1/120,[ground,wall]);assert.equal(p.zombieStride,stride);
 });
+test('the dirigible heaves gently and carries a passenger without changing who can reach it',()=>{
+ const g=L.geometry(),deck=g.platforms.find(p=>p.airship),p=Object.assign(P.createPlayer(),{x:9000,y:deck.y,ground:deck,grounded:true});
+ let low=Infinity,high=-Infinity;for(let t=0;t<40;t+=.05){S.update(g.platforms,p,t);low=Math.min(low,deck.y);high=Math.max(high,deck.y);assert.equal(p.y,deck.y);assert.equal(deck.y,S.deckY(t));}
+ assert.ok(high-low>6&&high-low<12,'visible but small travel: '+(high-low));assert.ok(Math.abs((high+low)/2-L.AIRSHIP.y)<1);
+ const walker=Object.assign(P.createPlayer(),{x:9000,y:620,grounded:true,ground:g.platforms[0]});S.update(g.platforms,walker,3);assert.equal(walker.y,620,'only passengers are moved');
+ const profile=U.fresh();S.update(g.platforms,p,7.3);assert.equal(S.collect(profile,p),true,'the reward is collected at any point of the heave');
+ assert.equal(S.update(L.geometry(true).platforms,p,1),null);
+});

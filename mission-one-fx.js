@@ -35,18 +35,21 @@
 
   // Fuentes de luz del mundo en coordenadas de mundo. `glow` añade color visible.
   function collect(state){
-    const {player:p,encounter:e,platforms,time,arrival,checkpoint}=state,lights=[];
-    for(const s of platforms)if(s.kind==='deck'&&s.floor%4===0&&!s.arena)lights.push({x:s.x+s.w*.7,y:s.y+(s.thickness||12)+40,r:150,a:.8+Math.sin(time*9+s.x)*.04});
+    const {player:p,encounter:e,platforms=[],time,arrival,checkpoint,lamps}=state,lights=[];
+    // Mission one derives its lamps from the decks; other missions pass their own list.
+    if(lamps)for(const l of lamps)lights.push({x:l.x,y:l.y,r:l.r||150,a:(l.a||.8)+Math.sin(time*9+l.x)*.04,glow:l.glow,ga:l.ga});
+    else for(const s of platforms)if(s.kind==='deck'&&s.floor%4===0&&!s.arena)lights.push({x:s.x+s.w*.7,y:s.y+(s.thickness||12)+40,r:150,a:.8+Math.sin(time*9+s.x)*.04});
     if(!arrival?.active)lights.push({x:p.x,y:p.y-26,r:p.form==='zombie'?150:120,a:.78,glow:p.form==='zombie'?'120,220,255':null,ga:.1});
     if(arrival?.visible)lights.push({x:arrival.x+62,y:arrival.ground-22,r:120,a:.85,glow:'255,232,170',ga:.2});
     if(checkpoint)lights.push({x:checkpoint.x,y:checkpoint.y-22,r:70,a:.6,glow:'110,255,170',ga:.08});
     if(e.flash>0&&p.form!=='wolf'){const aim=e.lastAim||{x:p.facing,y:0},k=clamp(e.flash/.14);lights.push({x:p.x+aim.x*26,y:p.y-28+aim.y*24,r:170,a:k,glow:'255,214,140',ga:.3*k});}
-    for(const n of e.enemies)if(n.hp>0&&n.flash>0)lights.push({x:n.x+n.facing*20,y:n.y-28,r:120,a:.9,glow:'255,180,120',ga:.26});
-    const b=e.boss;if(b.hp>0&&b.flash>0)lights.push({x:b.x+(b.facing||1)*34,y:b.y-40,r:150,a:1,glow:'255,190,120',ga:.3});
+    for(const n of e.enemies||[])if(n.hp>0&&n.flash>0)lights.push({x:n.x+n.facing*20,y:n.y-28,r:120,a:.9,glow:'255,180,120',ga:.26});
+    const b=e.boss;if(b&&b.hp>0&&b.flash>0)lights.push({x:b.x+(b.facing||1)*34,y:b.y-40,r:150,a:1,glow:'255,190,120',ga:.3});
     const f=e.finalBoss;if(f?.active&&f.hp>0)lights.push({x:f.x,y:f.y-45,r:130,a:.55,glow:f.stage===2?'150,255,120':'255,120,90',ga:.07});
     for(const m of f?.missiles||[])lights.push({x:m.x,y:m.y,r:60,a:.8,glow:'255,170,90',ga:.25});
-    for(const blast of e.explosions){const k=clamp(blast.life*2.2),r=(blast.radius||80)*2.4;lights.push({x:blast.x,y:blast.y,r,a:k,glow:'255,170,90',ga:.34*k});}
-    let shots=0;for(const s of e.bullets){if(shots++>=28)break;lights.push({x:s.x,y:s.y,r:s.slot===6?46:26,a:.55,glow:s.enemy?'255,120,90':'255,236,170',ga:.16});}
+    for(const blast of e.explosions||[]){const k=clamp(blast.life*2.2),r=(blast.radius||80)*2.4;lights.push({x:blast.x,y:blast.y,r,a:k,glow:'255,170,90',ga:.34*k});}
+    let shots=0;for(const s of e.bullets||[]){if(shots++>=28)break;lights.push({x:s.x,y:s.y,r:s.zombiePlasma?44:s.slot===6?46:26,a:.55,glow:s.zombiePlasma?'150,255,120':s.enemy?'255,120,90':'255,236,170',ga:s.zombiePlasma?.28:.16});}
+    if(state.powers&&root.ArcadePowerFx)lights.push(...root.ArcadePowerFx.lights(state.powers,p));
     if(e.extraction){const x=e.extraction.x??p.x,y=e.extraction.y??p.y-120;lights.push({x,y:y+70,r:230,a:.9,glow:'220,236,255',ga:.1});}
     return lights;
   }

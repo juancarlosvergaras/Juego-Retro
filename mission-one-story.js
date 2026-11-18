@@ -24,17 +24,19 @@
     {id:'rescue',who:VEGA,text:'¡Azotea despejada! Te tengo a la vista. Sujétate: nos vamos de aquí.',when:c=>c.extraction}
   ];
   const epilogue='El Capataz solo era un perro guardián. La manada obedece a un rey, y Vega ya ha puesto rumbo a su puerta.';
-  function createRadio(){
-    const state={seen:new Set(),queue:[],current:null,age:0,gap:0,primed:false};
+  // `list` son los avisos de la mision; `ambient` marca los que caducan cuando
+  // llega un aviso de historia y `series` los que se sustituyen entre si.
+  function createRadio(list=beats,ambient=/^(workers|militia|hurt|floor)/,series=/^floor/){
+    const beats=list,state={seen:new Set(),queue:[],current:null,age:0,gap:0,primed:false};
     return{state,
       reset(){state.seen.clear();state.queue.length=0;state.current=null;state.age=0;state.gap=0;state.primed=true;},
       // Al reanudar una partida, lo ya vivido no se repite.
       prime(c){state.primed=true;for(const b of beats)if(b.id!=='start'&&b.when(c))state.seen.add(b.id);},
       update(c,dt){
         if(!state.primed)this.prime(c);
-        for(const b of beats)if(!state.seen.has(b.id)&&(!b.after||state.seen.has(b.after))&&b.when(c)){state.seen.add(b.id);const story=!/^(workers|militia|hurt|floor)/.test(b.id);
+        for(const b of beats)if(!state.seen.has(b.id)&&(!b.after||state.seen.has(b.after))&&b.when(c)){state.seen.add(b.id);const story=!ambient.test(b.id);
           // Un aviso atrasado no debe sonar despues de lo que anuncia.
-          state.queue=state.queue.filter(q=>story?!/^(workers|militia|hurt|floor)/.test(q.id):!(q.id.startsWith('floor')&&b.id.startsWith('floor')));state.queue.push(b);}
+          state.queue=state.queue.filter(q=>story?!ambient.test(q.id):!(series.test(q.id)&&series.test(b.id)));state.queue.push(b);}
         if(state.current){state.age+=dt;if(state.age>=state.current.duration){state.current=null;state.gap=.6;}}
         else if(state.gap>0)state.gap=Math.max(0,state.gap-dt);
         else if(state.queue.length){const next=state.queue.shift();state.current={...next,duration:Math.max(4,2.2+next.text.length*.055)};state.age=0;}
@@ -42,26 +44,27 @@
       }
     };
   }
-  function mount(host){
-    const doc=root.document,radio=createRadio();
+  // Otras misiones reutilizan el informe y la radio pasando su propio guion.
+  function mount(host,config={}){
+    const doc=root.document,briefing=config.briefing||api.briefing,radio=createRadio(config.beats,config.ambient,config.series),sceneSet=config.scenes||'one';
     const panel=doc.createElement('aside');panel.id='radio';panel.hidden=true;panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
     panel.innerHTML='<span class="radio-icon" aria-hidden="true">◉</span><div><span class="radio-speaker"></span><span class="radio-text"></span></div>';
     host.append(panel);
     const speaker=panel.querySelector('.radio-speaker'),text=panel.querySelector('.radio-text');let shown=null;
     const layer=doc.createElement('section');layer.id='briefing';layer.hidden=true;layer.setAttribute('role','dialog');layer.setAttribute('aria-modal','true');layer.setAttribute('aria-label','Informe de misión');
-    layer.innerHTML='<div class="briefing-card"><canvas class="briefing-scene" width="640" height="250" aria-hidden="true"></canvas><span class="eyebrow">MISIÓN 01 · LA OBRA</span><h2></h2><div class="briefing-text" aria-live="polite"></div><ul class="briefing-objectives" hidden></ul><div class="briefing-actions"><button type="button" class="briefing-skip">Saltar informe</button><span class="briefing-step"></span><button type="button" class="briefing-next">Continuar</button></div></div>';
+    layer.innerHTML='<div class="briefing-card"><canvas class="briefing-scene" width="640" height="250" aria-hidden="true"></canvas><span class="eyebrow"></span><h2></h2><div class="briefing-text" aria-live="polite"></div><ul class="briefing-objectives" hidden></ul><div class="briefing-actions"><button type="button" class="briefing-skip">Saltar informe</button><span class="briefing-step"></span><button type="button" class="briefing-next">Continuar</button></div></div>';
     doc.body.append(layer);
-    const scene=layer.querySelector('.briefing-scene'),title=layer.querySelector('h2'),body=layer.querySelector('.briefing-text'),goals=layer.querySelector('.briefing-objectives'),step=layer.querySelector('.briefing-step'),next=layer.querySelector('.briefing-next'),skip=layer.querySelector('.briefing-skip');
+    layer.querySelector('.eyebrow').textContent=config.eyebrow||'MISIÓN 01 · LA OBRA';const scene=layer.querySelector('.briefing-scene'),title=layer.querySelector('h2'),body=layer.querySelector('.briefing-text'),goals=layer.querySelector('.briefing-objectives'),step=layer.querySelector('.briefing-step'),next=layer.querySelector('.briefing-next'),skip=layer.querySelector('.briefing-skip');
     let page=0,typed=0,timer=null,done=null;
     function finish(){if(layer.hidden)return;clearInterval(timer);timer=null;root.ArcadeStoryScenes?.stop();layer.hidden=true;const callback=done;done=null;callback?.();}
     function reveal(){const p=briefing[page];clearInterval(timer);timer=null;typed=p.text.length;body.textContent=p.text;goals.hidden=!p.objectives;}
-    function show(){const p=briefing[page];root.ArcadeStoryScenes?.show(scene,page);title.textContent=p.title;step.textContent=(page+1)+' / '+briefing.length;next.textContent=page===briefing.length-1?'Comenzar la cacería':'Continuar';goals.hidden=true;goals.replaceChildren(...(p.objectives||[]).map(o=>{const li=doc.createElement('li');li.textContent='▸ '+o;return li;}));typed=0;body.textContent='';clearInterval(timer);
+    function show(){const p=briefing[page];root.ArcadeStoryScenes?.show(scene,page,sceneSet);title.textContent=p.title;step.textContent=(page+1)+' / '+briefing.length;next.textContent=page===briefing.length-1?(config.startLabel||'Comenzar la cacería'):'Continuar';goals.hidden=true;goals.replaceChildren(...(p.objectives||[]).map(o=>{const li=doc.createElement('li');li.textContent='▸ '+o;return li;}));typed=0;body.textContent='';clearInterval(timer);
       if(root.matchMedia?.('(prefers-reduced-motion: reduce)').matches){reveal();return;}
       timer=setInterval(()=>{typed=Math.min(p.text.length,typed+2);body.textContent=p.text.slice(0,typed);if(typed>=p.text.length)reveal();},22);}
     function advance(){if(typed<briefing[page].text.length){reveal();return;}if(page<briefing.length-1){page++;show();}else finish();}
     next.onclick=advance;skip.onclick=finish;
     layer.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();finish();}else if(e.key==='Tab'){e.preventDefault();(doc.activeElement===next?skip:next).focus();}});
-    return{radio,epilogue,
+    return{radio,epilogue:config.epilogue||epilogue,
       briefingOpen:()=>!layer.hidden,
       briefing(callback){done=callback;page=0;layer.hidden=false;show();next.focus({preventScroll:true});},
       reset(){radio.reset();panel.hidden=true;shown=null;},

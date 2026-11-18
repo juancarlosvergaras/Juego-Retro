@@ -5,6 +5,8 @@
   const audio=ArcadeAudio.create(),keys=new Set(),queue=new Set(),firePointers=new Set(),camera={x:0,y:0},images={};
   let paused=true,loaded=false,started=false,last=0,accumulator=0,renderer,saveAge=0,shotWait=0,mode={},doorLatch=false,mainMenu=null,queuedAim=null,leavingMission=false;
   const fireBuffer=ArcadeArsenal.createFireBuffer();
+  const story=window.ArcadeMissionTwoStory?.mount(canvas.parentElement);let briefed=false,gotMk2=false;
+  const presentation=window.ArcadeBossPresentation?.create(canvas.parentElement,canvas),staged={};
   const storageKey='cap-dollar.mission-two.v1';
   function load(){try{const value=JSON.parse((window.ArcadeDeveloperMode?.storage(localStorage)||localStorage).getItem(storageKey)||'null');return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}catch{return{};}}
   const entry=new URLSearchParams(location.search).get('entry'),fresh=entry==='select'||entry==='campaign';
@@ -44,6 +46,7 @@
     state.bullets=[];state.fade=1;
   }
   const respawnPoint=()=>ArcadeCheckpoints.spawn(checkpoints,{inside:false,x:240,y:620});
+  if(!fresh&&Number.isFinite(saved.x))story?.radio.state.seen.add('start');
   configure(saved.dead?respawnPoint().inside:state.inside,saved.dead?respawnPoint().x:Number.isFinite(saved.x)?saved.x:160);if(saved.dead)stats.invincible=3;
   state.weather=window.ArcadeWorldLighting?.create();state.fade=0;state.checkpoints=checkpoints;state.combat=stats;state.loot=loot;state.king=king;state.storm=storm;
   ArcadeDifficulty.apply({...stats,enemies:[...cityEnemies,...interiorEnemies]},ArcadeDifficulty.load(store));
@@ -69,9 +72,12 @@
   function cyclePower(){if(paused||arrival?.active)return;const list=[...profile.owned,...(player.shield>0?['shield']:[])];profile.equipped=list[(list.indexOf(profile.equipped)+1)%list.length]||null;save();}
   function usePower(){if(paused||arrival?.active)return;if(profile.equipped==='shield')notify('Escudo antibalas · '+player.shield+' impactos restantes');else queue.add('power');}
   const hud=ArcadeMissionHud.create({player,encounter:stats,profile,powers,canvas,audio,score:()=>score.total,onSelect:chooseWeapon,onPower:usePower,onCycle:cyclePower,onPersist:save});
-  function controls(){return{left:keys.has('KeyA')||keys.has('ArrowLeft'),right:keys.has('KeyD')||keys.has('ArrowRight'),up:keys.has('KeyW')||keys.has('ArrowUp')||queue.has('up'),down:keys.has('KeyS')||keys.has('ArrowDown'),run:keys.has('ShiftLeft')||keys.has('ShiftRight'),jumpPressed:queue.has('jump'),hookPressed:queue.has('hook'),jetpackPressed:queue.has('jet'),...ArcadeArsenal.triggerInput(keys,firePointers.size>0,queue.has('fire')),kick:player.form!=='robot'&&(queue.has('kick')||keys.has('KeyL')),power:queue.has('power')||keys.has('KeyG')};}
+  function controls(){return{left:keys.has('KeyA')||keys.has('ArrowLeft'),right:keys.has('KeyD')||keys.has('ArrowRight'),up:keys.has('KeyW')||keys.has('ArrowUp')||queue.has('up'),down:keys.has('KeyS')||keys.has('ArrowDown'),run:keys.has('ShiftLeft')||keys.has('ShiftRight'),jumpPressed:queue.has('jump'),jumpHeld:queue.has('jump')||keys.has('Space'),hookPressed:queue.has('hook'),jetpackPressed:queue.has('jet'),...ArcadeArsenal.triggerInput(keys,firePointers.size>0,queue.has('fire')),kick:player.form!=='robot'&&(queue.has('kick')||keys.has('KeyL')),power:queue.has('power')||keys.has('KeyG')};}
   function pause(){if(!loaded)return;paused=true;player.wolfQueued=null;keys.clear();firePointers.clear();queue.clear();queuedAim=null;fireBuffer.clear();save();menu.hidden=false;canvas.inert=true;audio.setRunning(false);wheel.update(player.form,true,true,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked);play.textContent='Continuar';document.getElementById('level-two-title').textContent='Partida en pausa';message.textContent='Tu partida queda detenida mientras consultas el menú.';document.getElementById('pause-options').hidden=false;document.getElementById('shop').hidden=true;document.getElementById('shortcuts').hidden=true;const shortcuts=document.getElementById('show-shortcuts');shortcuts.textContent='Ver atajos de teclado';shortcuts.setAttribute('aria-expanded','false');play.focus();}
-  play.onclick=()=>{if(!loaded)return;if(stats.dead){stats.dead=false;stats.hp=stats.maxHp;stats.invincible=3;player.hurt=0;stats.bullets=[];stats.explosions=[];const cp=respawnPoint();configure(cp.inside,cp.x);Object.assign(king,ArcadeMausoleumKing.create(ArcadeMausoleumKing.snapshot(king),king.healthScale));save();}started=true;paused=false;menu.hidden=true;canvas.inert=false;keys.clear();firePointers.clear();queue.clear();queuedAim=null;fireBuffer.clear();audio.unlock();audio.setRunning(true);wheel.update(player.form,true,arrival?.active||player.transform>0,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked);canvas.focus();};
+  play.onclick=()=>{if(!loaded)return;
+    // A fresh drop opens with the animated briefing; resuming goes straight to play.
+    if(story&&!briefed&&!stats.dead&&arrival?.active&&arrivalAge===0){briefed=true;menu.hidden=true;story.briefing(()=>play.click());return;}
+    if(stats.dead){stats.dead=false;stats.hp=stats.maxHp;stats.invincible=3;player.hurt=0;stats.bullets=[];stats.explosions=[];const cp=respawnPoint();configure(cp.inside,cp.x);Object.assign(king,ArcadeMausoleumKing.create(ArcadeMausoleumKing.snapshot(king),king.healthScale));save();}started=true;paused=false;menu.hidden=true;canvas.inert=false;keys.clear();firePointers.clear();queue.clear();queuedAim=null;fireBuffer.clear();audio.unlock();audio.setRunning(true);wheel.update(player.form,true,arrival?.active||player.transform>0,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked);canvas.focus();};
   document.getElementById('pause-two').onclick=()=>paused?play.click():pause();
   document.getElementById('show-shortcuts').onclick=()=>{const panel=document.getElementById('shortcuts'),button=document.getElementById('show-shortcuts');panel.hidden=!panel.hidden;button.textContent=panel.hidden?'Ver atajos de teclado':'Ocultar atajos de teclado';button.setAttribute('aria-expanded',String(!panel.hidden));};
   document.getElementById('restart').onclick=()=>{if(loaded)location.assign('level-two.html?entry=select');};
@@ -86,7 +92,7 @@
     if(code==='Space')queue.add('jump');if(code==='KeyE')queue.add('hook');if(ArcadeArsenal.fireKeys.includes(code))queueFire();if(code==='KeyW'||code==='ArrowUp')queue.add('up');
   }
   window.addEventListener('keydown',e=>{
-    if(mainMenu?.isOpen())return;
+    if(mainMenu?.isOpen()||story?.briefingOpen())return;
     const code=ArcadeArsenal.controlCode(e);
     if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space',...ArcadeArsenal.fireKeys].includes(code))e.preventDefault();
     if(code==='Escape'||code==='KeyP'){if(paused&&started)play.click();else pause();return;}
@@ -102,26 +108,47 @@
   });
   for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,e=>firePointers.delete(e.pointerId));
 
-  window.addEventListener('blur',()=>{if(!paused)pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused)pause();});
+  window.addEventListener('blur',()=>{if(!paused&&!window.__keepRunning)pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden&&!paused&&!window.__keepRunning)pause();});
   window.addEventListener('pagehide',()=>{if(started&&!leavingMission)save();});
   menu.addEventListener('keydown',e=>{if(e.key!=='Tab')return;const items=Array.from(menu.querySelectorAll('button,a,input')).filter(el=>!el.disabled&&!el.closest('[hidden]'));const i=items.indexOf(document.activeElement);e.preventDefault();items[(i+(e.shiftKey?-1:1)+items.length)%items.length]?.focus();});
   for(const button of document.querySelectorAll('[data-key]')){
     button.addEventListener('pointerdown',e=>{e.preventDefault();button.setPointerCapture(e.pointerId);press(button.dataset.key);});
     for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,()=>keys.delete(button.dataset.key));
   }
+  // Each boss gets one entrance, one phase change and one fall; reloads skip what already happened.
+  function stage(){if(!presentation)return;
+    const once=(id,kind,title,subtitle)=>{if(staged[id])return;staged[id]=true;presentation[kind](title,subtitle);};
+    if(staged.init===undefined){staged.init=true;if(cityTank.hp<=0)staged.tankIn=staged.tankOut=true;if(storm.hp<=0)staged.stormIn=staged.stormOut=true;if(king.defeated)staged.kingIn=staged.kingTwo=staged.kingOut=true;if(king.stage===2)staged.kingIn=staged.kingTwo=true;}
+    if(!state.inside){
+      if(cityTank.hp>0&&Math.abs(player.x-cityTank.x)<620)once('tankIn','intro','TANQUE DE ASEDIO','Subjefe · Avenida central');
+      if(cityTank.hp<=0&&staged.tankIn)once('tankOut','defeat','TANQUE DESTRUIDO','La avenida queda libre');
+      if(storm.hp>0&&Math.abs(player.x-storm.x)<620)once('stormIn','intro','HERALDO ELÉCTRICO','Subjefe · Guardián del umbral');
+      if(storm.hp<=0&&staged.stormIn)once('stormOut','defeat','HERALDO ABATIDO','El sello del mausoleo se rompe');
+    }else{
+      if(king.active&&!king.defeated)once('kingIn','intro','EL REY DE PIEDRA','Jefe · Señor del mausoleo');
+      if(king.stage===2&&!king.defeated)once('kingTwo','phase','EL REY PUTREFACTO','Fase 2 · La coraza ha caído');
+      if(king.defeated&&staged.kingIn)once('kingOut','defeat','EL REY HA CAÍDO','Misión 02 completada');
+    }}
+  function narrate(dt){stage();story?.update({landed:!arrival?.active,x:player.x,inside:state.inside,hp:stats.hp,enemyAlert:stats.enemies.some(n=>n.hp>0&&n.alert&&(n.kind==='rifle'||n.kind==='knife'||n.kind==='turret')),tankNear:!state.inside&&cityTank.hp>0&&Math.abs(player.x-cityTank.x)<700,tankDown:cityTank.hp<=0,mk2:!!profile.jetpackMk2,mk2Now:gotMk2,zombieAwake:!state.inside&&cityEnemies.some(n=>n.kind==='zombie'&&n.hp>0&&n.phase!=='dormant'),heraldNear:!state.inside&&storm.hp>0&&Math.abs(player.x-storm.x)<700,heraldDown:storm.hp<=0&&storm.death<=0&&!!profile.zombieUnlocked,kingActive:state.inside&&king.active&&!king.defeated,kingStage:king.stage,kingDown:!!king.defeated},dt);}
+  function follow(dt){
+    const focus=state.inside&&king.active?player.x+Math.max(-canvas.width*.7,Math.min(canvas.width*.7,king.x-player.x))*.5-canvas.width*.5:player.x-canvas.width*.38;const targetX=Math.max(0,Math.min(P.WORLD.width-canvas.width,focus));camera.x+=(targetX-camera.x)*(1-Math.exp(-6*dt));
+    // Horizontal exploration keeps the walking plane steady; height follows only substantial climbs.
+    const targetY=Math.min(620-canvas.height*.84,player.y-canvas.height*.66);camera.y+=(targetY-camera.y)*(1-Math.exp(-5*dt));
+  }
   function update(dt){
-    window.ArcadeDeveloperMode?.tick(player,stats);
+    window.ArcadeDeveloperMode?.tick(player,stats);narrate(dt);
     state.civilians=L.updateCivilians(state.civilians,dt,p=>{if(Math.abs(p.x-player.x)<700)audio.play('scream',{gain:.22,pan:Math.max(-1,Math.min(1,(p.x-player.x)/500)),variant:p.sex?2:0});});
     state.time+=dt;if(state.weather)window.ArcadeWorldLighting.update(state.weather,dt,!state.inside&&player.x>=9700,camera,canvas.width);state.fade=Math.max(0,state.fade-dt*2);shotWait=Math.max(0,shotWait-dt);const input=window.ArcadeControls?.decorate(controls())||controls();
     ArcadeZombieForm.tick(player,dt);
     player.transform=Math.max(0,(player.transform||0)-dt);player.claw=Math.max(0,(player.claw||0)-dt);player.kick=Math.max(0,(player.kick||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
     wheel.update(player.form,true,paused||arrival?.active||player.transform>0||!!player.rope||!!player.ladder||!!player.burrow,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked);
 
-    if(arrival?.active){const wasFlying=arrival.flight;arrivalAge=ArcadeParachute.advance(arrivalAge,dt,input.down);arrival=ArcadeParachute.sample(arrivalAge);player.x=arrival.x;player.y=arrival.y;player.grounded=arrival.landed;if(wasFlying&&arrival.landed)audio.play('land',{gain:.35});context.textContent=arrival.flight?'Mantén ↓ / S para descender más rápido':arrival.active?'Aterrizando…':'A/D o flechas · Avanzar  |  T · Soldado / Lobo';queue.clear();queuedAim=null;fireBuffer.clear();if(!arrival.active){player.ground=state.geometry.platforms[0];player.fallPeak=620;player.coyote=.1;save();}return;}
+    if(arrival?.active){const wasFlying=arrival.flight;arrivalAge=ArcadeParachute.advance(arrivalAge,dt,input.down);arrival=ArcadeParachute.sample(arrivalAge);player.x=arrival.x;player.y=arrival.y;player.grounded=arrival.landed;follow(dt);if(wasFlying&&arrival.landed)audio.play('land',{gain:.35});context.textContent=arrival.flight?'Mantén ↓ / S para descender más rápido':arrival.active?'Aterrizando…':'A/D o flechas · Avanzar  |  T · Soldado / Lobo';queue.clear();queuedAim=null;fireBuffer.clear();if(!arrival.active){player.ground=state.geometry.platforms[0];player.fallPeak=620;player.coyote=.1;save();}return;}
     if(player.transform>0){queue.clear();queuedAim=null;fireBuffer.clear();return;}
     if(!input.up)doorLatch=false;
     if(input.up&&!input.fire&&!player.burrow&&!doorLatch&&(L.canEnter(player,state.inside)||L.canExit(player,state.inside))){if(!state.inside&&(storm.hp>0||storm.death>0||!profile.zombieUnlocked)){doorLatch=true;notify(storm.hp>0?'Derrota al Heraldo Eléctrico para abrir el mausoleo.':'El Heraldo está cayendo… Recoge su poder antes de entrar.');}else{if(state.inside&&king.defeated){save();leavingMission=true;ArcadeCampaign.transferThree(store,player,stats,score,powers);location.assign('level-three.html?entry=campaign');return;}doorLatch=true;configure(!state.inside,state.inside?L.ENTRANCE:100);queue.clear();queuedAim=null;fireBuffer.clear();save();return;}}
     if(!state.inside)window.ArcadeTankGate?.sync(state.geometry.platforms,cityTank);
+    if(!state.inside)window.ArcadeSkyExpedition?.update(state.geometry.platforms,player,state.time);
     const oldX=player.x,oldJumps=player.jumps,wasGrounded=player.grounded,oldLadder=player.ladder;
     player.aim=ArcadeArsenal.firingAim({...input,aimUp:input.aimUp||input.up,aimDown:input.aimDown||input.down},player.facing,queuedAim);
     if(input.hookPressed&&(player.form==='wolf'||player.form==='zombie'))notify('El gancho solo está disponible para el soldado');
@@ -151,15 +178,13 @@
     if(!state.inside&&storm.hp<=0&&storm.death<=0&&!profile.zombieUnlocked){profile.zombieUnlocked=true;player.zombieUnlocked=true;ArcadeScore.bonus(score,{id:'storm-zombie',points:1500,label:'Traje de zombi',x:storm.x,y:storm.y-85});notify('¡Traje de zombi desbloqueado! T · J rayos · L plasma · ↓ bajo tierra');save();}
     if(state.inside){for(const effect of king.events)audio.play(effect,{gain:.55});if(king.defeated){const reward=ArcadeScore.bonus(score,{id:'mausoleum-king',points:5000,label:'Rey del mausoleo derrotado',x:king.x,y:king.y-90});if(reward){notify('¡Rey del mausoleo derrotado! Misión 02 completada · +5000 puntos');save();}}}
     P.updateIdle(player,input,dt);
-    soundEvents.update({player,encounter:stats,powers,fuelTanks:state.inside?[]:loot.fuelTanks},dt);state.bullets=stats.bullets;
+    soundEvents.update({player,encounter:stats,powers,fuelTanks:state.inside?[]:loot.fuelTanks,weather:state.inside?{wind:.12}:{wind:.3+.4*L.atmosphere(player.x).dusk,rain:L.atmosphere(player.x).rain,bolt:state.weather?.bolt,distant:player.x<8100}},dt);state.bullets=stats.bullets;
     ArcadeScore.tick(score,dt);ArcadeScore.sync(score,{enemies:stats.enemies,pickups:stats.pickups,medkits:stats.medkits},state.inside?[]:loot.fuelTanks);const reward=score.total-beforeScore;if(reward){campaign.score=score.total;ArcadeProgression.credit(profile,reward);save();}
     if(stats.dead){player.jetpack=false;pause();play.textContent=checkpoints.active?'Volver al CHECK POINT':'Reintentar misión';message.textContent=checkpoints.active?'Has caído. Volverás a la última PC activada con tu progreso conservado.':'Has caído. Regresa al punto de entrada para continuar la misión.';return;}
-    if(!stats.dead&&window.ArcadeSkyExpedition?.collect(profile,player,state.inside)){notify('¡JETPACK MK II desbloqueado! Velocidad ×2 · F para volar');audio.play('pickup',{gain:.65});save();}
+    if(!stats.dead&&window.ArcadeSkyExpedition?.collect(profile,player,state.inside)){gotMk2=true;notify('¡JETPACK MK II desbloqueado! Velocidad ×2 · F para volar');audio.play('pickup',{gain:.65});save();}
     const activated=ArcadeCheckpoints.update(checkpoints,player,dt,{inside:state.inside,blocked:stats.dead});if(activated){notify('CHECK POINT · Progreso guardado');audio.play('pickup',{gain:.45});save();}
     queue.clear();if(fireBuffer.tick(dt,player,stats,previousAction))queue.add('fire');else queuedAim=null;
-    const focus=state.inside&&king.active?player.x+Math.max(-canvas.width*.7,Math.min(canvas.width*.7,king.x-player.x))*.5-canvas.width*.5:player.x-canvas.width*.38;const targetX=Math.max(0,Math.min(P.WORLD.width-canvas.width,focus));camera.x+=(targetX-camera.x)*(1-Math.exp(-6*dt));
-    // Horizontal exploration keeps the walking plane steady; height follows only substantial climbs.
-    const targetY=Math.min(620-canvas.height*.84,player.y-canvas.height*.66);camera.y+=(targetY-camera.y)*(1-Math.exp(-5*dt));
+    follow(dt);
     saveAge+=dt;if(saveAge>2&&player.grounded){saveAge=0;save();}
   }
   function updateRoute(){
@@ -200,6 +225,11 @@
     if(player.grounded&&!player.jetpack&&!player.rope&&!player.ladder){ctx.fillStyle='#16202255';ctx.beginPath();ctx.ellipse(player.x,player.y+1,16,3,0,0,Math.PI*2);ctx.fill();}
     if(player.transform>0){const t=Math.min(7,Math.floor((1-player.transform/1.2)*8)),pose=ArcadeSoldierAnimation.transformation(player.form==='wolf'?t:7-t),frames={soldier:SOLDIER_V2_FRAMES,wolf:ACTION_FRAMES.wolf,transformation:ArcadeSoldierAnimation.transformationFrames};sprite(images[pose.sheet],frames[pose.sheet],pose.row,pose.frame,pose.scale);return;}
     if(player.form==='wolf'){
+      ctx.save();ArcadeSoldierAnimation.applyWolfMotion(ctx,player,mode);drawWolf();ctx.restore();return;
+    }
+    drawSoldier();
+  }
+  function drawWolf(){{
       const idlePose=ArcadeSoldierAnimation.wolfIdlePose(player,mode),comboPose=ArcadeSoldierAnimation.wolfComboPose(player),ramPose=ArcadeSoldierAnimation.wolfRamPose(player),airPose=ArcadeSoldierAnimation.wolfAirPose(player),sprintPose=ArcadeSoldierAnimation.wolfSprintPose(player),walkPose=ArcadeSoldierAnimation.wolfWalkPose(player,mode);
       if(player.ladder||player.rope?.mantle)sprite(images.wolfClimb,WOLF_CLIMB_FRAMES,0,((Math.floor(player.y/6.5)%4)+4)%4,WOLF_CLIMB_SCALE);
       else if(player.rope)sprite(images.wolf,ACTION_FRAMES.wolf,4,Math.floor(player.hangCycle||0)%4,.48);
@@ -212,13 +242,13 @@
       else if(walkPose)sprite(images.wolfWalk,WOLF_WALK_FRAMES,walkPose.row,walkPose.frame,WOLF_WALK_SCALE);
       else if(idlePose)sprite(images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames,idlePose.row,idlePose.frame,idlePose.scale,idlePose.lift);
       else sprite(images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames,0,0,ArcadeSoldierAnimation.wolfActionScale);
-      return;
-    }
+    }}
+  function drawSoldier(){
     const pose=ArcadeSoldierAnimation.pose(player,mode,stats);if(player.jetpack)drawJetpack();
     if(player.rope&&player.rope.length>4){ctx.strokeStyle='#a6c5c2';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(player.x,player.y-44);ctx.lineTo(player.rope.x,player.rope.y);ctx.stroke();}
     if(pose.sheet==='mobility')sprite(images.climb,CLIMB_FRAMES,pose.row,pose.frame,CLIMB_SCALE);
     else{
-      const gait=ArcadeSoldierAnimation.gait(player,mode);
+      const gait=ArcadeSoldierAnimation.gait(player,mode,stats);
       const img=pose.sheet==='crouch'?images.crouch:pose.sheet==='melee'?images.melee:pose.sheet==='slide'?images.slide:images.soldier;
       const frames=pose.sheet==='crouch'?CROUCH_FRAMES:pose.sheet==='melee'?MELEE_FRAMES:pose.sheet==='slide'?SLIDE_FRAMES:SOLDIER_V2_FRAMES;
       const scale=pose.sheet==='crouch'?CROUCH_SCALE:pose.sheet==='melee'?MELEE_SCALE:pose.sheet==='slide'?SLIDE_SCALE:SOLDIER_V2_SCALE;
@@ -231,11 +261,11 @@
     for(const n of stats.enemies){
       if(n.x<camera.x-70||n.x>camera.x+canvas.width+70||n.hp<=0&&n.death<=0)continue;
       let row=0,frame=Math.floor(n.anim*4)%4;
-      if(n.hp<=0){row=3;frame=3;}else if(n.hit>0){row=3;frame=2;}else if(n.flash>0){row=3;frame=n.flash>.08?0:1;}else if(!n.grounded){row=2;frame=n.vy< -150?1:n.vy<50?2:3;}else if(Math.abs(n.vx)>10){row=1;frame=Math.floor(n.anim*9)%4;}
+      if(n.hp<=0){row=3;frame=n.death>.62?2:3;}else if(n.hit>0){row=3;frame=2;}else if(n.flash>0){row=3;frame=n.flash>.08?0:1;}else if(!n.grounded){row=2;frame=n.vy< -150?1:n.vy<50?2:3;}else if(Math.abs(n.vx)>10){row=1;frame=Math.floor((n.runCycle||0)*4)%4;}
       if(ArcadeEnemySpecialists.drawRam(ctx,n,images.ramHit))continue;
       if(n.kind==='stormZombie'){ArcadeStormZombie.draw(ctx,n);continue;}
       if(n.kind==='bat'){ArcadeCemeteryBat.draw(ctx,n,images.bat);continue;}
-      if(n.kind==='zombie')ArcadeCemeteryZombies.draw(ctx,n,images.zombie);else if(!ArcadeEnemySpecialists.draw(ctx,n,images)){const f=ENEMY_FRAMES[row][frame],scale=.19;ctx.save();if(n.hp<=0)ctx.globalAlpha=Math.min(1,n.death*2);ctx.translate(Math.round(n.x),Math.round(n.y));ctx.scale(n.facing,1);ctx.drawImage(images.enemy,...f.slice(0,4),-f[2]*scale/2,-f[3]*scale,f[2]*scale,f[3]*scale);ctx.restore();}
+      if(n.kind==='zombie')ArcadeCemeteryZombies.draw(ctx,n,images.zombie);else if(!ArcadeEnemySpecialists.draw(ctx,n,images)){const f=ENEMY_FRAMES[row][frame],scale=.19;ctx.save();if(n.hp<=0)ctx.globalAlpha=Math.min(1,n.death*2);ctx.translate(Math.round(n.x),Math.round(n.y));ctx.scale(n.facing,1);ctx.drawImage(images.enemy,...f.slice(0,4),-(f[5]??f[2]/2)*scale,-f[3]*scale,f[2]*scale,f[3]*scale);ctx.restore();}
       if(n.hp>0&&(n.kind!=='zombie'||n.phase==='active')){ctx.fillStyle='#17232d';ctx.fillRect(n.x-19,n.y-59,38,6);ctx.fillStyle=n.hit>0?'#fff0ad':'#e77b60';ctx.fillRect(n.x-18,n.y-58,36*n.hp/n.maxHp,4);if(n.alert){ctx.fillStyle='#ffdb85';ctx.font='bold 10px monospace';ctx.fillText(n.awareness==='sight'?'!':'?',n.x-3,n.y-64);}}
     }
   }
@@ -253,17 +283,23 @@
     if(player.hurt>0)ctx.globalAlpha=.65;
     drawPlayer();
     if(player.jetpack&&!arrival?.active)drawJetpack('front');
-    if(!arrival?.active){const pose=ArcadeSoldierAnimation.pose(player,mode,stats);if(player.form!=='wolf'&&player.form!=='zombie'&&!player.transform&&!player.rope&&!player.ladder&&(pose.armed||player.form==='robot')&&!powers.flame){const gait=player.form==='robot'?null:ArcadeSoldierAnimation.gait(player,mode);ctx.save();if(gait)ctx.translate(0,gait.bob);ArcadeWeaponRenderer.draw(ctx,player,stats);ctx.restore();}}
+    if(!arrival?.active){const pose=ArcadeSoldierAnimation.pose(player,mode,stats);if(player.form!=='wolf'&&player.form!=='zombie'&&!player.transform&&!player.rope&&!player.ladder&&(pose.armed||player.form==='robot')&&!powers.flame){const gait=player.form==='robot'?null:ArcadeSoldierAnimation.gait(player,mode,stats);ctx.save();if(gait)ctx.translate(0,gait.bob);ArcadeWeaponRenderer.draw(ctx,player,stats);ctx.restore();}}
     ctx.restore();
     ctx.restore();
-    if(!arrival?.active)ArcadeMissionCombat.draw(ctx,stats,powers,player,{top:camera.y,bottom:camera.y+canvas.height});
+    if(!arrival?.active){ArcadeMissionCombat.draw(ctx,stats,powers,player,{top:camera.y,bottom:camera.y+canvas.height});window.ArcadePowerFx?.draw(ctx,powers,player,stats);}
     if(state.inside)ArcadeMausoleumKing.drawEffects(ctx,king);
     ArcadeScore.draw(ctx,score);
   }
+  // Dusk and the mausoleum get real darkness with light sources; daylight only a vignette.
+  const braziers=[200,820,1430,1950,2370].map(x=>({x,y:545,r:190,a:.9,glow:'255,167,68',ga:.12})).concat([{x:96,y:560,r:170,a:.85,glow:'130,150,200',ga:.1}]);
+  function drawLight(){const Fx=window.ArcadeMissionOneFx;if(!Fx)return;const env=L.atmosphere(player.x,state.inside),ambient=state.inside?.34:.04+env.dusk*.3;
+    const lamps=state.inside?braziers:state.geometry.buildings.filter(b=>b.decks?.[0]&&b.x+b.w>camera.x-200&&b.x<camera.x+canvas.width+200).map(b=>({x:b.decks[0].x+b.decks[0].w*.5,y:b.decks[0].y+50,r:150}));
+    const station=ArcadeCheckpoints.spawn(checkpoints,null);
+    Fx.lightmap(ctx,camera,canvas.width,canvas.height,Fx.collect({player,encounter:stats,powers,time:state.time,arrival,lamps,checkpoint:station&&station.inside===state.inside?station:null}),ambient);}
   function resize(){const r=canvas.getBoundingClientRect();canvas.width=Math.min(960,Math.max(window.ArcadeMobile?.active?430:640,Math.round(r.width/(window.ArcadeMobile?.active?1.1:1.35))));canvas.height=Math.round(r.height/r.width*canvas.width);camera.y=Math.min(620-canvas.height*.84,player.y-canvas.height*.66);}
   new ResizeObserver(resize).observe(canvas);
   const frameBudget=window.ArcadeFrameBudget?.create();
-  function frame(t){window.ArcadeDeveloperMode?.poll();window.ArcadeControls?.poll(t);const budget=frameBudget?.plan(t,{paused,hidden:document.hidden,width:canvas.width,height:canvas.height})||{render:true,hud:true};const dt=Math.min(.08,(t-last)/1000||0);last=t;if(loaded){if(!paused){accumulator+=dt;while(accumulator>=1/120){update(1/120);accumulator-=1/120;if(paused||stats.dead){accumulator=0;break;}}}else accumulator=0;if(budget.render)renderer.draw(ctx,state,camera,canvas.width,canvas.height,drawLoadout);if(budget.hud){updateObjectives();updateRoute();hud.update(paused||arrival?.active||player.transform>0,!!arrival?.active&&!paused&&!(player.transform>0));}}requestAnimationFrame(frame);}
+  function frame(t){window.ArcadeDeveloperMode?.poll();window.ArcadeControls?.poll(t);const budget=frameBudget?.plan(t,{paused,hidden:document.hidden,width:canvas.width,height:canvas.height})||{render:true,hud:true};const dt=Math.min(.08,(t-last)/1000||0);last=t;if(loaded){if(!paused){accumulator+=dt*(presentation?presentation.tick(dt):1);while(accumulator>=1/120){update(1/120);accumulator-=1/120;if(paused||stats.dead){accumulator=0;break;}}}else accumulator=0;if(budget.render){renderer.draw(ctx,state,camera,canvas.width,canvas.height,drawLoadout);drawLight();presentation?.draw(ctx,canvas.width,canvas.height);}story?.render(paused||!!arrival?.active);if(budget.hud){updateObjectives();updateRoute();hud.update(paused||arrival?.active||player.transform>0,!!arrival?.active&&!paused&&!(player.transform>0));}}requestAnimationFrame(frame);}
   const paths={lightning:'assets/sprites/relampago-cementerio-v1.png',zombieCast:'assets/sprites/zombi-disparo-direcciones-v1.png',airship:'assets/worlds/mission-02/dirigible-v1.png',jetMk2:'assets/sprites/jetpack-mk2-v1.png',zombieRun:'assets/sprites/zombi-carrera-v2.png',shock:'assets/sprites/electrocucion-v1.png',checkpointPc:'assets/sprites/checkpoint-pc-v1.png',wolfJump:'assets/sprites/lobo-salto-carrera-v1.png',carDamage:'assets/sprites/carros-dano-v1.png',formTransition:'assets/sprites/transformaciones-jugador-v3.png',mausoleumScaffold:'assets/worlds/mission-02/mausoleum-scaffold-v1.png',kingRock:'assets/sprites/rey-roca-v1.png',zombieIdle:'assets/sprites/zombi-soldado-reposo-v1.png',zombieSoldier:'assets/sprites/zombi-soldado-v1.png',zombieSoldierExtra:'assets/sprites/zombi-soldado-extra-v1.png',tankWall:'assets/worlds/mission-02/tank-wall-v1.png',zombiePlayer:'assets/sprites/zombi-electrico-v1.png',zombieExtra:'assets/sprites/zombi-electrico-extra-v1.png',kingStone:'assets/sprites/rey-piedra-v2.png',kingWalk:'assets/sprites/rey-zombi-marcha-v4.png',kingVomit:'assets/sprites/rey-zombi-plasma-v4.png',kingLeap:'assets/sprites/rey-zombi-salto-v4.png',kingClaw:'assets/sprites/rey-zombi-garras-v4.png',kingDeath:'assets/sprites/rey-zombi-derrota-v4.png',kingTransform:'assets/sprites/rey-transformacion-v1.png',wolfActions:'assets/sprites/lobo-reposo-patadas-v2.png',wolfCombos:'assets/sprites/lobo-combos-v1.png',wolfRam:'assets/sprites/lobo-cabezazo-v1.png',ramHit:'assets/sprites/enemigos-embestida-v1.png',cityBridge:'assets/worlds/mission-02/city-bridge-v1.png',cemeteryTrees:'assets/sprites/cemetery-trees-v2.png',bat:'assets/sprites/cemetery-bat-v1.png',zombie:'assets/sprites/zombi-cementerio-v1.png',wreckedCars:'assets/sprites/carros-destruidos-v1.png',tankFragments:'assets/sprites/tanque-fragmentos-v1.png',crater:'assets/worlds/mission-02/crater-ciudad-v1.png',wolfWalk:'assets/sprites/lobo-caminata-v2.png',crouch:'assets/sprites/soldado-agachado-pasos-v1.png',barricadeCity:'assets/worlds/mission-02/barricada-ciudad-v1.png',barricadeCemetery:'assets/worlds/mission-02/barricada-cementerio-v1.png',turret:'assets/sprites/enemigo-torreta-v1.png',knife:'assets/sprites/enemigo-cuchillo-v1.png',tankCrew:'assets/sprites/tanque-tripulante-granada-v1.png',impact:'assets/sprites/explosion-impacto-v1.png',wolfSprint:'assets/sprites/lobo-carrera-cuatro-patas-v1.png',enemy:'assets/sprites/soldado-enemigo-v1.png',tankBattle:'assets/sprites/tanques-batalla-v1.png',melee:'assets/sprites/soldado-cuchillo-hacha-v1.png',kicks:'assets/sprites/lobo-patadas-v1.png',powerSheet:'assets/sprites/poderes-v1.png',orbitalSheet:'assets/sprites/orbital-superrayo-v1.png',cityObjects:'assets/worlds/mission-02/city-objects-v2.png',civilians:'assets/sprites/civiles-huyendo-v2.png',cityStart:'assets/worlds/mission-02/city-start-v1.png',city:'assets/worlds/mission-02/city-day-v1.png',cemetery:'assets/worlds/mission-02/cemetery-dusk-v1.png',interior:'assets/worlds/mission-02/mausoleum-interior-v1.png',atlas:'assets/worlds/mission-02/environment-atlas-v1.png',effects:'assets/sprites/ambiente-animado-v1.png',soldier:'assets/sprites/soldado-v2.png',climb:'assets/sprites/soldado-escalada-v2.png',walk:'assets/sprites/soldado-pasos-v3.png',slide:'assets/sprites/soldado-deslizamiento-v1.png',wolf:'assets/sprites/soldado-lobo-v1.png',wolfClimb:'assets/sprites/lobo-escalada-v1.png',transformation:'assets/sprites/soldado-transformacion-v2.png',parachute:'assets/sprites/paracaidas-v1.png'};
   let loadPromise;
   function loadLevel(){if(loaded)return Promise.resolve(true);if(loadPromise)return loadPromise;
@@ -271,6 +307,7 @@
   loadPromise=Promise.all([window.ArcadeAdvancedForms?.load(),window.ArcadeRobotForm?.load(),...Object.entries(paths).map(([key,path])=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{images[key]=img;window.ArcadeLoading?.step();resolve();};img.onerror=()=>reject(Error(path));img.src=path;}))]).then(()=>{images.airship=prepareWhiteDeath(images.airship);ArcadeJetpackRenderer.setSheet(prepareWhiteDeath(images.jetMk2));ArcadeZombieForm.setRunSheet(prepareWhiteDeath(images.zombieRun));ArcadeZombieForm.setShockSheet(prepareWhiteDeath(images.shock));ArcadeCheckpoints.setSheet(prepareWhiteDeath(images.checkpointPc));window.ArcadeFormTransition?.setSheet(prepareWhiteDeath(images.formTransition));images.mausoleumScaffold=prepareWhiteDeath(images.mausoleumScaffold);ArcadeMausoleumKing.setRockSheet(prepareWhiteDeath(images.kingRock));kingAtlases.kingZombie=ArcadeMausoleumKing.prepareZombieStrips(['kingWalk','kingVomit','kingLeap','kingClaw','kingDeath'].map(key=>{const image=images[key];delete images[key];return image;}));for(const key of ['kingStone','kingTransform']){images[key]=prepareWhiteDeath(images[key]);kingAtlases[key]=ArcadeMausoleumKing.prepareAtlas(images[key],key==='kingTransform'?2:5,key);}images.zombie=prepareWhiteDeath(images.zombie);images.crater=ArcadeWaterCrater.prepareSprite(prepareWhiteDeath(images.crater));images.barricadeCity=prepareWhiteDeath(images.barricadeCity);images.barricadeCemetery=prepareWhiteDeath(images.barricadeCemetery);images.turret=prepareWhiteDeath(images.turret);images.knife=prepareWhiteDeath(images.knife);images.tankCrew=prepareWhiteDeath(images.tankCrew);images.tankFragments=prepareWhiteDeath(images.tankFragments);images.wreckedCars=prepareWhiteDeath(images.wreckedCars);ArcadeImpact.setSheet(images.impact);images.wolfJump=prepareWhiteDeath(images.wolfJump);images.carDamage=prepareWhiteDeath(images.carDamage);images.wolfWalk=prepareWhiteDeath(images.wolfWalk);images.wolfActions=prepareWhiteDeath(images.wolfActions);images.crouch=prepareWhiteDeath(images.crouch);images.melee=prepareWhiteDeath(images.melee);ArcadePowerSprites.setSpriteSheet(images.powerSheet);ArcadePowerSprites.setOrbitalSheet(images.orbitalSheet);renderer=ArcadeLevelTwoRenderer.create(images);loaded=true;window.ArcadeLoading?.finish();resize();ArcadeZombieForm.setSheet(prepareWhiteDeath(images.zombiePlayer));ArcadeZombieForm.setExtra(prepareWhiteDeath(images.zombieExtra));ArcadeZombieForm.setCastSheet(prepareWhiteDeath(images.zombieCast));ArcadeZombieForm.setPlayerSheets(prepareWhiteDeath(images.zombieSoldier),prepareWhiteDeath(images.zombieSoldierExtra));ArcadeZombieForm.setIdleSheet(prepareWhiteDeath(images.zombieIdle));wheel.setSprites(images.soldier,SOLDIER_V2_FRAMES[0][0],images.wolf,ACTION_FRAMES.wolf[0][7]);window.ArcadeFormTransition?.setEndpoint('wolf',images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);wheel.update(player.form,true,true,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked);play.disabled=false;play.textContent=Number.isFinite(saved.x)?'Continuar misión 02':'Comenzar misión 02';canvas.inert=true;play.focus();if(mainMenu)mainMenu.ready({autoPlay:!!entry});else if(entry)play.click();if(entry){save();window.history?.replaceState(null,'','level-two.html');}}).catch(error=>{window.ArcadeLoading?.fail();mainMenu?.fail();message.textContent='No se pudo cargar el escenario. Recarga la página para volver a intentarlo.';console.error(error);loadPromise=null;return false;});return loadPromise;}
   if(mainMenu?.defer)mainMenu.defer(loadLevel);
   if(entry||!mainMenu?.defer)loadLevel();
+  if(new URLSearchParams(location.search).has('debug'))window.__game={player,stats,state,camera,canvas,king,storm,cityTank,loot,cityEnemies,get paused(){return paused;},get arrival(){return arrival;}};
   requestAnimationFrame(frame);
 })();
 

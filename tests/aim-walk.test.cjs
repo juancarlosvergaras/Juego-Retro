@@ -16,7 +16,7 @@ test('knife and axe attacks keep six moving leg poses and preserve their attack 
  for(const slot of [1,2])for(const vx of [145,-145,230,-230]){
   const p={x:100,y:100,grounded:true,vx,walkCycle:.01},frames=new Set();
   for(let i=0;i<6;i++){
-   A.advanceWalk(p,(Math.abs(vx)>170?82:52)/Math.abs(vx)/6);
+   A.advanceWalk(p,(Math.abs(vx)>170?104:52)/Math.abs(vx)/6);
    const action={slot,age:i*.08,duration:.6},pose=A.pose(p,{}, {inventory:{selected:slot},weaponAction:action});
    assert.equal(pose.sheet,'melee');assert.equal(pose.frame,A.meleeFrame(action,slot));
    const result=A.drawGait(ctx,p,A.gait(p),frame=>frames.add(frame),bob=>{assert.ok(bob<=0&&bob>=-1.2);return 46;},pose);
@@ -45,4 +45,34 @@ test('crouch walking cycles six low poses in both directions with every loadout 
   assert.notEqual(A.pose({...p,grounded:false,vy:300},mode,e).sheet,'crouch');
   assert.notEqual(A.pose({...p,rope:{}},mode,e).sheet,'crouch');
  }
+});
+test('running draws the whole stride with a level helmet instead of walking legs',()=>{
+ const armed={inventory:{selected:3}},p={x:100,y:100,grounded:true,vx:220,walkCycle:0,aim:{x:1,y:0}};
+ const lifts=new Set();
+ for(let i=0;i<6;i++){
+  p.walkCycle=(i+.5)/6;const g=A.gait(p,{},armed);
+  assert.equal(g.full,true);assert.equal(g.row,2);assert.equal(g.frame,i);assert.equal(g.bob,-A.RUN_LIFT[i]);lifts.add(g.bob);
+  let legs=0,torso=null;A.drawGait({},p,g,()=>legs++,bob=>{torso=bob;return 46;});
+  assert.equal(legs,0,'no separate walking legs');assert.equal(torso,g.bob);
+ }
+ assert.ok(lifts.size>3,'feet leave the ground during the flight phases');assert.ok(Math.max(...A.RUN_LIFT)<=3.5&&Math.min(...A.RUN_LIFT)===0);
+ // Walking, melee torsos and aiming keep the composed legs.
+ assert.equal(A.gait({...p,vx:140},{},armed).full,undefined);
+ assert.equal(A.gait(p,{},{inventory:{selected:1}}).full,undefined);
+ assert.equal(A.gait({...p,aim:{x:.7,y:-.7}},{},armed).full,undefined);
+ assert.equal(A.gait(p,{}).full,undefined,'callers that pass no loadout keep the old behaviour');
+});
+test('the wolf carries weight: breathing, stride bob, lunge, landing squash and recoil',()=>{
+ const wolf=o=>({form:'wolf',facing:1,grounded:true,vx:0,vy:0,anim:0,...o});
+ assert.deepEqual(A.wolfMotion({form:'soldier'}),{lean:0,bob:0,stretch:1,dx:0});
+ const breaths=new Set();for(let i=0;i<30;i++){const m=A.wolfMotion(wolf({anim:i*.2}));breaths.add(m.stretch.toFixed(3));assert.ok(Math.abs(m.stretch-1)<=.0141&&m.dx===0);}assert.ok(breaths.size>8);
+ assert.ok(A.wolfMotion(wolf({vx:150,walkCycle:.25})).bob<-1);assert.ok(Math.abs(A.wolfMotion(wolf({vx:150,walkCycle:.5})).bob)<.01);
+ const swing=A.wolfMotion(wolf({wolfAttack:{age:.16,duration:.32,stage:1,kind:'claw'}}));assert.ok(swing.dx>6&&swing.lean>.06,'leans into the blow');
+ assert.ok(A.wolfMotion(wolf({facing:-1,wolfAttack:{age:.16,duration:.32,stage:1,kind:'claw'}})).dx< -6);
+ assert.ok(A.wolfMotion(wolf({wolfAttack:{age:.02,duration:.32,stage:1,kind:'claw'}})).lean<0,'winds up first');
+ assert.ok(A.wolfMotion(wolf({landing:.24})).stretch<.92);assert.ok(A.wolfMotion(wolf({hurt:.32})).lean< -.14);
+ assert.ok(A.wolfMotion(wolf({grounded:false,vy:-500})).stretch>1.02);assert.ok(A.wolfMotion(wolf({grounded:false,vy:600})).lean>.09);
+ // The transform always pivots on the paws and leaves the player untouched.
+ const p=wolf({x:300,y:620,landing:.2}),before=JSON.stringify(p),calls=[];A.applyWolfMotion({translate:(x,y)=>calls.push(['t',x,y]),rotate:a=>calls.push(['r',a]),scale:(x,y)=>calls.push(['s',x,y])},p,{});
+ assert.deepEqual(calls[0],['t',300,620]);assert.deepEqual(calls.at(-1),['t',-300,-620]);assert.equal(JSON.stringify(p),before);
 });

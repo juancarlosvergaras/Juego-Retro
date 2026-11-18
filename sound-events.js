@@ -7,11 +7,15 @@
     return{gain:Math.max(0,1-distance/range)**2,pan:Math.max(-.85,Math.min(.85,(source.x-listener.x)/400))};
   }
   function create(audio){
-    const history=new WeakMap(),seen=new WeakSet();let walking=0,lastPlayer=null;
+    const history=new WeakMap(),seen=new WeakSet();let walking=0,lastPlayer=null,rumble=4;
     function state(o){let value=history.get(o);if(!value){value={};history.set(o,value);}return value;}
     function fresh(o){if(seen.has(o))return false;seen.add(o);return true;}
-    function update({player:p,encounter:e,powers:s,ambience:a,arrival, fuelTanks=[]},dt){
+    function update({player:p,encounter:e,powers:s,ambience:a,arrival, fuelTanks=[],weather},dt){
       if(!p||!e)return;
+      // The world keeps sounding between fights: wind, rain, thunder and far artillery.
+      if(weather){audio.loop('wind',(weather.wind||0)*.2);audio.loop('rain',(weather.rain||0)*.22);
+        if(weather.bolt&&fresh(weather.bolt))audio.play('thunder',{gain:.85,pan:Math.max(-.7,Math.min(.7,(weather.bolt.x-p.x)/500))});
+        if(weather.distant){rumble-=dt;if(rumble<=0){rumble=5+Math.random()*9;audio.play('distant',{gain:.3+Math.random()*.3,pan:Math.random()*1.6-.8});}}}
       const emit=(name,source=p,extra={})=>audio.play(name,{...spatial(source,p),...extra});
       const ep=state(e),pp=state(p),action=e.weaponAction;
       if(action&&fresh(action)&&action.age<=dt+.02)emit(weapons[action.slot]);
@@ -27,7 +31,7 @@
       if(p!==lastPlayer){walking=0;lastPlayer=p;}
       if(p.grounded&&!p.rope&&!p.ladder&&!arrival?.active){walking+=Math.abs(p.vx||0)*dt;if(walking>30){walking%=30;emit('step',p,{gain:.45});}}
       Object.assign(pp,{claw:p.claw,kick:p.kick,transform:p.transform,shield:p.shield,grounded:p.grounded,jumps:p.jumps,rope:!!p.rope});ep.hp=e.hp;
-      for(const n of e.enemies||[]){const h=state(n);if((n.flash||0)>(h.flash||0))emit(n.kind==='zombie'?'plasma':'rifle',n);if(n.kind==='zombie'&&n.phase==='waking'&&h.phase!=='waking')emit('zombieRoar',n);if(n.kind==='bat'&&n.phase==='wake'&&h.phase!=='wake')emit('bat',n);h.phase=n.phase;if(n.kind==='knife'&&n.attackAge>=.24&&(h.attackAge==null||h.attackAge<.24))emit('knife',n);if(h.hp!==undefined&&n.hp<h.hp)emit('hurt',n);h.attackAge=n.attackAge;h.flash=n.flash;h.hp=n.hp;}
+      for(const n of e.enemies||[]){const h=state(n);if((n.flash||0)>(h.flash||0))emit(n.kind==='zombie'?'plasma':'rifle',n);if(n.kind==='zombie'&&n.phase==='waking'&&h.phase!=='waking')emit('zombieRoar',n);if(n.kind==='zombie'){if(n.lunge!=null&&h.lunge==null)emit('wolfHurt',n,{...spatial(n,p),gain:spatial(n,p).gain*.6});h.lunge=n.lunge;}if(n.kind==='bat'&&n.phase==='wake'&&h.phase!=='wake')emit('bat',n);h.phase=n.phase;if(n.kind==='knife'&&n.attackAge>=.24&&(h.attackAge==null||h.attackAge<.24))emit('knife',n);if(h.hp!==undefined&&n.hp<h.hp)emit('hurt',n);h.attackAge=n.attackAge;h.flash=n.flash;h.hp=n.hp;}
       for(const [b,roar] of [[e.boss,'whiteRoar'],[e.finalBoss,'blackRoar']]){
         if(!b)continue;const h=state(b);
         if(b.active&&!h.active)emit(roar,b);

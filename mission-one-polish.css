@@ -7,6 +7,8 @@
   :root:not(.mobile-play) body>.header,
   :root:not(.mobile-play) body>.page-footer{display:none}
   :root:not(.mobile-play) main{max-width:calc(var(--scene-height)*1.45 + 42px);padding:8px 20px 0}
+  /* Side-scrolling missions keep a wide frame. */
+  :root:not(.mobile-play) main:has(#level-two){max-width:calc(var(--scene-height)*2.1 + 42px)}
   :root:not(.mobile-play) .game-card .viewport{height:var(--scene-height)}
   :root:not(.mobile-play) #power-status{display:none}
 }
@@ -89,3 +91,22 @@
 #shop-list .owned .shop-buy:not(:disabled){background:#1f4a4a;border-color:#8fe3cf;color:#dffaf3}
 @media (max-width:620px){#shop-list .shop-tab small{display:none}.shop-grid{grid-template-columns:1fr}#shop .shop-summary{grid-template-columns:1fr}#shop .shop-summary #shop-balance{grid-column:1;grid-row:auto;text-align:left}#shop .shop-summary #shop-message{grid-column:1}}
 @media (prefers-reduced-motion:reduce){#shop-list .shop-card{transition:none}#shop-list .shop-card.bought{animation:none}}
+
+/* Puesta en escena de jefes: rótulo, temblor y estela de daño en la barra. */
+#boss-banner{position:absolute;left:0;right:0;top:34%;z-index:9;display:grid;justify-items:center;gap:4px;padding:14px 12px;pointer-events:none;text-align:center;background:linear-gradient(90deg,transparent,rgba(5,9,14,.86) 22%,rgba(5,9,14,.86) 78%,transparent);border-top:1px solid #f7b64c66;border-bottom:1px solid #f7b64c66;animation:boss-banner-in .45s cubic-bezier(.2,.9,.2,1) both}
+#boss-banner[hidden]{display:none}
+#boss-banner .boss-banner-kicker{font-size:10px;letter-spacing:5px;color:#f7b64c}
+#boss-banner strong{font-size:clamp(22px,4.4vw,40px);font-weight:900;letter-spacing:3px;color:#fff3dc;text-shadow:3px 3px #1a0d08,0 0 24px #ff7b4a55;line-height:1.05}
+#boss-banner .boss-banner-sub{font-size:12px;letter-spacing:2px;color:#d7c9ac}
+#boss-banner.tone-phase{border-color:#9dff9c88}#boss-banner.tone-phase .boss-banner-kicker{color:#9dff9c}#boss-banner.tone-phase strong{text-shadow:3px 3px #06140a,0 0 26px #7dff8a66}
+#boss-banner.tone-defeat{border-color:#8fe3cf88}#boss-banner.tone-defeat .boss-banner-kicker{color:#8fe3cf}#boss-banner.tone-defeat strong{color:#eafff9;text-shadow:3px 3px #06131a,0 0 24px #8fe3cf55}
+#boss-banner.leaving{opacity:0;transform:scaleY(.6);transition:opacity .35s,transform .35s}
+@keyframes boss-banner-in{0%{opacity:0;transform:scaleX(1.25) scaleY(.2)}60%{opacity:1;transform:scaleX(.99) scaleY(1.06)}100%{opacity:1;transform:none}}
+canvas.boss-shake{animation:boss-shake .09s steps(2) infinite}
+@keyframes boss-shake{0%{transform:translate(2px,-1px)}50%{transform:translate(-2px,1px)}100%{transform:translate(1px,2px)}}
+.boss-hud .life-track{position:relative}
+.boss-hud .life-track .boss-ghost{position:absolute;inset:0 auto 0 0;display:block;height:100%;background:#ffe6c0;transition:width .55s ease-out}
+.boss-hud .life-track i{position:relative}
+.boss-hud .life-track.boss-hit{animation:boss-hit .25s}
+@keyframes boss-hit{0%{box-shadow:0 0 0 2px #ffe6c0}100%{box-shadow:0 0 0 0 #ffe6c000}}
+@media (prefers-reduced-motion:reduce){#boss-banner{animation:none}canvas.boss-shake{animation:none}.boss-hud .life-track.boss-hit{animation:none}}

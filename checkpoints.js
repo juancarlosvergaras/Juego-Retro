@@ -1,11 +1,13 @@
 (function(root){
  'use strict';
  const CITY=[420,2000,3500,5100,7000,8050,9900,11750,13850,15960,17360];
+ // Two PCs per mission: one near the middle and one before the final stretch.
+ // The original station IDs are kept so existing saves still resolve.
  function stations(mission,platforms=[]){
-  if(mission===3)return [250,2200,4050,5960].map((x,i)=>({id:'three-'+i,x,y:620,inside:false,floor:0}));
-  if(mission===2)return [...CITY.map((x,i)=>({id:'two-out-'+i,x,y:620,inside:false,floor:0})),...[210,1795].map((x,i)=>({id:'two-in-'+i,x,y:620,inside:true,floor:0}))];
-  const ground=platforms.find(p=>p.kind==='ground'),list=ground?[{id:'one-ground',x:340,y:ground.y,inside:false,floor:0}]:[];
-  for(const floor of [3,6,9,12,15,18,20]){const deck=platforms.filter(p=>p.kind==='deck'&&p.floor===floor&&!p.arena).sort((a,b)=>b.w-a.w)[0];if(deck)list.push({id:'one-floor-'+floor,x:Math.round(deck.x+deck.w*.45),y:deck.y,inside:false,floor});}
+  if(mission===3)return [250,2200,4050,5960].map((x,i)=>({id:'three-'+i,x,y:620,inside:false,floor:0})).filter((_,i)=>i===1||i===3);
+  if(mission===2)return CITY.map((x,i)=>({id:'two-out-'+i,x,y:620,inside:false,floor:0})).filter((_,i)=>i===5||i===9);
+  const list=[];
+  for(const floor of [9,18]){const deck=platforms.filter(p=>p.kind==='deck'&&p.floor===floor&&!p.arena).sort((a,b)=>b.w-a.w)[0];if(deck)list.push({id:'one-floor-'+floor,x:Math.round(deck.x+deck.w*.45),y:deck.y,inside:false,floor});}
   return list;
  }
  function create(mission,platforms,saved){

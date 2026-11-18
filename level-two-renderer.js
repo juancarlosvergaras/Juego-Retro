@@ -49,6 +49,8 @@
     function battle(c,time,cam,w){
       const B=root.ArcadeBackgroundBattle;if(!B||!images.tankBattle)return;
       for(const tank of B.tanks){
+        // The far layer scrolls at half speed: tanks beyond this point would surface over the cemetery.
+        if(tank.x>8000*B.DEPTH-150)continue;
         const q=B.sample(tank,time),x=q.x-cam.x*B.DEPTH,target=q.targetX-cam.x*B.DEPTH,base=q.base-cam.y;
         if(Math.max(x,target)<-100||Math.min(x,target)>w+100)continue;
         // One opaque layer for street, tank, projectile and damaged wall: no camera-dependent fading.
@@ -79,6 +81,34 @@
         }else if(top>0)c.drawImage(img,0,0,img.width,1,0,-top,tile,top+1);
         c.drawImage(img,0,0,tile,height);c.restore();
       }c.restore();
+    }
+    // The way out of the vault: a stone arch at the west end with the storm
+    // light of the cemetery beyond it, so the interior has a real threshold.
+    function vaultDoor(c,x,base,time){
+      const w=78,h=124,left=Math.round(x-w/2),top=base-h;
+      c.fillStyle='#2f2d2a';c.fillRect(left-22,base-5,w+44,5);c.fillStyle='#3d3b36';c.fillRect(left-14,base-11,w+28,6);c.fillStyle='#6b675c';c.fillRect(left-22,base-5,w+44,1);c.fillRect(left-14,base-11,w+28,1);
+      c.fillStyle='#45423c';c.fillRect(left-14,top,w+28,h-11);
+      for(let y=top+6;y<base-14;y+=17){c.fillStyle='#34322e';c.fillRect(left-14,y,14,1);c.fillRect(left+w,y,14,1);c.fillStyle='#5d594f';c.fillRect(left-14,y+1,14,1);c.fillRect(left+w,y+1,14,1);}
+      c.fillStyle='#6b675c';c.fillRect(left-14,top,w+28,3);c.fillStyle='#807a6b';c.fillRect(left+w/2-9,top-7,18,10);c.fillStyle='#45423c';c.fillRect(left+w/2-6,top-4,12,5);
+      const sky=c.createLinearGradient(0,top+16,0,base-11);sky.addColorStop(0,'#141a30');sky.addColorStop(.55,'#35405e');sky.addColorStop(1,'#59627a');c.fillStyle=sky;c.fillRect(left,top+16,w,h-27);
+      // Stepped corners turn the opening into an arch.
+      c.fillStyle='#45423c';for(const [inset,drop] of [[14,4],[9,9],[5,15],[2,23]]){c.fillRect(left,top+16,inset,drop);c.fillRect(left+w-inset,top+16,inset,drop);}
+      // Distant graves and the rain outside.
+      c.fillStyle='#1b2136';for(const [gx,gh] of [[10,16],[27,23],[46,13],[61,19]]){c.fillRect(left+gx,base-11-gh,7,gh);c.fillRect(left+gx-2,base-11-gh+5,11,2);}
+      c.fillStyle='rgba(200,214,240,.35)';for(let i=0;i<9;i++){const ry=(time*150+i*31)%(h-34);c.fillRect(left+6+(i*17)%(w-10),top+18+ry,1,7);}
+      // Iron-bound leaves swung open against the wall.
+      for(const side of [0,1]){const dx=side?left+w-9:left;c.fillStyle='#2a1e16';c.fillRect(dx,top+24,9,h-35);c.fillStyle='#4a3524';c.fillRect(dx+(side?6:1),top+24,2,h-35);c.fillStyle='#6f6a5f';for(const band of [38,70,100])c.fillRect(dx,top+band,9,2);}
+      // Cold light spilling onto the vault floor.
+      c.save();c.globalCompositeOperation='screen';const spill=c.createLinearGradient(left,0,left+w+150,0);spill.addColorStop(0,'rgba(130,150,200,.3)');spill.addColorStop(1,'rgba(130,150,200,0)');c.fillStyle=spill;c.beginPath();c.moveTo(left+4,base-11);c.lineTo(left+w-4,base-11);c.lineTo(left+w+150,base+16);c.lineTo(left-30,base+16);c.closePath();c.fill();c.restore();
+    }
+    // While the Herald lives, his charge seals the mausoleum's outer door.
+    function heraldSeal(c,x,base,time,power){
+      if(power<=0)return;const w=74,h=112,left=x-w/2,top=base-h;
+      c.save();c.globalAlpha=power;c.fillStyle='rgba(60,120,220,.22)';c.fillRect(left,top,w,h);
+      c.globalCompositeOperation='screen';const glow=c.createRadialGradient(x,base-h/2,6,x,base-h/2,96);glow.addColorStop(0,'rgba(150,215,255,'+(.42+.12*Math.sin(time*9))+')');glow.addColorStop(1,'rgba(90,150,255,0)');c.fillStyle=glow;c.fillRect(x-100,base-h/2-100,200,200);
+      c.strokeStyle='rgba(215,240,255,.9)';c.lineWidth=1.5;const tick=Math.floor(time*14);
+      for(let k=0;k<4;k++){c.beginPath();let px=left+(k+.5)*w/4,py=top;c.moveTo(px,py);for(let j=1;j<=8;j++){const n=Math.sin((tick*7+k*13+j)*91.7)*43758.5;px=left+(k+.5)*w/4+((n-Math.floor(n))-.5)*22;py=top+h*j/8;c.lineTo(Math.round(px),Math.round(py));}c.stroke();}
+      c.strokeStyle='rgba(150,215,255,.8)';c.lineWidth=2;c.strokeRect(Math.round(left)+.5,Math.round(top)+.5,w,h);c.restore();
     }
     function draw(c,s,cam,w,h,drawPlayer){
       const env=ArcadeLevelTwo.atmosphere(s.player.x,s.inside),base=620-cam.y;c.imageSmoothingEnabled=false;
@@ -143,7 +173,9 @@
           art(c,4,x+45,623,160+(i%3)*24,90+(i%4)*14,i%2===0);
         }
         art(c,6,ArcadeLevelTwo.ENTRANCE,620,520,505);
+        if(s.storm&&ArcadeLevelTwo.ENTRANCE>cam.x-120&&ArcadeLevelTwo.ENTRANCE<cam.x+w+120)heraldSeal(c,ArcadeLevelTwo.ENTRANCE,620,s.time,s.storm.hp>0?1:Math.min(1,(s.storm.death||0)/1.2));
       }else{
+        if(cam.x<260)vaultDoor(c,96,620,s.time);
         const f=frames[7],basePart=.29,base=ArcadeLevelTwo.PEDESTAL;c.drawImage(source,f[0],f[1]+f[3]*(1-basePart),f[2],f[3]*basePart,base.x,base.y,base.w,base.h);
         for(const scaffold of s.geometry.scaffolds||[]){if(scaffold.x+scaffold.w<cam.x||scaffold.x>cam.x+w)continue;c.drawImage(images.mausoleumScaffold,...scaffold.frame,Math.round(scaffold.x),Math.round(scaffold.y-scaffold.frame[3]*scaffold.scale),Math.round(scaffold.w),Math.round(scaffold.frame[3]*scaffold.scale));}
         for(const x of [200,820,1430,1950,2370]){object(c,7,x,620,63,88);fire(c,s.time+x,x,535,30,.95);}

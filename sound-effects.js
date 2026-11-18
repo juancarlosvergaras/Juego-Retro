@@ -1,9 +1,11 @@
 (function(root){
   'use strict';
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  const names=['knife','axe','pistol','shotgun','rifle','rocket','bow','crossbow','grenade','explosion','debris','whiteRoar','blackRoar','zombieRoar','wolfHurt','wolfDeath','claw','kick','scream','brake','door','pickup','heal','cryo','wave','drone','turret','orbital','shield','hurt','jump','land','step','grip','splash','plasma','bat'];
+  const names=['knife','axe','pistol','shotgun','rifle','rocket','bow','crossbow','grenade','explosion','debris','whiteRoar','blackRoar','zombieRoar','wolfHurt','wolfDeath','claw','kick','scream','brake','door','pickup','heal','cryo','wave','drone','turret','orbital','shield','hurt','jump','land','step','grip','splash','plasma','bat','thunder','distant'];
+  // How much of each effect is sent to the shared room reverb.
+  const space={pistol:.3,rifle:.28,shotgun:.4,rocket:.4,explosion:.65,orbital:.6,grenade:.2,whiteRoar:.45,blackRoar:.5,zombieRoar:.5,wolfDeath:.45,wolfHurt:.25,scream:.35,thunder:.8,distant:.9,wave:.4,land:.12,debris:.25,door:.2,plasma:.25,splash:.2,turret:.25,kick:.1,claw:.1,axe:.1};
   function create(options={}){
-    let context=options.context||null,master,gate,compressor,noiseBuffer,unlocked=!!context,running=true,muted=false,volume=.55;
+    let context=options.context||null,master,gate,compressor,send=null,noiseBuffer,unlocked=!!context,running=true,muted=false,volume=.55;
     const voices=new Set(),loops=new Map(),limits=new Map();
     let storage=options.storage;
     if(storage===undefined)try{storage=root.localStorage;}catch{}
@@ -16,12 +18,22 @@
       gate.connect(compressor);compressor.connect(master);master.connect(context.destination);master.gain.value=muted?0:volume;gate.gain.value=running?1:0;
       noiseBuffer=context.createBuffer(1,context.sampleRate*2,context.sampleRate);const data=noiseBuffer.getChannelData(0);
       for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+      // A short synthetic room: decaying stereo noise gives shots and blasts a tail
+      // instead of ending dry. Skipped where the context cannot convolve.
+      if(context.createConvolver){try{
+        const length=Math.floor(context.sampleRate*1.7),impulse=context.createBuffer(2,length,context.sampleRate);
+        for(let ch=0;ch<2;ch++){const d=impulse.getChannelData(ch);for(let i=0;i<length;i++){const t=i/length;d[i]=(Math.random()*2-1)*Math.pow(1-t,2.6)*(i<context.sampleRate*.012?t*80:1);}}
+        const reverb=context.createConvolver(),wet=context.createGain(),tone=context.createBiquadFilter();reverb.buffer=impulse;wet.gain.value=.34;tone.type='lowpass';tone.frequency.value=3200;
+        send=context.createGain();send.connect(reverb);reverb.connect(tone);tone.connect(wet);wet.connect(gate);
+      }catch{send=null;}}
     }
     function target(param,value,time=.02){param.cancelScheduledValues(context.currentTime);param.setTargetAtTime(value,context.currentTime,time);}
     async function unlock(){
       try{if(!context){const Audio=root.AudioContext||root.webkitAudioContext;if(!Audio)return false;context=new Audio();}setup();if(context.state==='suspended')await context.resume();unlocked=context.state==='running';return unlocked;}catch{return false;}
     }
-    function output(gain,pan){const g=context.createGain(),p=context.createStereoPanner();g.gain.value=gain;p.pan.value=clamp(pan,-1,1);g.connect(p);p.connect(gate);return{g,p};}
+    function output(gain,pan,room=0){const g=context.createGain(),p=context.createStereoPanner();g.gain.value=gain;p.pan.value=clamp(pan,-1,1);g.connect(p);p.connect(gate);let s=null;if(room>0&&send){s=context.createGain();s.gain.value=room;p.connect(s);s.connect(send);}return{g,p,s};}
+    // No two shots are identical: a little pitch and level drift keeps bursts alive.
+    const drift=(value,amount=.06)=>value*(1+(Math.random()*2-1)*amount);
     function voice(out,{type='noise',freq=180,end=freq,cut=2000,q=.7,filter='lowpass',gain=.2,duration=.2,delay=0,attack=.003,vibrato=0,flutter=0}){
       const t=context.currentTime+delay,node=type==='noise'?context.createBufferSource():context.createOscillator(),f=context.createBiquadFilter(),env=context.createGain(),extra=[];
       if(type==='noise')node.buffer=noiseBuffer;else{node.type=type;node.frequency.setValueAtTime(freq,t);node.frequency.exponentialRampToValueAtTime(Math.max(15,end),t+duration);}
@@ -37,19 +49,30 @@
       if(!context||!unlocked||!running||muted||!volume||gain<.015||!names.includes(name))return false;
       setup();const now=context.currentTime,minGap=name==='debris'?.07:name==='step'?.065:.018;
       if(now-(limits.get(name)??-Infinity)<minGap||voices.size>96)return false;limits.set(name,now);
-      const {g,p}=output(clamp(gain,0,1),pan);let length=0;
+      const {g,p,s:roomSend}=output(clamp(gain,0,1),pan,space[name]||0);let length=0;
       const layer=o=>{length=Math.max(length,voice(g,o));};
       const tone=(freq,end,duration,gain=.2,type='sine',delay=0)=>layer({type,freq,end,duration,gain,delay,cut:4500});
       const noise=(duration,gain=.2,cut=2000,delay=0)=>layer({duration,gain,cut,delay});
-      const boom=(size=1)=>{tone(110,27,.65*size,.65);noise(.7*size,.65,1400);noise(.09,.42,6000);};
+      const crack=(gain=.6,duration=.014)=>layer({duration,gain,filter:'highpass',cut:5200,attack:.001});
+      const body=(duration,gain,cut,q=.8,delay=0)=>layer({duration,gain,filter:'bandpass',cut,q,delay,attack:.002});
+      // Blast: sharp front, chest-level drop, rolling rumble and scattered crackle.
+      const boom=(size=1)=>{crack(.75,.02);tone(drift(96),22,.9*size,.78);tone(46,19,1.25*size,.5,'sine',.02);noise(.95*size,.62,drift(900,.15));body(.3*size,.4,drift(420,.2),.6,.03);for(let i=0;i<6;i++)noise(.045,.16,2400+Math.random()*3200,.14+Math.random()*.6*size);};
       if(['pistol','rifle','shotgun'].includes(name)){
-        const heavy=name==='shotgun',rapid=name==='rifle';tone(heavy?150:220,rapid?65:42,heavy?.22:.12,.36);noise(heavy?.34:.13,heavy?.6:.38,rapid?3500:4700);noise(.028,.35,8500);
-        noise(.08,.07,2100,.12);tone(1700,750,.05,.025,'triangle',.09);
-      }else if(name==='rocket'){noise(.65,.44,1750);tone(155,40,.5,.38);noise(.06,.32,5000);}
+        const heavy=name==='shotgun',rapid=name==='rifle',k=drift(1,.07);
+        // Crack, bark, thump and tail are separate layers, as in a recorded shot.
+        crack(heavy?.7:.6,rapid?.01:.014);body(heavy?.3:rapid?.1:.15,heavy?.62:.44,(heavy?880:rapid?2100:1500)*k);
+        tone((heavy?128:rapid?205:168)*k,heavy?32:46,heavy?.27:.13,heavy?.58:.4);noise(heavy?.5:.22,heavy?.2:.12,heavy?1200:2600,.03);
+        if(heavy){noise(.05,.15,2400,.34);noise(.06,.19,1500,.44);tone(240,120,.05,.07,'triangle',.44);}
+        else tone(drift(2400,.2),drift(1500,.2),.03,.028,'triangle',.15+Math.random()*.09);
+      }else if(name==='rocket'){crack(.4,.03);body(.7,.4,drift(1300,.1),.5);noise(.75,.34,1750);tone(drift(150),38,.55,.42);layer({type:'sawtooth',freq:620,end:210,duration:.6,gain:.07,cut:1800});}
+      else if(name==='thunder'){crack(.35,.05);tone(drift(72,.12),26,2.3,.5);noise(2.6,.5,drift(520,.2));for(let i=0;i<4;i++)noise(.5,.22,380+Math.random()*300,.35+i*.42+Math.random()*.2);}
+      else if(name==='distant'){tone(drift(58,.15),28,.9,.3);noise(1.2,.22,drift(300,.2));noise(.4,.1,180,.5);}
       else if(name==='explosion')boom(1.25);
       else if(name==='orbital'){tone(90,680,.44,.22,'sawtooth');tone(45,30,1.85,.5,'sine',.43);noise(1.7,.45,2800,.45);tone(960,170,1.5,.09,'triangle',.45);}
       else if(name==='knife'||name==='axe'||name==='claw'||name==='kick'){
-        noise(name==='axe'?.3:.16,.22,name==='knife'?4800:2100);if(name==='kick')tone(95,40,.15,.3);
+        // A swing is air moving: a band of noise that sweeps, then the hit.
+        layer({duration:name==='axe'?.26:.15,gain:.24,filter:'bandpass',cut:drift(name==='knife'?4400:name==='axe'?1500:2300,.15),q:1.6,attack:.03});noise(name==='axe'?.3:.16,.12,name==='knife'?4800:2100);
+        if(name==='kick'){tone(drift(95),38,.16,.36);body(.07,.3,drift(520,.2),.7,.02);}if(name==='axe'){tone(drift(120),45,.12,.22,'sine',.12);body(.05,.22,900,.8,.12);}
         if(name==='claw'){noise(.16,.16,3200,.045);noise(.15,.12,4000,.09);}
       }else if(name==='bow'||name==='crossbow'){tone(name==='bow'?280:450,90,.12,.2,'triangle');noise(.12,.12,3800);if(name==='crossbow')noise(.04,.2,1700);}
       else if(name==='grenade'){noise(.06,.1,6200);tone(1800,1100,.055,.1,'triangle');noise(.16,.08,1800,.1);}
@@ -71,14 +94,14 @@
       else if(name==='drone'){tone(210,650,.6,.11,'triangle');tone(840,1100,.12,.08,'sine',.2);}
       else if(name==='turret'){noise(.2,.15,2700);tone(170,70,.15,.13);tone(600,900,.2,.08,'square',.1);}
       else if(name==='shield'){tone(1600,280,.28,.16,'sine');noise(.17,.13,4600);}
-      else if(name==='hurt'){tone(140,65,.18,.16,'triangle');noise(.12,.12,600);}
+      else if(name==='hurt'){tone(drift(132),58,.2,.24,'triangle');body(.09,.3,drift(620,.2),.7);layer({type:'sawtooth',freq:drift(175,.1),end:92,duration:.2,gain:.07,filter:'bandpass',cut:760,q:2,attack:.02,delay:.02});}
       else if(name==='jump'){noise(.13,.09,1800);tone(130,260,.11,.045,'triangle');}
       else if(name==='bat'){tone(1700,3100,.09,.075,'sine');tone(2800,900,.14,.06,'sine',.10);noise(.12,.035,2800);}
       else if(name==='splash'){noise(.22,.18,1600);tone(330,85,.16,.05,'sine');}
-      else if(name==='land'){tone(90,35,.17,.18);noise(.16,.2,950);}
-      else if(name==='step'||name==='grip'){noise(.065,.09,name==='step'?1100:1700);tone(105,55,.07,.07);}
+      else if(name==='land'){tone(drift(88),33,.18,.26);body(.1,.24,drift(480,.2),.6);noise(.16,.14,950);noise(.05,.07,2600,.06);}
+      else if(name==='step'||name==='grip'){body(.05,.11,drift(name==='step'?760:1500,.25),.9);noise(.06,.06,drift(name==='step'?1500:2200,.2));tone(drift(102,.12),52,.07,.08);}
       // Each effect owns its output bus; release it after its final layer ends.
-      const timer=context.createBufferSource();timer.buffer=context.createBuffer(1,1,context.sampleRate);timer.connect(g);timer.onended=()=>{timer.disconnect();g.disconnect();p.disconnect();};timer.start(now+length);
+      const timer=context.createBufferSource();timer.buffer=context.createBuffer(1,1,context.sampleRate);timer.connect(g);timer.onended=()=>{timer.disconnect();g.disconnect();p.disconnect();roomSend?.disconnect();};timer.start(now+length);
       return true;
     }
     function stopLoop(name){const item=loops.get(name);if(!item)return;target(item.g.gain,0,.015);for(const n of item.nodes)try{n.stop?.(context.currentTime+.08);}catch{}item.osc.onended=()=>{for(const n of item.nodes)n.disconnect();item.g.disconnect();item.p.disconnect();};loops.delete(name);}
@@ -86,8 +109,10 @@
       if(!context||!unlocked||!running||muted||!volume||gain<.01){stopLoop(name);return;}
       setup();let item=loops.get(name);
       if(!item){
-        const {g,p}=output(0,pan),nodes=[],source=context.createBufferSource(),filter=context.createBiquadFilter(),bed=context.createGain();source.buffer=noiseBuffer;source.loop=true;filter.type='lowpass';filter.frequency.value={jeep:380,helicopter:650,jetpack:2600,flame:1700,beam:2000}[name]||900;bed.gain.value=.12;source.connect(filter);filter.connect(bed);bed.connect(g);source.start();nodes.push(source,filter,bed);
-        const osc=context.createOscillator(),body=context.createGain(),pulse=context.createOscillator(),depth=context.createGain();osc.type=name==='jeep'?'sawtooth':'triangle';osc.frequency.value=name==='jeep'?47:name==='helicopter'?36:65;body.gain.value=name==='jeep'?.13:.08;pulse.frequency.value=name==='helicopter'?14:name==='jeep'?22:9;depth.gain.value=.055;pulse.connect(depth);depth.connect(body.gain);osc.connect(body);body.connect(g);osc.start();pulse.start();nodes.push(osc,body,pulse,depth);
+        const {g,p}=output(0,pan),nodes=[],source=context.createBufferSource(),filter=context.createBiquadFilter(),bed=context.createGain();source.buffer=noiseBuffer;source.loop=true;filter.type='lowpass';filter.frequency.value={jeep:380,helicopter:650,jetpack:2600,flame:1700,beam:2000,wind:420,rain:6200}[name]||900;bed.gain.value=name==='rain'?.2:name==='wind'?.26:.12;source.connect(filter);filter.connect(bed);bed.connect(g);source.start();nodes.push(source,filter,bed);
+        const osc=context.createOscillator(),body=context.createGain(),pulse=context.createOscillator(),depth=context.createGain();osc.type=name==='jeep'?'sawtooth':'triangle';osc.frequency.value=name==='jeep'?47:name==='helicopter'?36:65;const weather=name==='wind'||name==='rain';body.gain.value=weather?0:name==='jeep'?.13:.08;pulse.frequency.value=name==='helicopter'?14:name==='jeep'?22:name==='wind'?.23:9;depth.gain.value=weather?0:.055;
+        // Weather breathes: a slow gust opens and closes the noise bed.
+        if(name==='wind'){const gust=context.createGain();gust.gain.value=170;pulse.connect(gust);gust.connect(filter.frequency);nodes.push(gust);}pulse.connect(depth);depth.connect(body.gain);osc.connect(body);body.connect(g);osc.start();pulse.start();nodes.push(osc,body,pulse,depth);
         item={g,p,nodes,osc,pulse};loops.set(name,item);
       }
       target(item.g.gain,clamp(gain,0,1));target(item.p.pan,clamp(pan,-1,1));target(item.osc.frequency,(name==='jeep'?47:name==='helicopter'?36:65)*speed,.08);

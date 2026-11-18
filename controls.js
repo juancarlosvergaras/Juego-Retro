@@ -70,7 +70,7 @@
   const router=createRouter(emit);
   const visible=el=>el&&!el.hidden&&!el.closest('[hidden]')&&!el.closest('[inert]');
   const menuFocus=createMenuFocus(doc,visible);
-  function menu(){const loading=doc.getElementById('level-loading');if(visible(loading))return loading;if(dialog&&!dialog.hidden)return dialog;for(const id of ['main-menu','overlay','level-two-menu','victory-screen']){const el=doc.getElementById(id);if(visible(el))return el;}return doc.querySelector('.overlay:not([hidden])');}
+  function menu(){const loading=doc.getElementById('level-loading');if(visible(loading))return loading;if(dialog&&!dialog.hidden)return dialog;for(const id of ['mission-results','main-menu','overlay','level-two-menu','victory-screen']){const el=doc.getElementById(id);if(visible(el))return el;}return doc.querySelector('.overlay:not([hidden])');}
   function reset(){root.ArcadeMobile?.release();router.clear();aim=null;neutral=true;previous.clear();}
   function save(){try{store.setItem(STORE,JSON.stringify(settings));notice.textContent='Configuración guardada para todas las misiones.';}catch{notice.textContent='Configuración aplicada durante esta sesión; el navegador no permite guardarla.';}reset();refresh();}
   function refresh(){for(const {a,key,pad}of rows){key.textContent=settings.keyboard[a.id]?keyName(settings.keyboard[a.id]):a.keys.map(keyName).join(' / ');const b=Object.hasOwn(settings.gamepad,a.id)?settings.gamepad[a.id]:a.button;pad.textContent=b===null?'Sin asignar':buttonNames[b];}}

@@ -18,6 +18,19 @@ test('mission two includes twenty zombies and remembers their defeat separately 
  assert.equal((await game('?entry=resume',Object.fromEntries(g.data))).state.combat.enemies.find(n=>n.id===200).hp,0);
  const resumed=await game('?entry=resume',Object.fromEntries(g.data));assert.equal(resumed.state.combat.enemies.find(n=>n.id===100).hp,0);assert.equal(resumed.state.combat.enemies.find(n=>n.id===2).hp,0);assert.equal(resumed.state.combat.enemies.filter(n=>n.kind==='zombie').length,20);
 });
+test('mission 2 restores elapsed time only when resuming the same run',async()=>{
+ const key='cap-dollar.mission-two.v1';
+ const saved={x:400,landed:true,elapsed:84};
+ const g=await game('?entry=resume',{[key]:JSON.stringify(saved)});
+ g.tick(1);g.pagehide();
+ const elapsed=JSON.parse(g.data.get(key)).elapsed;
+ assert.ok(elapsed>=85&&elapsed<86);
+ const back=await game('?entry=resume',Object.fromEntries(g.data));
+ assert.ok(back.state.time>=elapsed&&back.state.time<elapsed+1);
+ const fresh=await game('?entry=select',Object.fromEntries(g.data));assert.ok(fresh.state.time<1);
+ const legacy=await game('?entry=resume',{[key]:JSON.stringify({x:400,landed:true})});assert.ok(legacy.state.time<1);
+});
+
 async function game(query='?entry=select',initial={}){
  const data=new Map(Object.entries(initial)),listeners={},elements=new Map();let frame,view,wheelState,menuCallbacks,resizeCallback,navigation;
  // Stable loot prevents an unrelated random ammunition pickup during input tests.

@@ -115,7 +115,7 @@ canvas.boss-shake{animation:boss-shake .09s steps(2) infinite}
 #boss-banner.tone-title{border-color:#f7b64c88}#boss-banner.tone-title strong{letter-spacing:6px}
 #mission-results{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;background:radial-gradient(ellipse at 50% 35%,rgba(22,40,58,.92),rgba(5,9,14,.97) 75%);color:#e8eef2}
 #mission-results[hidden]{display:none}
-#mission-results .results-card{width:min(560px,100%);padding:28px 32px;border:1px solid #3c4d5e;border-top:4px solid #8fe3cf;border-radius:8px;background:#0e1823f5;box-shadow:0 24px 70px #000b;animation:results-in .45s cubic-bezier(.2,.9,.2,1) both}
+#mission-results .results-card{max-height:100%;overflow-y:auto;box-sizing:border-box;width:min(560px,100%);padding:28px 32px;border:1px solid #3c4d5e;border-top:4px solid #8fe3cf;border-radius:8px;background:#0e1823f5;box-shadow:0 24px 70px #000b;animation:results-in .45s cubic-bezier(.2,.9,.2,1) both}
 #mission-results .results-kicker{display:block;font-size:10px;letter-spacing:4px;color:#8fe3cf;margin-bottom:8px}
 #mission-results h2{margin:0 0 18px;font-size:28px;letter-spacing:2px;color:#fff3dc}
 #mission-results .results-rows{margin:0;display:grid;gap:2px}
@@ -127,7 +127,7 @@ canvas.boss-shake{animation:boss-shake .09s steps(2) infinite}
 #mission-results .results-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;flex-wrap:wrap}
 #mission-results button{font:inherit;font-weight:700;font-size:13px;padding:10px 20px;border-radius:4px;cursor:pointer}
 #mission-results .results-next{background:#f7b64c;border:1px solid #f7b64c;color:#1a1408}
-#mission-results .results-retry{background:transparent;border:1px solid #4a5b6b;color:#b8c5d0}
+#mission-results .results-retry,#mission-results .results-route{background:transparent;border:1px solid #4a5b6b;color:#b8c5d0}
 @keyframes results-in{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}
 @keyframes results-row{0%{opacity:0;transform:translateX(-10px)}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#mission-results .results-card{animation:none}#mission-results .results-rows div{animation:none;opacity:1}}

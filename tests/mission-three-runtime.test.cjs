@@ -6,6 +6,19 @@ test('robot reward and selected second weapon survive resume, with four forms an
 test('checkpoint retry restores health and resets an unfinished mecha without removing collected weapons',async()=>{const g=await game('?entry=resume',seed(5960,{inventory:{owned:[1,3,6],selected:6,ammo:{3:20,6:8}}}));g.tick(.1);g.state.player.x=6400;g.tick(.1);g.state.mecha.hp=2;g.state.combat.dead=true;g.element('play-two').click();assert.equal(g.state.player.x,5960);assert.equal(g.state.mecha.hp,100);assert.equal(g.state.combat.hp,8);assert.equal(g.state.combat.inventory.ammo[6],8);});
 test('mission three exit plays its finale then transfers once to mission four, preserving the destination through pause and pagehide',async()=>{const g=await game('?entry=resume',seed(7480,{robotUnlocked:true,mecha:{defeated:true}}));g.tick(.1);assert.ok(g.state.endingAge>=0);g.tick(10);assert.equal(g.navigation,undefined);g.tick(3.2);assert.equal(g.navigation,'level-four.html?entry=campaign');assert.equal(JSON.parse(g.data.get('cap-dollar.campaign.v1')).level,4);g.pagehide();g.menu.onPause();assert.equal(JSON.parse(g.data.get('cap-dollar.campaign.v1')).level,4);});
 test('an interrupted mission three finale resumes before handing off to the road',async()=>{const g=await game('?entry=resume',seed(7480,{ending:true,robotUnlocked:true,mecha:{defeated:true}}));assert.ok(g.state.endingAge>=0);g.tick(13.2);assert.equal(g.navigation,'level-four.html?entry=campaign');});
+test('mission 3 restores elapsed time only when resuming the same run',async()=>{
+ const key='cap-dollar.mission-three.v1';
+ const saved={x:400,landed:true,elapsed:84};
+ const g=await game('?entry=resume',{[key]:JSON.stringify(saved)});
+ g.tick(1);g.pagehide();
+ const elapsed=JSON.parse(g.data.get(key)).elapsed;
+ assert.ok(elapsed>=85&&elapsed<86);
+ const back=await game('?entry=resume',Object.fromEntries(g.data));
+ assert.ok(back.state.time>=elapsed&&back.state.time<elapsed+1);
+ const fresh=await game('?entry=select',Object.fromEntries(g.data));assert.ok(fresh.state.time<1);
+ const legacy=await game('?entry=resume',{[key]:JSON.stringify({x:400,landed:true})});assert.ok(legacy.state.time<1);
+});
+
 async function game(query='?entry=select',initial={}){
  const data=new Map(Object.entries(initial)),listeners={},elements=new Map();let frame,view,wheelState,menuCallbacks,resizeCallback,navigation;
  // Stable loot prevents an unrelated random ammunition pickup during input tests.

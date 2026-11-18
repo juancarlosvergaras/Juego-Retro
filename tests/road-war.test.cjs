@@ -1,6 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),R=require('../road-war'),P=require('../physics'),E=require('../mission-combat'),A=require('../arsenal'),C=require('../campaign');
 function game(distance=0,form='soldier'){const s=R.create({distance}),p=Object.assign(P.createPlayer(),{form,x:200,lane:414,y:414,maxJumps:2,grounded:true}),e=E.create(A.createInventory());e.invincible=999;return{s,p,e};}
 function tick(g,seconds,input={}){const events=[];for(let i=0;i<Math.round(seconds*120);i++)events.push(...R.update(g.s,g.p,g.e,input,1/120));return events;}
+test('road hits use the protection interval of each difficulty',()=>{
+ for(const level of require('../difficulty').levels){
+  const {s,p,e}=game(100);e.invincible=0;e.hitProtection=level.grace;e.combatDamage=level.damage;s.hitWait=0;
+  assert.equal(R.hurt(s,p,e),true);assert.equal(s.hitWait,level.grace);
+  R.update(s,p,e,{},.05);assert.equal(R.hurt(s,p,e),false);
+ }
+});
 test('potholes and asphalt travel together normally, in turbo and during a crash',()=>{for(const mode of ['normal','turbo','crash']){const g=game(100);g.s.obstacles=[{distance:180,lane:462,type:'pothole'}];if(mode==='crash')g.s.crash=2;R.update(g.s,g.p,g.e,{},.01);const x=g.s.obstacles[0].x,scroll=g.s.scroll;tick(g,.4,{run:mode==='turbo'});assert.ok(Math.abs((x-g.s.obstacles[0].x)-(g.s.scroll-scroll))<1e-7,mode);}});
 test('wide ramps launch at their new edge, but a different lane and an airborne rider bypass them',()=>{for(const mode of ['edge','other lane','air']){const g=game(100);g.s.obstacles=[{distance:114,lane:414,type:'ramp'}];g.p.x=200;if(mode==='other lane')g.p.lane=366;if(mode==='air'){g.s.jump=80;g.s.jumpV=100;}R.update(g.s,g.p,g.e,{},.01);assert.equal(!!g.s.obstacles[0].used,mode==='edge');if(mode==='edge'){assert.ok(g.s.jumpV>400);assert.equal(g.p.grounded,false);assert.equal(g.p.y,g.p.lane-g.s.jump);}}});
 test('introduction blocks road progress and combat for five active seconds',()=>{const g=game();tick(g,4,{fire:true,run:true});assert.equal(g.s.distance,0);assert.equal(g.e.inventory.ammo[3],36);tick(g,2);assert.ok(g.s.distance>60);});

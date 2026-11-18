@@ -15,11 +15,16 @@
     return{owned,...(owned.includes(source.secondary)&&source.secondary>=3?{secondary:source.secondary}:{}),selected:owned.includes(source.selected)?source.selected:owned[0],ammo:Object.fromEntries(owned.filter(n=>n>2).map(n=>[n,Math.floor(number(source.ammo?.[n]))]))};
   }
   function loadout(store,entry,saved={}){const current=read(store),original=first(store);return entry==='campaign'?current||original||{}:entry==='select'?original||current||{}:{...original,...current,...saved};}
+  const routePages={3:'level-three.html',4:'level-four.html',5:'level-five.html',6:'level-six.html'};
+  function enterRoute(level,store,player,encounter,score,powers){
+    write(store,{level,arrival:true,...snapshot(player,encounter,score,powers)});
+    return routePages[level]+'?entry=campaign';
+  }
   function transferThree(store,p,e,score,powers){return write(store,{level:3,arrival:true,...snapshot(p,e,score,powers)});}
   function transferFour(store,p,e,score,powers){return write(store,{level:4,arrival:true,...snapshot(p,e,score,powers)});}
   function transferFive(store,p,e,score,powers){return write(store,{level:5,arrival:true,...snapshot(p,e,score,powers)});}
   function transferSix(store,p,e,score,powers){return write(store,{level:6,arrival:true,...snapshot(p,e,score,powers)});}
   function transferSeven(store,p,e,score,powers){return write(store,{level:7,arrival:true,...snapshot(p,e,score,powers)});}
   function transferEight(store,p,e,score,powers){return write(store,{level:8,arrival:true,...snapshot(p,e,score,powers)});}
-  const api={transferEight,transferSeven,transferSix,snapshot,read,write,transferFive,transferFour,transferThree,transfer,remember,first,inventory,loadout};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeCampaign=api;
+  const api={enterRoute,transferEight,transferSeven,transferSix,snapshot,read,write,transferFive,transferFour,transferThree,transfer,remember,first,inventory,loadout};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeCampaign=api;
 })(typeof window!=='undefined'?window:globalThis);

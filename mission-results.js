@@ -15,14 +15,20 @@
     const kicker=layer.querySelector('.results-kicker'),title=layer.querySelector('h2'),list=layer.querySelector('.results-rows'),epilogue=layer.querySelector('.results-epilogue'),next=layer.querySelector('.results-next'),retry=layer.querySelector('.results-retry');
     let busy=false;
     function hide(){layer.hidden=true;busy=false;}
-    function show({kicker:k='MISIÓN COMPLETADA',title:t='',stats=[],epilogue:e='',next:n,retry:r}){
+    function show({kicker:k='MISIÓN COMPLETADA',title:t='',stats=[],epilogue:e='',next:n,retry:r,routes=[]}){
       kicker.textContent=k;title.textContent=t;epilogue.textContent=e;epilogue.hidden=!e;busy=false;
       list.replaceChildren(...stats.map(([label,value],i)=>{const row=doc.createElement('div'),dt=doc.createElement('dt'),dd=doc.createElement('dd');dt.textContent=label;dd.textContent=value;row.style.animationDelay=(.25+i*.14).toFixed(2)+'s';row.append(dt,dd);return row;}));
       // Un solo clic cuenta: continuar navega y no debe dispararse dos veces.
       const bind=(button,action)=>{button.hidden=!action;if(!action)return;button.textContent=action.label;button.onclick=()=>{if(busy)return;busy=true;if(action.keepOpen!==true)layer.hidden=true;action.run();};};
+      layer.querySelectorAll('.results-route').forEach(button=>button.remove());
+      for(const action of routes){
+        const button=doc.createElement('button');
+        button.type='button';button.className='results-route';bind(button,action);
+        next.parentElement.append(button);
+      }
       bind(next,n);bind(retry,r);layer.hidden=false;(n?next:retry).focus({preventScroll:true});
     }
-    layer.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Tab'){const items=[retry,next].filter(b=>!b.hidden);if(items.length<2){e.preventDefault();return;}e.preventDefault();items[(items.indexOf(doc.activeElement)+1)%items.length].focus();}});
+    layer.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Tab'){const items=[...layer.querySelectorAll('.results-actions button')].filter(b=>!b.hidden);if(items.length<2){e.preventDefault();return;}e.preventDefault();items[(items.indexOf(doc.activeElement)+(e.shiftKey?-1:1)+items.length)%items.length].focus();}});
     return{show,hide,isOpen:()=>!layer.hidden};
   }
   const api={rows};

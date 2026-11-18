@@ -34,7 +34,7 @@
   for(const star of loot.stars)if(star.taken)score.awarded.add('challenge:city-star:'+star.id);
   if(loot.stars.every(s=>s.taken))score.awarded.add('challenge:city-stars-all');
   if(cityTank.hp<=0)score.awarded.add('challenge:city-tank');if(king.defeated)score.awarded.add('challenge:mausoleum-king');
-  const player=P.createPlayer(),state={player,time:0,inside:!!saved.inside,geometry:null,bullets:[],fade:0,waters:L.CRATERS.map(ArcadeWaterCrater.create)};
+  const player=P.createPlayer(),state={player,time:Number.isFinite(saved.elapsed)?Math.max(0,saved.elapsed):0,inside:!!saved.inside,geometry:null,bullets:[],fade:0,waters:L.CRATERS.map(ArcadeWaterCrater.create)};
   Object.assign(P.WORLD,L.WORLD);
   function configure(inside,x){
     state.inside=inside;state.geometry=L.geometry(inside);if(!inside){state.geometry.platforms=state.geometry.platforms.filter(p=>p.kind!=='wreck');state.geometry.cars=cars;state.geometry.platforms.push(...cars.flatMap(c=>c.platforms));for(const c of cars)c.collisionStage=null;ArcadeWreckedCars.sync(cars,state.geometry.platforms,loot.weapons);
@@ -68,7 +68,7 @@
   window.ArcadeDeveloperMode?.prepare(profile,player,stats,powers);
   const wheel=ArcadeCharacterWheel.create(document.getElementById('characters-two'),switchForm);
   function switchForm(target){if(paused||arrival?.active||outro)return;if(!ArcadeZombieForm.change(stats,player,target)){if(player.formCooldown>0)notify('Transformación disponible en '+Math.ceil(player.formCooldown)+' s');return;}audio.play('whiteRoar',{gain:.3});notify('Forma de '+ArcadeZombieForm.label(player.form)+' · T en 5 s');save();wheel.update(player.form,true,true,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked);}
-  function save(){if(leavingMission)return;try{profile.shield=player.shield;ArcadeProgression.save(profile,store);const carry={formCooldown:player.formCooldown||0,zombieUnlocked:!!player.zombieUnlocked,robotUnlocked:!!player.robotUnlocked,tankUnlocked:!!player.tankUnlocked,fighterUnlocked:!!player.fighterUnlocked,score:score.total,hp:stats.hp,fuel:player.fuel,shield:player.shield,inventory:stats.inventory,cooldowns:powers.cooldowns};store.setItem(storageKey,JSON.stringify({...carry,checkpoints:ArcadeCheckpoints.snapshot(checkpoints),x:player.x,inside:state.inside,form:player.form,landed:!arrival?.active,dead:stats.dead,defeated:cityEnemies.filter(n=>n.hp<=0).map(n=>n.id),interiorDefeated:interiorEnemies.filter(n=>n.hp<=0).map(n=>n.id),cars:cars.map(c=>c.hp),king:ArcadeMausoleumKing.snapshot(king),storm:{x:storm.x,hp:storm.hp/storm.maxHp*42},tank:{x:cityTank.x,hp:cityTank.hp},lootSeed:loot.seed,loot:ArcadeMissionTwoLoot.snapshot(loot),cemetery:cemetery?ArcadeCemeteryEvents.snapshot(cemetery):undefined}));ArcadeCampaign.write(store,{...carry,level:2,arrival:!!arrival?.active});}catch{}}
+  function save(){if(leavingMission)return;try{profile.shield=player.shield;ArcadeProgression.save(profile,store);const carry={formCooldown:player.formCooldown||0,zombieUnlocked:!!player.zombieUnlocked,robotUnlocked:!!player.robotUnlocked,tankUnlocked:!!player.tankUnlocked,fighterUnlocked:!!player.fighterUnlocked,score:score.total,hp:stats.hp,fuel:player.fuel,shield:player.shield,inventory:stats.inventory,cooldowns:powers.cooldowns};store.setItem(storageKey,JSON.stringify({...carry,elapsed:state.time,checkpoints:ArcadeCheckpoints.snapshot(checkpoints),x:player.x,inside:state.inside,form:player.form,landed:!arrival?.active,dead:stats.dead,defeated:cityEnemies.filter(n=>n.hp<=0).map(n=>n.id),interiorDefeated:interiorEnemies.filter(n=>n.hp<=0).map(n=>n.id),cars:cars.map(c=>c.hp),king:ArcadeMausoleumKing.snapshot(king),storm:{x:storm.x,hp:storm.hp/storm.maxHp*42},tank:{x:cityTank.x,hp:cityTank.hp},lootSeed:loot.seed,loot:ArcadeMissionTwoLoot.snapshot(loot),cemetery:cemetery?ArcadeCemeteryEvents.snapshot(cemetery):undefined}));ArcadeCampaign.write(store,{...carry,level:2,arrival:!!arrival?.active});}catch{}}
   let noticeAge=0,notice='';
   function notify(text){notice=text;noticeAge=3;context.textContent=text;}
   function chooseWeapon(slot){if(player.form==='robot'&&slot<3){notify('Robot · Elige un arma de disparo (3–9)');return;}if(paused||arrival?.active||player.transform>0)return;if(player.form==='wolf'||player.form==='zombie'){notify('Vuelve al soldado con T para usar armas.');return;}if(ArcadeArsenal.selectWeapon(stats.inventory,slot)){save();hud.update(false);}else notify('Todavía no has recogido esa arma.');}
@@ -149,20 +149,24 @@
       else if(ev.type==='pitEnd'){audio.play('door',{gain:.9});ArcadeScore.bonus(score,{id:'pit',points:800,label:'La Fosa superada',x:ev.x,y:560});stats.hp=stats.maxHp;player.healGlow=.7;notify('La Fosa superada · Vida completa · +800');save();}
     }
   }
-  // Progress is recorded either way; only the destination changes.
-  function leaveMission(url){save();leavingMission=true;ArcadeCampaign.transferThree(store,player,stats,score,powers);location.assign(url);}
-  function leaveForMissionThree(){leaveMission('level-three.html?entry=campaign');}
+  function leaveForRoute(level){
+    save();leavingMission=true;
+    location.assign(ArcadeCampaign.enterRoute(level,store,player,stats,score,powers));
+  }
   // Scripted pickup after the king falls: the player only watches (or skips).
   function runOutro(dt){
+    if(outro.shown)return;
     const O=ArcadeMissionTwoOutro;outro.age+=dt;state.time+=dt;state.fade=Math.max(0,state.fade-dt*2);
     const s=O.script(outro.age,L.ENTRANCE);Object.assign(player,{x:s.player.x,y:s.player.y,vx:s.player.vx,vy:0,facing:s.player.facing,grounded:s.player.grounded,jetpack:false,rope:null,ladder:null});
     player.aim={x:player.facing,y:0};player.anim+=dt;ArcadeSoldierAnimation.advanceWalk(player,dt);audio.loop('helicopter',s.loud);
     const targetX=Math.max(0,Math.min(P.WORLD.width-canvas.width,s.pick-canvas.width*.5));camera.x+=(targetX-camera.x)*(1-Math.exp(-5*dt));
     const rise=Math.max(0,Math.min(1,(outro.age-4.4)/3)),targetY=620-canvas.height*.84-rise*70;camera.y+=(targetY-camera.y)*(1-Math.exp(-4*dt));
     if(outro.age>=O.DURATION&&!outro.shown){outro.shown=true;audio.loop('helicopter',0);
-      ArcadeMissionResults.show({kicker:'MISIÓN 02 COMPLETADA',title:'EL UMBRAL DEL REY',epilogue:'El rey ha caído, pero alguien fue a despertarlo. Vega pone rumbo a un portaaviones que vuela sobre la costa.',
+      ArcadeMissionResults.show({kicker:'MISIÓN 02 COMPLETADA',title:'EL UMBRAL DEL REY',epilogue:'El rey ha caído. Vega espera tus coordenadas. Elige por dónde seguir la cacería.',
         stats:ArcadeMissionResults.rows(score,{enemies:[...cityEnemies,...interiorEnemies],seconds:state.time,extra:[['Estrellas',loot.stars.filter(x=>x.taken).length+' / '+loot.stars.length],['Traje de zombi',profile.zombieUnlocked?'Conseguido':'—']]}),
-        next:{label:'Continuar · Misión 03',run:leaveForMissionThree},retry:{label:'Repetir misión',run:()=>leaveMission('level-two.html?entry=select')}});}
+        next:{label:'Aire · Misión 03',run:()=>leaveForRoute(3)},
+        routes:[{label:'Carretera · Misión 04',run:()=>leaveForRoute(4)},{label:'Mar · Misión 05',run:()=>leaveForRoute(5)}],
+        retry:{label:'Repetir misión',run:()=>document.getElementById('restart').click()}});}
   }
   function narrate(dt){stage();story?.update({pit:cemetery?.pit.state,strikes:cemetery?.strikes||0,landed:!arrival?.active,x:player.x,inside:state.inside,hp:stats.hp,enemyAlert:stats.enemies.some(n=>n.hp>0&&n.alert&&(n.kind==='rifle'||n.kind==='knife'||n.kind==='turret')),tankNear:!state.inside&&cityTank.hp>0&&Math.abs(player.x-cityTank.x)<700,tankDown:cityTank.hp<=0,mk2:!!profile.jetpackMk2,mk2Now:gotMk2,zombieAwake:!state.inside&&cityEnemies.some(n=>n.kind==='zombie'&&n.hp>0&&n.phase!=='dormant'),heraldNear:!state.inside&&storm.hp>0&&Math.abs(player.x-storm.x)<700,heraldDown:storm.hp<=0&&storm.death<=0&&!!profile.zombieUnlocked,kingActive:state.inside&&king.active&&!king.defeated,kingStage:king.stage,kingDown:!!king.defeated},dt);}
   function follow(dt){
@@ -185,7 +189,7 @@
     if(input.up&&!input.fire&&!player.burrow&&!doorLatch&&(L.canEnter(player,state.inside)||L.canExit(player,state.inside))){if(!state.inside&&(storm.hp>0||storm.death>0||!profile.zombieUnlocked)){doorLatch=true;notify(storm.hp>0?'Derrota al Heraldo Eléctrico para abrir el mausoleo.':'El Heraldo está cayendo… Recoge su poder antes de entrar.');}else{if(state.inside&&king.defeated){
         // With the outro available the hunter walks out to his pickup; otherwise leave at once.
         if(window.ArcadeMissionTwoOutro&&window.ArcadeMissionResults?.show){doorLatch=true;configure(false,L.ENTRANCE);outro={age:0,shown:false};mode={};notice='';noticeAge=0;context.textContent='';keys.clear();queue.clear();queuedAim=null;fireBuffer.clear();return;}
-        leaveForMissionThree();return;}doorLatch=true;configure(!state.inside,state.inside?L.ENTRANCE:100);queue.clear();queuedAim=null;fireBuffer.clear();save();return;}}
+        leaveForRoute(3);return;}doorLatch=true;configure(!state.inside,state.inside?L.ENTRANCE:100);queue.clear();queuedAim=null;fireBuffer.clear();save();return;}}
     if(!state.inside)window.ArcadeTankGate?.sync(state.geometry.platforms,cityTank);
     if(!state.inside)window.ArcadeSkyExpedition?.update(state.geometry.platforms,player,state.time);
     if(cemetery)player.speedBonus=(1+(profile.levels.speed||0)*.08)*ArcadeCemeteryEvents.slow(cemetery,player,state.inside);
@@ -234,7 +238,7 @@
     document.getElementById('route-two').value=state.inside?18000:player.x;
     document.getElementById('distance-two').textContent=state.inside?'INTERIOR · EL MAUSOLEO':Math.round(player.x/180)+'% DEL RECORRIDO';
     const nearWall=state.geometry.ladders.some(l=>Math.abs(player.x-l.x)<32&&player.y>l.top+2);
-    context.textContent=noticeAge>0?notice:player.burrow?'↑ / Espacio · Salir del subsuelo':!state.inside&&player.x>9400&&player.x<9750&&player.y<160?'Dirigible al oeste ↑ · Saltos extra o jetpack':player.jetpack?(player.jetBoost?'TURBO · Gasolina ×2 · Suelta Shift para vuelo normal':'Shift · Acelerar  |  F · Apagar jetpack'):L.canEnter(player,state.inside)?'W / ↑ · Entrar al mausoleo':L.canExit(player,state.inside)?king.defeated?'W / ↑ · Salir y abordar el helicóptero · Misión 3':'W / ↑ · Volver al cementerio':state.inside&&king.defeated?'MISIÓN 02 COMPLETADA · Regresa a la salida ← para abordar el helicóptero':state.inside&&king.phase==='crack'?'¡La coraza se rompe!':state.inside&&king.phase==='roar'?'EL REY PUTREFACTO · Segunda fase':player.rope?'A/D · Recorrer  |  W · Trepar  |  E / Espacio · Soltar':nearWall?'W / ↑ · Subir al siguiente piso':state.time<8&&player.x<800?'Avanza por la ciudad. Puedes atravesar los edificios y subir por sus plataformas.':'';
+    context.textContent=noticeAge>0?notice:player.burrow?'↑ / Espacio · Salir del subsuelo':!state.inside&&player.x>9400&&player.x<9750&&player.y<160?'Dirigible al oeste ↑ · Saltos extra o jetpack':player.jetpack?(player.jetBoost?'TURBO · Gasolina ×2 · Suelta Shift para vuelo normal':'Shift · Acelerar  |  F · Apagar jetpack'):L.canEnter(player,state.inside)?'W / ↑ · Entrar al mausoleo':L.canExit(player,state.inside)?king.defeated?'W / ↑ · Salir y elegir ruta':'W / ↑ · Volver al cementerio':state.inside&&king.defeated?'MISIÓN 02 COMPLETADA · Regresa a la salida ← para abordar el helicóptero':state.inside&&king.phase==='crack'?'¡La coraza se rompe!':state.inside&&king.phase==='roar'?'EL REY PUTREFACTO · Segunda fase':player.rope?'A/D · Recorrer  |  W · Trepar  |  E / Espacio · Soltar':nearWall?'W / ↑ · Subir al siguiente piso':state.time<8&&player.x<800?'Avanza por la ciudad. Puedes atravesar los edificios y subir por sus plataformas.':'';
   }
   const robotDock=window.ArcadeRobotForm?.installDock(player,stats,save);
   function updateObjectives(){robotDock?.();

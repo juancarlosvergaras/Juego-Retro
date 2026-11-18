@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Auditoría de sprites · Misión 01</title>
+<style>body{margin:0;background:#1b2530;color:#dfe8ec;font:12px Consolas,monospace}h2{margin:10px 8px 2px;font-size:13px;color:#ffd58a}canvas{image-rendering:pixelated;display:block;margin:0 8px}small{margin:0 8px;color:#9fb1bf}.bad{color:#ff9a7a}</style></head>
+<body><div id="out"></div>
+<script src="../sprite-atlas.js"></script><script src="../action-atlas.js"></script><script src="../soldier-v2-atlas.js"></script><script src="../walk-atlas.js"></script><script src="../crouch-atlas.js"></script><script src="../slide-atlas.js"></script><script src="../climb-atlas.js"></script><script src="../melee-atlas.js"></script><script src="../enemy-atlas.js"></script><script src="../worker-atlas.js"></script><script src="../wolf-walk-atlas.js"></script><script src="../wolf-sprint-atlas.js"></script><script src="../wolf-climb-atlas.js"></script><script src="../kick-atlas.js"></script><script src="../white-death-atlas.js"></script><script src="../black-wolf-atlas.js"></script><script src="../zombie-wolf-atlas.js"></script><script src="../physics.js"></script><script src="../soldier-animation.js"></script>
+<script>
+// Mide cada cuadro tal como lo dibuja el juego: alto visible, hueco bajo los pies
+// y deriva horizontal del cuerpo respecto a su ancla. Solo lectura.
+const A=ArcadeSoldierAnimation,S='../assets/sprites/';
+const workerScale=f=>46/f[3];
+const sets=[
+ ['Soldado · reposo (v2 fila 0)','soldado-v2.png',SOLDIER_V2_FRAMES[0],SOLDIER_V2_SCALE],
+ ['Soldado · caminar torso (fila 1)','soldado-v2.png',SOLDIER_V2_FRAMES[1],SOLDIER_V2_SCALE],
+ ['Soldado · correr torso (fila 2)','soldado-v2.png',SOLDIER_V2_FRAMES[2],SOLDIER_V2_SCALE],
+ ['Soldado · salto (fila 3)','soldado-v2.png',SOLDIER_V2_FRAMES[3],SOLDIER_V2_SCALE],
+ ['Soldado · caída/aterrizaje (fila 4)','soldado-v2.png',SOLDIER_V2_FRAMES[4],SOLDIER_V2_SCALE],
+ ['Soldado · disparo (fila 5)','soldado-v2.png',SOLDIER_V2_FRAMES[5],SOLDIER_V2_SCALE],
+ ['Soldado · apuntar arriba (fila 6)','soldado-v2.png',SOLDIER_V2_FRAMES[6],SOLDIER_V2_SCALE],
+ ['Soldado · apuntar abajo (fila 7)','soldado-v2.png',SOLDIER_V2_FRAMES[7],SOLDIER_V2_SCALE],
+ ['Soldado · piernas al andar','soldado-pasos-v3.png',WALK_FRAMES[0],WALK_SCALE],
+ ['Soldado · agachado','soldado-agachado-pasos-v1.png',CROUCH_FRAMES[0],CROUCH_SCALE],
+ ['Soldado · deslizamiento','soldado-deslizamiento-v1.png',SLIDE_FRAMES[0],SLIDE_SCALE],
+ ['Soldado · escalera','soldado-escalada-v2.png',CLIMB_FRAMES[0],CLIMB_SCALE],
+ ['Soldado · colgado','soldado-escalada-v2.png',CLIMB_FRAMES[1],CLIMB_SCALE],
+ ['Soldado · cuchillo','soldado-cuchillo-hacha-v1.png',MELEE_FRAMES[0],MELEE_SCALE],
+ ['Soldado · hacha','soldado-cuchillo-hacha-v1.png',MELEE_FRAMES[1],MELEE_SCALE],
+ ['Transformación','soldado-transformacion-v2.png',A.transformationFrames[0],null,i=>A.transformation(i).scale],
+ ['Lobo · reposo (acciones fila 0)','lobo-reposo-patadas-v2.png',A.wolfActionFrames[0],A.wolfActionScale],
+ ['Lobo · gesto (acciones fila 1)','lobo-reposo-patadas-v2.png',A.wolfActionFrames[1],A.wolfActionScale],
+ ['Lobo · patada suelo (fila 2)','lobo-reposo-patadas-v2.png',A.wolfActionFrames[2],A.wolfActionScale],
+ ['Lobo · patada aire (fila 3)','lobo-reposo-patadas-v2.png',A.wolfActionFrames[3],A.wolfActionScale],
+ ['Lobo · caminar','lobo-caminata-v2.png',WOLF_WALK_FRAMES[0],WOLF_WALK_SCALE],
+ ['Lobo · carrera','lobo-carrera-cuatro-patas-v1.png',WOLF_SPRINT_FRAMES[0],WOLF_SPRINT_SCALE],
+ ['Lobo · combo 1','lobo-combos-v1.png',A.wolfComboFrames[0],A.wolfComboScale],
+ ['Lobo · combo 2','lobo-combos-v1.png',A.wolfComboFrames[1],A.wolfComboScale],
+ ['Lobo · combo 3','lobo-combos-v1.png',A.wolfComboFrames[2],A.wolfComboScale],
+ ['Lobo · embestida','lobo-cabezazo-v1.png',A.wolfRamFrames[0],A.wolfRamScale],
+ ['Lobo · salto en carrera','lobo-salto-carrera-v1.png',A.wolfJumpFrames[0],.24],
+ ['Lobo · v1 fila 0 (pose base f7)','soldado-lobo-v1.png',ACTION_FRAMES.wolf[0],.48],
+ ['Lobo · v1 fila 1 (zarpazo)','soldado-lobo-v1.png',ACTION_FRAMES.wolf[1],.48],
+ ['Lobo · v1 fila 2 (salto/agachado)','soldado-lobo-v1.png',ACTION_FRAMES.wolf[2],.48],
+ ['Lobo · v1 fila 3 (caída/aterrizaje)','soldado-lobo-v1.png',ACTION_FRAMES.wolf[3],.48],
+ ['Lobo · v1 fila 4 (colgado)','soldado-lobo-v1.png',ACTION_FRAMES.wolf[4],.48],
+ ['Lobo · escalera','lobo-escalada-v1.png',WOLF_CLIMB_FRAMES[0],WOLF_CLIMB_SCALE],
+ ['Capataz · andar (v1 fila 5 ×.57)','soldado-lobo-v1.png',[0,1,2,6].map(i=>ACTION_FRAMES.wolf[5][i]).concat([ACTION_FRAMES.wolf[0][7]]),.57],
+ ['Capataz · patada','lobo-patadas-v1.png',KICK_FRAMES[0],.34],
+ ['Capataz · muerte','lobo-blanco-muerte-v1.png',WHITE_DEATH_FRAMES,WHITE_DEATH_SCALE],
+ ['Lobo Negro · fila 0','lobo-negro-jefe-v1.png',BLACK_WOLF_FRAMES[0],BLACK_WOLF_SCALE],
+ ['Lobo Negro · fila 1','lobo-negro-jefe-v1.png',BLACK_WOLF_FRAMES[1],BLACK_WOLF_SCALE],
+ ['Lobo Negro · fila 2','lobo-negro-jefe-v1.png',BLACK_WOLF_FRAMES[2],BLACK_WOLF_SCALE],
+ ['Lobo Zombi · fila 1','lobo-zombie-jefe-v1.png',ZOMBIE_WOLF_FRAMES[1],.55],
+ ['Lobo Zombi · fila 2','lobo-zombie-jefe-v1.png',ZOMBIE_WOLF_FRAMES[2],.55],
+ ['Enemigo · reposo','soldado-enemigo-v1.png',ENEMY_FRAMES[0],.19],
+ ['Enemigo · correr','soldado-enemigo-v1.png',ENEMY_FRAMES[1],.19],
+ ['Enemigo · salto','soldado-enemigo-v1.png',ENEMY_FRAMES[2],.19],
+ ['Enemigo · disparo/golpe/muerte','soldado-enemigo-v1.png',ENEMY_FRAMES[3],.19],
+ ['Obrero · café','trabajadores-descanso-huida-v3.png',WORKER_FRAMES.slice(0,4),null,(i,f)=>workerScale(f)],
+ ['Obrero · charla','trabajadores-descanso-huida-v3.png',WORKER_FRAMES.slice(4,8),null,(i,f)=>workerScale(f)],
+ ['Obrero · susto','trabajadores-descanso-huida-v3.png',WORKER_FRAMES.slice(8,12),null,(i,f)=>workerScale(f)],
+ ['Obrero · carrera','trabajadores-carrera-v4.png',WORKER_RUN_FRAMES,WORKER_RUN_SCALE]
+];
+const cache={},load=src=>cache[src]||(cache[src]=new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(src);i.src=S+src;}));
+function measure(img,f){const [sx,sy,sw,sh]=f,c=document.createElement('canvas');c.width=sw;c.height=sh;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(img,sx,sy,sw,sh,0,0,sw,sh);const d=x.getImageData(0,0,sw,sh).data;let top=sh,bottom=-1,left=sw,right=-1,sum=0,count=0,footL=sw,footR=-1;
+ for(let y=0;y<sh;y++)for(let px=0;px<sw;px++)if(d[(y*sw+px)*4+3]>=200){if(y<top)top=y;if(y>bottom)bottom=y;if(px<left)left=px;if(px>right)right=px;sum+=px;count++;}
+ if(bottom>=0)for(let y=Math.max(0,bottom-Math.round(sh*.04));y<=bottom;y++)for(let px=0;px<sw;px++)if(d[(y*sw+px)*4+3]>=200){if(px<footL)footL=px;if(px>footR)footR=px;}
+ return{top,bottom,left,right,cx:count?sum/count:sw/2,footCx:(footL+footR)/2,empty:!count};}
+(async()=>{const out=document.getElementById('out'),report=[];
+ for(const [name,src,frames,scale,scaleFn] of sets){
+  let img;try{img=await load(src);}catch(e){report.push({name,error:'no carga '+src});continue;}
+  const rows=frames.map((f,i)=>{const s=scaleFn?scaleFn(i,f):scale,m=measure(img,f),anchor=f[5]??f[2]/2;
+   return{i,scale:+s.toFixed(4),drawn:+(f[3]*s).toFixed(1),visible:+((m.bottom-m.top+1)*s).toFixed(1),footGap:+((f[3]-1-m.bottom)*s).toFixed(1),bodyDx:+((m.cx-anchor)*s).toFixed(1),footDx:+((m.footCx-anchor)*s).toFixed(1),width:+((m.right-m.left+1)*s).toFixed(1)};});
+  const range=k=>+(Math.max(...rows.map(r=>r[k]))-Math.min(...rows.map(r=>r[k]))).toFixed(1);
+  const entry={name,frames:rows,visibleRange:range('visible'),footGapMax:Math.max(...rows.map(r=>r.footGap)),bodyDxRange:range('bodyDx'),footDxRange:range('footDx'),scaleRange:range('scale')};report.push(entry);
+  const zoom=3,cell=64,h=92,c=document.createElement('canvas');c.width=frames.length*cell*zoom;c.height=h*zoom;c.style.width=c.width+'px';const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.fillStyle='#2c3a48';x.fillRect(0,0,c.width,c.height);
+  frames.forEach((f,i)=>{const s=(scaleFn?scaleFn(i,f):scale)*zoom,anchor=f[5]??f[2]/2,ox=(i+.5)*cell*zoom,oy=(h-8)*zoom;x.strokeStyle='#ffffff22';x.strokeRect(i*cell*zoom+.5,.5,cell*zoom-1,h*zoom-1);x.drawImage(img,f[0],f[1],f[2],f[3],Math.round(ox-anchor*s),Math.round(oy-f[3]*s),f[2]*s,f[3]*s);x.strokeStyle='#ff5a5a';x.beginPath();x.moveTo(i*cell*zoom,oy+.5);x.lineTo((i+1)*cell*zoom,oy+.5);x.stroke();x.strokeStyle='#5ad0ff66';x.beginPath();x.moveTo(ox+.5,0);x.lineTo(ox+.5,h*zoom);x.stroke();x.strokeStyle='#ffd58a55';x.beginPath();x.moveTo(i*cell*zoom,oy-46*zoom+.5);x.lineTo((i+1)*cell*zoom,oy-46*zoom+.5);x.stroke();});
+  const title=document.createElement('h2');title.textContent=name;const note=document.createElement('small');note.textContent='alto visible '+rows.map(r=>r.visible).join(' / ')+' · hueco pies '+rows.map(r=>r.footGap).join(' / ')+' · deriva pies '+rows.map(r=>r.footDx).join(' / ');if(entry.footGapMax>1.5||entry.scaleRange>0)note.className='bad';out.append(title,c,note);}
+ window.__audit=report;document.title='Auditoría lista';
+})();
+</script></body></html>

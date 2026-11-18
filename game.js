@@ -73,24 +73,16 @@
     }
     for(const card of wheel.querySelectorAll('.power-card')){const id=card.dataset.power;let offset=(list.indexOf(id)-list.indexOf(profile.equipped)+list.length)%list.length;if(offset>list.length/2)offset-=list.length;card.style.setProperty('--offset',offset);card.style.zIndex=String(10-Math.abs(offset));card.hidden=Math.abs(offset)>2;card.classList.toggle('front',offset===0);card.tabIndex=offset===0?0:-1;card.setAttribute('aria-pressed',offset===0?'true':'false');const c=ArcadeProgression.catalog.find(c=>c.id===id),wait=powers.cooldowns[id]||0;card.querySelector('.power-wait').textContent=id==='shield'?player.shield+'/10 · ACTIVO':id==='flame'&&(player.form==='wolf'||player.form==='zombie')?'SOLO SOLDADO':wait?wait.toFixed(1)+' s':'LISTO';card.querySelector('.power-ready').style.width=(id==='shield'?player.shield*10:100*(1-wait/(c.cooldown||1)))+'%';card.classList.toggle('cooling',wait>0);}
   }
+  let shopFlash=null;
   function drawShop(){
     document.getElementById('shop-balance').textContent=profile.wallet.toLocaleString('es-CO')+' puntos disponibles';
     document.getElementById('score-value').textContent=profile.wallet.toLocaleString('es-CO');
-    const list=document.getElementById('shop-list');list.replaceChildren();
-    for(const c of ArcadeProgression.catalog){
-      const row=document.createElement('article'),title=document.createElement('strong'),desc=document.createElement('p'),availability=document.createElement('small'),button=document.createElement('button');
-      const level=profile.levels[c.id]||0,owned=profile.owned.includes(c.id),full=c.kind==='upgrade'?level>=c.max:c.kind==='shield'?profile.shield>=10:owned;
-      title.textContent=c.name+(c.kind==='upgrade'?' · '+level+'/'+c.max:c.kind==='shield'?' · '+profile.shield+'/10':'');desc.textContent=c.text;
-      button.textContent=owned?(profile.equipped===c.id?'Equipado':'Equipar'):full?'Máximo':'Comprar · '+c.cost.toLocaleString('es-CO')+' ptos';
-      availability.className='shop-availability';availability.textContent=owned?'Poder adquirido':full?'Mejora completa':profile.wallet>=c.cost?'Puedes comprarlo':'Te faltan '+(c.cost-profile.wallet).toLocaleString('es-CO')+' puntos';
-      if(c.rewardOnly&&!owned){button.textContent='Derrota al Soberano';availability.textContent='Recompensa · Misión 7';}
-      button.dataset.upgrade=c.id;
-      button.disabled=owned?profile.equipped===c.id:full||profile.wallet<c.cost||!!c.rewardOnly;
-      button.onclick=()=>{if(owned){profile.equipped=c.id;persist();drawShop();return;}
-        const result=ArcadeProgression.buy(profile,c.id);document.getElementById('shop-message').textContent=result.message;
-        if(result.ok){ArcadeProgression.apply(profile,player,encounter);fuelMax=player.fuelMax;persist();drawShop();}
-      };row.append(title,desc,availability,button);list.append(row);
-    }
+    const say=text=>{document.getElementById('shop-message').textContent=text;};
+    ArcadeShopUI.render(document.getElementById('shop-list'),{profile,inventory:encounter.inventory,catalog:ArcadeProgression.catalog,flash:shopFlash,
+      onEquip(id){profile.equipped=id;persist();shopFlash=null;drawShop();},
+      onBuy(id){const result=ArcadeProgression.buy(profile,id);say(result.message);if(result.ok){ArcadeProgression.apply(profile,player,encounter);fuelMax=player.fuelMax;persist();sound.play('pickup',{gain:.5});shopFlash=id;}drawShop();},
+      onBuyWeapon(slot){const result=ArcadeArmory.buy(profile,encounter.inventory,slot);say(result.message);if(result.ok){persist();rememberLoadout();sound.play('pickup',{gain:.5});shopFlash='w'+slot;}drawShop();}});
+    shopFlash=null;
   }
   document.getElementById('show-shop').onclick=()=>{const shop=document.getElementById('shop');shop.hidden=!shop.hidden;if(!shop.hidden)drawShop();};
   const specialistImages={ramHit:new Image(),turret:new Image(),knife:new Image()};
@@ -267,7 +259,7 @@
       if(n.y<camera.y-80||n.y>camera.y+canvas.height+80||n.hp<=0&&n.death<=0)continue;
       if(ArcadeEnemySpecialists.drawRam(ctx,n,specialistImages.ramHit))continue;
       let row=0,frame=Math.floor(n.anim*4)%4;
-      if(n.hp<=0){row=3;frame=3;}else if(n.hit>0){row=3;frame=2;}else if(n.flash>0){row=3;frame=n.flash>.08?0:1;}else if(!n.grounded){row=2;frame=n.vy< -150?1:n.vy<50?2:3;}else if(Math.abs(n.vx)>10){row=1;frame=Math.floor(n.anim*9)%4;}
+      if(n.hp<=0){row=3;frame=n.death>.62?2:3;}else if(n.hit>0){row=3;frame=2;}else if(n.flash>0){row=3;frame=n.flash>.08?0:1;}else if(!n.grounded){row=2;frame=n.vy< -150?1:n.vy<50?2:3;}else if(Math.abs(n.vx)>10){row=1;frame=Math.floor((n.runCycle||0)*4)%4;}
       if(!ArcadeEnemySpecialists.draw(ctx,n,specialistImages)){ctx.save();if(n.hp<=0)ctx.globalAlpha=Math.min(1,n.death*2);sprite(enemySoldier,ENEMY_FRAMES,row,frame,n.x,n.y,.19,n.facing);ctx.restore();}
       if(n.hp>0&&n.alert){ctx.fillStyle=n.awareness==='sight'?'#ff9b70':'#ffe5a0';ctx.font='bold 10px monospace';ctx.fillText(n.awareness==='sight'?'!':'?',n.x-3,n.y-63);}
       if(n.hp>0){ctx.fillStyle='#17232d';ctx.fillRect(n.x-19,n.y-59,38,6);ctx.fillStyle=n.hit>0?'#fff0ad':'#e77b60';ctx.fillRect(n.x-18,n.y-58,36*n.hp/n.maxHp,4);ctx.fillStyle='#17232d';for(let i=1;i<3;i++)ctx.fillRect(n.x-18+i*12,n.y-58,1,4);}
@@ -282,7 +274,11 @@
       if(b.phase==='climb'){sprite(wolfClimb,WOLF_CLIMB_FRAMES,0,((Math.floor(b.y/6.5)%4)+4)%4,b.x,b.y,WOLF_CLIMB_SCALE*1.3,1);}
       else if(b.phase==='jump'||b.phase==='fall'||b.descending){const falling=b.descending||b.phase==='fall'||(b.traverse&&b.traverse.age>b.traverse.duration*.7);sprite(wolf,ACTION_FRAMES.wolf,falling?3:2,falling?1:4,b.x,b.y,.57,b.facing);}
       else if(b.phase==='kick'){sprite(kicks,KICK_FRAMES,0,Math.min(7,Math.floor(b.kickAge/.9*8)),b.x,b.y,.34,b.facing);if(b.kickAge<.35){ctx.fillStyle='#ffd17b';ctx.font='10px monospace';ctx.fillText('¡PATADA!',b.x-24,b.y-90);}}
-      else{const moving=b.active&&Math.abs(player.x-b.x)>75;sprite(wolf,ACTION_FRAMES.wolf,moving?5:0,moving?[0,1,2,6][Math.floor(b.t*8)%4]:7,b.x,b.y,.57,g.facing);ArcadeBossRenderer.whiteGun(ctx,b,player);}}
+      else{
+        // Steps follow the distance actually covered, on the same walk sheet as the player's wolf.
+        const moved=Math.abs(b.x-(b.drawX??b.x));b.drawX=b.x;b.stride=moved>.05?(b.stride||0)+moved:b.stride||0;b.stepHold=moved>.05?.12:Math.max(0,(b.stepHold||0)-1/60);
+        if(b.stepHold>0)sprite(wolfWalk.texture,WOLF_WALK_FRAMES,0,Math.floor(b.stride/9)%8,b.x,b.y,WOLF_WALK_SCALE*.57/.48,g.facing);else sprite(wolf,ACTION_FRAMES.wolf,0,7,b.x,b.y,.57,g.facing);
+        ArcadeBossRenderer.whiteGun(ctx,b,player);}}
 
     const final=encounter.finalBoss;
     ArcadeBossRenderer.missiles(ctx,final);ArcadeBossRenderer.zombieEffects(ctx,final);

@@ -49,13 +49,13 @@
     host.append(panel);
     const speaker=panel.querySelector('.radio-speaker'),text=panel.querySelector('.radio-text');let shown=null;
     const layer=doc.createElement('section');layer.id='briefing';layer.hidden=true;layer.setAttribute('role','dialog');layer.setAttribute('aria-modal','true');layer.setAttribute('aria-label','Informe de misión');
-    layer.innerHTML='<div class="briefing-card"><span class="eyebrow">MISIÓN 01 · LA OBRA</span><h2></h2><div class="briefing-text" aria-live="polite"></div><ul class="briefing-objectives" hidden></ul><div class="briefing-actions"><button type="button" class="briefing-skip">Saltar informe</button><span class="briefing-step"></span><button type="button" class="briefing-next">Continuar</button></div></div>';
+    layer.innerHTML='<div class="briefing-card"><canvas class="briefing-scene" width="640" height="250" aria-hidden="true"></canvas><span class="eyebrow">MISIÓN 01 · LA OBRA</span><h2></h2><div class="briefing-text" aria-live="polite"></div><ul class="briefing-objectives" hidden></ul><div class="briefing-actions"><button type="button" class="briefing-skip">Saltar informe</button><span class="briefing-step"></span><button type="button" class="briefing-next">Continuar</button></div></div>';
     doc.body.append(layer);
-    const title=layer.querySelector('h2'),body=layer.querySelector('.briefing-text'),goals=layer.querySelector('.briefing-objectives'),step=layer.querySelector('.briefing-step'),next=layer.querySelector('.briefing-next'),skip=layer.querySelector('.briefing-skip');
+    const scene=layer.querySelector('.briefing-scene'),title=layer.querySelector('h2'),body=layer.querySelector('.briefing-text'),goals=layer.querySelector('.briefing-objectives'),step=layer.querySelector('.briefing-step'),next=layer.querySelector('.briefing-next'),skip=layer.querySelector('.briefing-skip');
     let page=0,typed=0,timer=null,done=null;
-    function finish(){if(layer.hidden)return;clearInterval(timer);timer=null;layer.hidden=true;const callback=done;done=null;callback?.();}
+    function finish(){if(layer.hidden)return;clearInterval(timer);timer=null;root.ArcadeStoryScenes?.stop();layer.hidden=true;const callback=done;done=null;callback?.();}
     function reveal(){const p=briefing[page];clearInterval(timer);timer=null;typed=p.text.length;body.textContent=p.text;goals.hidden=!p.objectives;}
-    function show(){const p=briefing[page];title.textContent=p.title;step.textContent=(page+1)+' / '+briefing.length;next.textContent=page===briefing.length-1?'Comenzar la cacería':'Continuar';goals.hidden=true;goals.replaceChildren(...(p.objectives||[]).map(o=>{const li=doc.createElement('li');li.textContent='▸ '+o;return li;}));typed=0;body.textContent='';clearInterval(timer);
+    function show(){const p=briefing[page];root.ArcadeStoryScenes?.show(scene,page);title.textContent=p.title;step.textContent=(page+1)+' / '+briefing.length;next.textContent=page===briefing.length-1?'Comenzar la cacería':'Continuar';goals.hidden=true;goals.replaceChildren(...(p.objectives||[]).map(o=>{const li=doc.createElement('li');li.textContent='▸ '+o;return li;}));typed=0;body.textContent='';clearInterval(timer);
       if(root.matchMedia?.('(prefers-reduced-motion: reduce)').matches){reveal();return;}
       timer=setInterval(()=>{typed=Math.min(p.text.length,typed+2);body.textContent=p.text.slice(0,typed);if(typed>=p.text.length)reveal();},22);}
     function advance(){if(typed<briefing[page].text.length){reveal();return;}if(page<briefing.length-1){page++;show();}else finish();}

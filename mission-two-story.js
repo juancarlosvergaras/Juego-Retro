@@ -20,6 +20,9 @@
     {id:'mk2',who:VEGA,text:'¿Un jetpack de doble empuje? Con eso vuelas al doble de velocidad. Buen botín, Cap.',when:c=>c.mk2Now},
     {id:'cemetery',who:CAP,text:'Tumbas abiertas desde dentro. La tierra se mueve.',when:c=>c.x>9750&&!c.inside},
     {id:'zombies',who:VEGA,text:'¡Están saliendo del suelo! Unos escupen de lejos y otros se te echan encima: no dejes que te rodeen.',when:c=>c.zombieAwake},
+    {id:'storm',who:VEGA,text:'¡Cuidado con los rayos! Avisan en el suelo antes de caer… y a los muertos también los fríen.',when:c=>c.strikes>0},
+    {id:'pit',who:CAP,text:'Las rejas se han cerrado. Esto es una trampa: una fosa común que se vacía sola.',when:c=>c.pit==='fight'},
+    {id:'pitDone',who:VEGA,text:'Las rejas bajan. Sigue, Cap: lo que los despierta está más adelante.',when:c=>c.pit==='done',after:'pit'},
     {id:'barricade',who:VEGA,text:'Última barricada de la milicia. Ellos tampoco pudieron pasar del cementerio.',when:c=>c.x>12700&&!c.inside},
     {id:'herald',who:VEGA,text:'Lectura eléctrica disparada. Ese es el Heraldo: salta sus descargas y castígalo cuando recarga.',when:c=>c.heraldNear},
     {id:'suit',who:CAP,text:'Su poder se me pega a la piel… otra forma más. La puerta del mausoleo se abre.',when:c=>c.heraldDown},
@@ -28,7 +31,7 @@
     {id:'rot',who:VEGA,text:'¡La coraza ha caído y lo de dentro sigue vivo! ¡No pares, Cap!',when:c=>c.kingStage===2},
     {id:'done',who:VEGA,text:'El rey ha caído. Sal por donde entraste: te recojo en la puerta. Hay un portaaviones volando hacia la costa y no es nuestro.',when:c=>c.kingDown}
   ];
-  const config={briefing,beats,eyebrow:'MISIÓN 02 · EL UMBRAL DEL REY',scenes:'two',startLabel:'Saltar sobre la ciudad',ambient:/^(militia|hurt|giants|avenue|airship|cemetery|barricade)/,series:/^(giants|avenue|cemetery|barricade)/};
+  const config={briefing,beats,eyebrow:'MISIÓN 02 · EL UMBRAL DEL REY',scenes:'two',startLabel:'Saltar sobre la ciudad',ambient:/^(militia|hurt|giants|avenue|airship|cemetery|barricade|storm)/,series:/^(giants|avenue|cemetery|barricade)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionTwoStory=api;
 })(typeof window!=='undefined'?window:globalThis);

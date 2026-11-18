@@ -85,21 +85,26 @@
     // The way out of the vault: a stone arch at the west end with the storm
     // light of the cemetery beyond it, so the interior has a real threshold.
     function vaultDoor(c,x,base,time){
-      const w=78,h=124,left=Math.round(x-w/2),top=base-h;
-      c.fillStyle='#2f2d2a';c.fillRect(left-22,base-5,w+44,5);c.fillStyle='#3d3b36';c.fillRect(left-14,base-11,w+28,6);c.fillStyle='#6b675c';c.fillRect(left-22,base-5,w+44,1);c.fillRect(left-14,base-11,w+28,1);
-      c.fillStyle='#45423c';c.fillRect(left-14,top,w+28,h-11);
-      for(let y=top+6;y<base-14;y+=17){c.fillStyle='#34322e';c.fillRect(left-14,y,14,1);c.fillRect(left+w,y,14,1);c.fillStyle='#5d594f';c.fillRect(left-14,y+1,14,1);c.fillRect(left+w,y+1,14,1);}
-      c.fillStyle='#6b675c';c.fillRect(left-14,top,w+28,3);c.fillStyle='#807a6b';c.fillRect(left+w/2-9,top-7,18,10);c.fillStyle='#45423c';c.fillRect(left+w/2-6,top-4,12,5);
-      const sky=c.createLinearGradient(0,top+16,0,base-11);sky.addColorStop(0,'#141a30');sky.addColorStop(.55,'#35405e');sky.addColorStop(1,'#59627a');c.fillStyle=sky;c.fillRect(left,top+16,w,h-27);
-      // Stepped corners turn the opening into an arch.
-      c.fillStyle='#45423c';for(const [inset,drop] of [[14,4],[9,9],[5,15],[2,23]]){c.fillRect(left,top+16,inset,drop);c.fillRect(left+w-inset,top+16,inset,drop);}
-      // Distant graves and the rain outside.
-      c.fillStyle='#1b2136';for(const [gx,gh] of [[10,16],[27,23],[46,13],[61,19]]){c.fillRect(left+gx,base-11-gh,7,gh);c.fillRect(left+gx-2,base-11-gh+5,11,2);}
-      c.fillStyle='rgba(200,214,240,.35)';for(let i=0;i<9;i++){const ry=(time*150+i*31)%(h-34);c.fillRect(left+6+(i*17)%(w-10),top+18+ry,1,7);}
-      // Iron-bound leaves swung open against the wall.
-      for(const side of [0,1]){const dx=side?left+w-9:left;c.fillStyle='#2a1e16';c.fillRect(dx,top+24,9,h-35);c.fillStyle='#4a3524';c.fillRect(dx+(side?6:1),top+24,2,h-35);c.fillStyle='#6f6a5f';for(const band of [38,70,100])c.fillRect(dx,top+band,9,2);}
-      // Cold light spilling onto the vault floor.
-      c.save();c.globalCompositeOperation='screen';const spill=c.createLinearGradient(left,0,left+w+150,0);spill.addColorStop(0,'rgba(130,150,200,.3)');spill.addColorStop(1,'rgba(130,150,200,0)');c.fillStyle=spill;c.beginPath();c.moveTo(left+4,base-11);c.lineTo(left+w-4,base-11);c.lineTo(left+w+150,base+16);c.lineTo(left-30,base+16);c.closePath();c.fill();c.restore();
+      // Built from the mausoleum's own carved portal, so the inside of the door
+      // is the same stone the player walked through outside.
+      const sx=885,sy=748,sw=150,sh=237,k=.56,w=Math.round(sw*k),h=Math.round(sh*k),left=Math.round(x-w/2),top=base-h;
+      const at=(px,py)=>[left+(px-sx)*k,top+(py-sy)*k];
+      // A buttress of the same masonry ties the portal into the wall.
+      c.fillStyle='#2b2d2a';c.fillRect(left-26,top+10,w+52,h-10);c.fillStyle='#3a3c37';for(let y=top+18;y<base-6;y+=14)c.fillRect(left-26,y,w+52,1);for(let y=top+18,n=0;y<base-6;y+=14,n++)for(let bx=left-26+(n%2?9:0);bx<left+w+26;bx+=18)c.fillRect(bx,y,1,14);
+      c.fillStyle='#1c1e1c';c.fillRect(left-26,top+10,2,h-10);c.fillRect(left+w+24,top+10,2,h-10);
+      c.drawImage(source,sx,sy,sw,sh,left,top,w,h);
+      // The pointed opening shows the cemetery under the storm.
+      const opening=[[921,985],[921,838],[934,803],[960,779],[986,803],[999,838],[999,985]].map(([px,py])=>at(px,py));
+      c.save();c.beginPath();opening.forEach(([px,py],n)=>c[n?'lineTo':'moveTo'](px,py));c.closePath();c.clip();
+      const far=images.cemetery;c.drawImage(far,Math.round(far.width*.43),Math.round(far.height*.36),Math.round(far.width*.06),Math.round(far.height*.52),left,top,w,h);
+      c.fillStyle='rgba(26,32,66,.42)';c.fillRect(left,top,w,h);
+      c.fillStyle='rgba(205,218,245,.5)';for(let n=0;n<10;n++){const ry=(time*170+n*37)%h;c.fillRect(Math.round(left+w*.34+(n*13)%(w*.32)),Math.round(top+ry),1,6);}
+      // Depth of the wall: the jambs fall into shadow.
+      const [ox]=opening[0],[ox2]=opening[6],jamb=c.createLinearGradient(ox,0,ox2,0);jamb.addColorStop(0,'rgba(6,8,14,.85)');jamb.addColorStop(.22,'rgba(6,8,14,0)');jamb.addColorStop(.78,'rgba(6,8,14,0)');jamb.addColorStop(1,'rgba(6,8,14,.85)');c.fillStyle=jamb;c.fillRect(left,top,w,h);
+      c.restore();
+      // Worn threshold and the cold light it lets in.
+      c.fillStyle='#4d4f49';c.fillRect(left-8,base-4,w+16,4);c.fillStyle='#74766c';c.fillRect(left-8,base-4,w+16,1);
+      c.save();c.globalCompositeOperation='screen';const spill=c.createLinearGradient(left,0,left+w+170,0);spill.addColorStop(0,'rgba(130,150,200,.3)');spill.addColorStop(1,'rgba(130,150,200,0)');c.fillStyle=spill;c.beginPath();c.moveTo(opening[0][0],base);c.lineTo(opening[6][0],base);c.lineTo(left+w+170,base+18);c.lineTo(left-34,base+18);c.closePath();c.fill();c.restore();
     }
     // While the Herald lives, his charge seals the mausoleum's outer door.
     function heraldSeal(c,x,base,time,power){

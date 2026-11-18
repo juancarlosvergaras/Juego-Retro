@@ -28,10 +28,20 @@ test('powers light the scene with bounded, finite sources',()=>{
  for(const l of lights){assert.ok([l.x,l.y,l.r,l.a].every(Number.isFinite)&&l.r>0&&l.a>=0&&l.a<=1,JSON.stringify(l));assert.match(l.glow,/^\d+,\d+,\d+$/);}
  assert.ok(lights.some(l=>l.x===300),'the alien pulse lights its target');assert.equal(lights.filter(l=>l.r>400).length,1,'only the firing beam floods the screen');
 });
-test('power effects draw additively and leave the context balanced',()=>{
- let depth=0,calls=0;const g={addColorStop(){}},c={save(){depth++;},restore(){depth--;},translate(){},rotate(){},beginPath(){},ellipse(){},stroke(){calls++;},moveTo(){},lineTo(){},closePath(){},fillRect(){calls++;},createRadialGradient:()=>g,globalCompositeOperation:'source-over'};
+test('power effects are drawn as hard pixels and leave the context balanced',()=>{
+ let depth=0;const rects=[],c={save(){depth++;},restore(){depth--;},fillRect(x,y,w,h){rects.push([x,y,w,h]);},imageSmoothingEnabled:true,fillStyle:''};
  const p={x:100,y:620,facing:1,shield:2,form:'soldier'},e={enemies:[{x:200,y:620,hp:3,frozen:1}]};
- F.draw(c,{age:2,effects:['wave','cryo','heal','alien','orbital'].map(kind=>({kind,x:100,y:590,tx:260,ty:580,r:120,life:.3,duration:.6})),beams:[{x:300,y:620,age:.2},{x:300,y:620,age:1.2}],drones:[{x:150,y:500,target:{x:200,y:620,hp:3}}],turrets:[{x:120,y:594,flash:.1,angle:.3,age:.2,life:2}],flame:.1,shieldFlash:.2},p,e);
- assert.equal(depth,0);assert.ok(calls>60,'plenty of marks drawn: '+calls);assert.equal(c.globalCompositeOperation,'lighter');
- F.draw({},{effects:[]},p,e);
+ F.draw(c,{age:2,cooldowns:{},effects:['wave','cryo','heal','alien','orbital'].map(kind=>({kind,x:100,y:590,tx:260,ty:580,r:120,life:.3,duration:.6})),beams:[{x:300,y:620,age:.2},{x:300,y:620,age:1.2}],drones:[{x:150,y:500,target:{x:200,y:620,hp:3}}],turrets:[{x:120,y:594,flash:.1,angle:.3,age:.2,life:2}],flame:.1,shieldFlash:.2},p,e);
+ assert.equal(depth,0);assert.ok(rects.length>150,'plenty of marks: '+rects.length);assert.equal(c.imageSmoothingEnabled,false);
+ assert.ok(rects.every(r=>r.every(Number.isInteger)),'every mark sits on whole pixels');
+ assert.equal(c.globalCompositeOperation,undefined,'no additive blending or gradients');
+});
+test('every power launches from the player the moment its recharge starts',()=>{
+ const p={x:300,y:620,facing:-1,form:'soldier'},s={age:5,cooldowns:{},effects:[],beams:[],drones:[],turrets:[]};
+ assert.equal(F.launches(s,p).length,0);
+ s.cooldowns.drone=12;const [launch]=F.launches(s,p);assert.equal(launch.id,'drone');assert.equal(launch.x,300);assert.equal(launch.facing,-1);
+ s.cooldowns.drone=11.5;s.age=5.2;assert.equal(F.launches(s,p).length,1,'a draining recharge is not a new launch');
+ s.cooldowns.flame=.12;assert.equal(F.launches(s,p).length,1,'the flamethrower has no launch');
+ s.age=5+F.LAUNCH+.5;assert.equal(F.launches(s,p).length,0,'launches expire');
+ for(const id of ['drone','turret','wave','cryo','heal','orbital','alien']){const rects=[],c={save(){},restore(){},fillRect(...r){rects.push(r);}},state={age:1,cooldowns:{},effects:[],beams:[],drones:[],turrets:[]};F.launches(state,p);state.cooldowns[id]=9;for(const age of [1.02,1.2,1.4]){state.age=age;F.draw(c,state,p,null);}assert.ok(rects.length>6,id+' draws its launch: '+rects.length);}
 });

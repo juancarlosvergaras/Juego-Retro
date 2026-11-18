@@ -89,7 +89,7 @@ test('pause freezes the arrival and resume preserves form and checkpoint',async(
 test('real second-mission runtime saves ammunition, equipped powers and cooldowns across reload',async()=>{
  const profile=require('../progression.js').fresh();profile.levels.jump=2;profile.owned=['wave'];profile.equipped='wave';
  const initial={'obra10.progress.v1':JSON.stringify(profile),'cap-dollar.campaign.v1':JSON.stringify({version:1,level:2,score:9200,hp:6,fuel:440,shield:3,inventory:{selected:4,owned:[1,3,4],ammo:{3:0,4:3}}})};
- const g=await game('?entry=campaign',initial);g.tick(7);assert.equal(g.state.player.maxJumps,4);g.key('KeyJ');g.tick(.04);g.key('KeyJ',false);g.key('KeyG');g.tick(.04);g.key('KeyG',false);g.element('pause-two').click();
+ const g=await game('?entry=campaign',initial);assert.equal(g.state.player.shield,0,'a bought shield lasts one world: a new mission never starts with it up');g.tick(7);assert.equal(g.state.player.maxJumps,4);g.state.player.shield=3;g.key('KeyJ');g.tick(.04);g.key('KeyJ',false);g.key('KeyG');g.tick(.04);g.key('KeyG',false);g.element('pause-two').click();
  const saved=JSON.parse(g.data.get('cap-dollar.mission-two.v1'));assert.equal(saved.inventory.ammo[4],2);assert.equal(saved.inventory.ammo[3],0);assert.ok(saved.cooldowns.wave>9);assert.equal(saved.score,9200);
  const resumed=await game('?entry=resume',Object.fromEntries(g.data));assert.equal(resumed.state.combat.inventory.selected,4);assert.equal(resumed.state.combat.inventory.ammo[4],2);assert.equal(resumed.state.player.maxJumps,4);assert.equal(resumed.state.player.shield,3);assert.equal(resumed.state.player.fuel,440);
 });
@@ -101,7 +101,7 @@ test('new missions refill upgraded health, while resuming keeps saved damage eve
   const initial={'obra10.progress.v1':JSON.stringify(profile),'cap-dollar.campaign.v1':JSON.stringify(carry)};
   if(query!=='?entry=resume')initial['cap-dollar.mission-two.v1']=JSON.stringify({x:240,landed:true,hp:2});
   const g=await game(query,initial);assert.equal(g.state.combat.maxHp,13);assert.equal(g.state.combat.hp,13);
-  assert.equal(g.state.combat.inventory.ammo[4],12);assert.equal(g.state.player.shield,3);assert.equal(g.state.player.fuel,440);
+  assert.equal(g.state.combat.inventory.ammo[4],12);assert.equal(g.state.player.shield,query==='?entry=resume'?3:0,'only a resumed mission keeps its shield');assert.equal(g.state.player.fuel,440);
   g.state.combat.hp=10;g.element('pause-two').click();const saved=JSON.parse(g.data.get('cap-dollar.mission-two.v1'));assert.equal(saved.hp,10);assert.equal(saved.landed,false);assert.equal(saved.score,9200);
   const resumed=await game('?entry=resume',Object.fromEntries(g.data));assert.equal(resumed.state.combat.hp,10);assert.equal(resumed.state.combat.maxHp,13);
  }

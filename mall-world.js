@@ -9,7 +9,7 @@
  const emit=(s,type,data={})=>s.events.push({type,...data});
  function interact(s,p){if(s.floor===0&&Math.abs(p.x-s.arcadeX)<200&&p.grounded&&!p.burrow)return'arcade';if(s.floor<3&&p.x>widths[s.floor]-570&&p.grounded&&!p.burrow){s.travel=0;s.travelX=p.x;return'escalator';}return null;}
  function floorUp(s,p,e){s.floor++;s.checkpoint=s.floor;s.x=140;s.y=FLOOR;s.travel=-1;s.enemies=soldiers(s.floor,s.awarded,s.difficulty);configure(s,p,e);emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});}
- function bossUpdate(s,p,e,dt){const b=s.boss;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
+ function bossUpdate(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
   if(b.hp<=0){s.ending=0;e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:8500,text:'Coloso derrotado'});}emit(s,'ending');return;}
   b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.65:1);const next=phase=>{b.phase=phase;b.age=0;};
   if(b.phase==='arrival'&&b.age>2.5)next('fistWarn');

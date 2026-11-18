@@ -36,7 +36,7 @@
     for(const f of t.fragments)if(f.settled){f.restAge=Math.min(.3,(f.restAge||0)+dt);const target=FRAGMENTS[f.id].rest*f.facing,delta=Math.atan2(Math.sin(target-f.restFrom),Math.cos(target-f.restFrom)),k=f.restAge/.3;f.angle=f.restFrom+delta*k*k*(3-2*k);f.y=t.y-fragmentSupport(f);}
     t.fragments=t.fragments.filter(f=>f.life>0);
   }
-  function update(t,p,dt,bullets,explosions,view){
+  function update(t,p,dt,bullets,explosions,view){if(p.cloak>0&&t?.hp>0)return;
     if(!t)return;
     t.age+=dt;t.flash=Math.max(0,t.flash-dt);t.launchFlash=Math.max(0,t.launchFlash-dt);t.hit=Math.max(0,t.hit-dt);
     breakParts(t,dt);

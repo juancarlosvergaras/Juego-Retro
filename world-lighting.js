@@ -24,6 +24,21 @@
    cone(c,x+36,y,95+sway,inside?440:h-y+30,inside?20:38,color,inside?.12:night?.08:.13);
   }c.restore();
  }
+ // El arte del mausoleo ya pinta la luz que cae de sus cuatro ventanas. Encima no se
+ // dibuja ningún haz: solo polvo flotando dentro de esos mismos rayos, para que la luz
+ // y el muro nunca se contradigan. Posiciones como fracción del ancho y alto del mosaico.
+ const WINDOWS=[.445,.5985,.716,.8225],SHAFT={top:.157,dx:-.075,dy:.66};
+ function shafts(camX,w,height=650,speed=.65,aspect=2172/724){
+  const tile=height*aspect,offset=camX*speed,first=Math.floor(offset/tile),list=[];
+  for(let i=first;i<first+Math.ceil(w/tile)+2;i++){const x0=i*tile-offset,flip=Math.abs(i)%2===1;
+   WINDOWS.forEach((u,k)=>{const x=x0+(flip?1-u:u)*tile,dx=SHAFT.dx*tile*(flip?-1:1);if(Math.max(x,x+dx)>-60&&Math.min(x,x+dx)<w+60)list.push({id:i*4+k,x,y:SHAFT.top*height,dx,dy:SHAFT.dy*height});});}
+  return list;
+ }
+ function dust(c,cam,w,top,time,height=650){
+  c.save();c.globalCompositeOperation='screen';
+  for(const s of shafts(cam.x,w,height))for(let k=0;k<7;k++){const t=((time*.035*(1+k%3*.3)+k*.143+s.id*.37)%1+1)%1,side=Math.sin(k*2.4+s.id)*18+Math.sin(time*.6+k)*5;c.fillStyle='rgba(226,196,240,'+(Math.sin(t*Math.PI)*.5).toFixed(3)+')';c.fillRect(Math.round(s.x+s.dx*t+side),Math.round(top+s.y+s.dy*t),2,2);}
+  c.restore();
+ }
  function lamp(c,x,y,time){c.save();c.globalCompositeOperation='screen';const a=.15+Math.sin(time*1.5+x)*.018;cone(c,x,y,0,155,65,'255,199,108',a);halo(c,x,y,72,'255,177,81',.25);c.restore();c.fillStyle='#283336';c.fillRect(Math.round(x)-6,Math.round(y)-7,12,5);c.fillStyle='#fff0b6';c.fillRect(Math.round(x)-4,Math.round(y)-2,8,3);}
  function fixtures(c,mission,geometry,cam,w,h,time,inside=false){
   const visible=(x,y,r=160)=>x+r>cam.x&&x-r<cam.x+w&&y+r>cam.y&&y-r<cam.y+h;
@@ -34,5 +49,5 @@
  function storm(c,s,image,cam,w,h){if(!s?.bolt||!image)return;const b=s.bolt,a=flash(s),frame=Math.min(5,Math.floor(b.age/1.05*6)),cw=image.width/3,ch=image.height/2,height=clamp(620-cam.y-40,320,720),width=height*.66,x=b.x-b.cameraX-(cam.x-b.cameraX)*.3;
   c.save();c.globalCompositeOperation='screen';c.fillStyle='rgba(153,183,231,'+(a*.22)+')';c.fillRect(0,0,w,h);c.imageSmoothingEnabled=false;c.globalAlpha=.85*Math.min(1,(1.05-b.age)*4);c.drawImage(image,frame%3*cw,Math.floor(frame/3)*ch,cw,ch,Math.round(x-width/2),Math.round(620-cam.y-height-45),Math.round(width),Math.round(height));c.restore();
  }
- const api={create,update,flash,shadow,sky,fixtures,storm};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeWorldLighting=api;
+ const api={create,update,flash,shadow,sky,fixtures,storm,shafts,dust,WINDOWS,SHAFT};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeWorldLighting=api;
 })(typeof window!=='undefined'?window:globalThis);

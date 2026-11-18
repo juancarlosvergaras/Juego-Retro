@@ -9,6 +9,7 @@ function nearest(e,x,y,range=600){return targets(e).filter(n=>Math.hypot(n.x-x,n
 function damage(e,n,amount){if(n===e.finalBoss)F.damage(n,amount);else if(n===e.boss||n===e.tank){n.hp=Math.max(0,n.hp-amount);n.hit=.18;}else N.damage(n,amount);}
 function blast(s,e,p,x,y,r,amount,color,kind='wave'){for(const n of targets(e))if(Math.hypot(n.x-x,n.y-30-y)<r)damage(e,n,amount*(p.damageBonus||1));s.effects.push({x,y,r,life:.5,duration:.5,color,kind});}
 function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top:p.y-600,bottom:p.y+60}){
+ p.cloak=Math.max(0,(p.cloak||0)-dt);
  s.age+=dt;s.shieldFlash=Math.max(0,s.shieldFlash-dt);if(s.lastShield!==null&&p.shield<s.lastShield)s.shieldFlash=.3;s.lastShield=p.shield;
  for(const k in s.cooldowns)s.cooldowns[k]=Math.max(0,s.cooldowns[k]-dt);
  s.effects=s.effects.filter(f=>(f.life-=dt)>0);s.flame=Math.max(0,s.flame-dt);
@@ -16,7 +17,7 @@ function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top
  const id=profile.equipped,c=C.catalog.find(c=>c.id===id);let message=null;
  if(pressed&&!p.burrow&&c&&profile.owned.includes(id)&&!s.cooldowns[id]&&!p.transform){
   const target=nearest(e,p.x,p.y-30);let used=true;
-  if(id==='alien'){const list=targets(e).filter(n=>Math.hypot(n.x-p.x,n.y-30-(p.y-30))<520).sort((a,b)=>Math.abs(a.x-p.x)-Math.abs(b.x-p.x)).slice(0,3);if(!list.length){used=false;message='No hay enemigos al alcance.';}else{for(const n of list){damage(e,n,7*(p.damageBonus||1));n.frozen=Math.max(n.frozen||0,1.4);s.effects.push({kind:'alien',x:p.x,y:p.y-30,tx:n.x,ty:n.y-30,r:65,life:.75,duration:.75});}message='¡PULSO DEL VACÍO!';}}else if(id==='flame'){
+  if(id==='cloak'){p.cloak=6;message='Invisibilidad activa · 6 s';}else if(id==='alien'){const list=targets(e).filter(n=>Math.hypot(n.x-p.x,n.y-30-(p.y-30))<520).sort((a,b)=>Math.abs(a.x-p.x)-Math.abs(b.x-p.x)).slice(0,3);if(!list.length){used=false;message='No hay enemigos al alcance.';}else{for(const n of list){damage(e,n,7*(p.damageBonus||1));n.frozen=Math.max(n.frozen||0,1.4);s.effects.push({kind:'alien',x:p.x,y:p.y-30,tx:n.x,ty:n.y-30,r:65,life:.75,duration:.75});}message='¡PULSO DEL VACÍO!';}}else if(id==='flame'){
    if(p.form==='wolf'||p.form==='zombie'){used=false;message='Lanzallamas: solo soldado.';}
    else{const aim=p.aim||{x:p.facing,y:0};s.flame=.16;for(const n of targets(e)){const dx=n.x-p.x,dy=n.y-30-(p.y-30),along=dx*aim.x+dy*aim.y,side=Math.abs(dx*aim.y-dy*aim.x);if(along>0&&along<140&&side<30)damage(e,n,.45*(p.damageBonus||1));}}
   }else if(id==='drone'){if(target)s.drones.push({x:p.x,y:p.y-45,life:6,target});else{used=false;message='No hay enemigos al alcance.';}}
@@ -69,7 +70,7 @@ function draw(ctx,s,p,e,view={top:-400,bottom:4000}){
  for(const t of s.turrets)V.turret(ctx,t);
  for(const m of s.marks){V.draw(ctx,'wave',Math.floor(s.age*8)%4,m.x,m.y+22,58,18,.7);V.draw(ctx,'orbital',0,m.x,m.y-80,35,200,(1-m.t)*.65);}
  if(s.flame>0)V.flame(ctx,p,s.age);
- if(!p.burrow&&(p.shield>0||s.shieldFlash>0)){const wolf=p.form==='wolf';V.draw(ctx,'shield',s.shieldFlash>0?3:Math.floor(s.age*7)%3,p.x,p.y-(wolf?38:26),wolf?78:58,wolf?98:76,s.shieldFlash>0?1:.58);}
+ if(!p.burrow&&(p.shield>0||s.shieldFlash>0)){const wolf=p.form==='wolf',ride=!!p.onMotorcycle;/* On the bike the shield covers rider and machine. */V.draw(ctx,'shield',s.shieldFlash>0?3:Math.floor(s.age*7)%3,p.x,p.y-(ride?36:wolf?38:26),ride?136:wolf?78:58,ride?98:wolf?98:76,s.shieldFlash>0?1:.58);}
  ctx.restore();
 }
 const api={create,update,draw,nearest};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadePowers=api;

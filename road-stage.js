@@ -4,7 +4,8 @@
  // farolas de la autopista y las luces del atardecer. No decide nada del
  // combate; el dibujo vive en road-renderer.js.
  const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)),ease=u=>{u=clamp(u);return u*u*(3-2*u);};
- const INTRO=5,CRUISE=360,LAMP_GAP=560,LAMP_Y=238,RAIL_Y=330,REST=200;
+ // HELI: escala del helicóptero frente a los motoristas, que aquí se dibujan más grandes que a pie.
+ const HELI=.7,INTRO=5,CRUISE=360,LAMP_GAP=560,LAMP_Y=238,RAIL_Y=330,REST=200;
  // Entrada: los últimos motoristas del convoy se alejan, el helicóptero de Vega
  // pasa bajo y se aparta, y el cazador entra acelerando hasta su carril.
  function intro(t,lane=414){
@@ -55,6 +56,6 @@
   let shots=0;for(const q of s.bullets){if(shots++>=28)break;list.push({x:q.x,y:q.y,r:q.plasma?44:q.slot===6?46:26,a:.55,glow:q.plasma?'150,255,120':q.enemy?'255,120,90':'255,236,170',ga:q.plasma?.28:.16});}
   return list;
  }
- const api={INTRO,LAMP_GAP,LAMP_Y,RAIL_Y,REST,intro,ending,lamps,lights};
+ const api={HELI,INTRO,LAMP_GAP,LAMP_Y,RAIL_Y,REST,intro,ending,lamps,lights};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadStage=api;
 })(typeof window!=='undefined'?window:globalThis);

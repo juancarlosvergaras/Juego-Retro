@@ -86,25 +86,25 @@ test('a mission title shows its card without stopping the action',()=>{
  assert.equal(line.state.cue.kind,'intro');assert.ok(lost>0,'the queued entrance brings its own freeze');
 });
 
-test('mission 2 exit: the hunter walks out, the helicopter picks him up and leaves',()=>{
+test('mission 2 exit: the hunter runs to the helicopter, boards it and it leaves',()=>{
  const door=17500,at=t=>Outro.script(t,door),first=at(0);
- assert.ok(Math.abs(first.player.x-(door-18))<1e-9);assert.equal(first.player.y,Outro.GROUND);assert.equal(first.player.hidden,false);assert.equal(first.rope,0);assert.equal(first.done,false);
- assert.ok(first.heli.y<Outro.GROUND-400&&first.heli.x<first.pick-400,'the helicopter starts high and off to the left');
- assert.equal(first.pick,door-Outro.PICKUP);assert.ok(Outro.PICKUP>=280,'the pickup is clear of the mausoleum front');
- // He never teleports, never walks backwards and never moves faster than a walk.
+ assert.ok(Math.abs(first.player.x-(door-18))<1e-9);assert.equal(first.player.y,Outro.GROUND);assert.equal(first.player.hidden,false);assert.equal(first.done,false);
+ assert.ok(first.heli.y<Outro.GROUND-300&&first.heli.x<first.pick-400,'the helicopter starts high and off to the left');
+ assert.equal(first.pick,door-Outro.PICKUP);
+ // A helicopter, not a toy: several times the 46 px soldier, and its nose stays clear of the mausoleum front.
+ assert.ok(Outro.HELI>=.58&&Outro.HELI<=.7);assert.ok(504*Outro.HELI>46*6);assert.ok(first.pick+Outro.DOOR+172*Outro.HELI<door-315,'the nose does not touch the facade');assert.ok(Math.abs(Outro.DOOR-(332-241)*Outro.HELI)<2,'he stops at the cabin door, not at the cockpit');
  let prev=first,arrived=null,hidAt=null;
  for(let t=1/60;t<=Outro.DURATION+1e-9;t+=1/60){const s=at(t),dx=s.player.x-prev.player.x;
-  assert.ok(dx<=1e-9&&dx>-110/60,'steady walk at '+t.toFixed(2));assert.ok(s.player.y<=prev.player.y+1e-9,'only ever climbs');
-  assert.equal(s.player.vx!==0,Math.abs(dx)>1e-9,'the walk animation runs only while he moves, t='+t.toFixed(2));
+  assert.ok(dx<=1e-9&&dx>-170/60,'a steady run, never backwards, at '+t.toFixed(2));assert.equal(s.rope,0,'no rope to slide up');
+  assert.ok(s.player.y<=Outro.GROUND+1e-9&&s.player.y>Outro.GROUND-30,'feet on the ground but for the hop aboard');
   if(arrived===null&&Math.abs(s.player.x-s.pick)<1e-6)arrived=t;if(hidAt===null&&s.player.hidden)hidAt=t;
-  if(!s.player.grounded&&!s.player.hidden){assert.ok(s.rope>0,'he climbs a rope that is there, t='+t.toFixed(2));assert.ok(Math.abs(s.heli.x-6-s.pick)<2,'under a helicopter that holds still');}
-  if(s.rope>0)assert.ok(s.heli.y+24+s.rope<=Outro.GROUND+1,'the rope never goes through the ground');
+  if(!s.player.grounded&&!s.player.hidden)assert.ok(Math.abs(s.heli.x-(s.pick+Outro.DOOR))<2&&Math.abs(s.heli.y-(Outro.GROUND-27))<3,'he hops into a helicopter that is waiting at ground level');
   prev=s;}
- assert.ok(arrived>3&&arrived<4,'reaches the rope after a real walk: '+arrived);assert.ok(hidAt>arrived+.8,'climbs before disappearing aboard');
- const down=at(arrived);assert.ok(down.rope>100,'the rope is already down when he arrives');assert.ok(Math.abs(down.heli.y-(Outro.GROUND-150))<4);assert.ok(down.light>.95);
- const end=at(Outro.DURATION);assert.equal(end.done,true);assert.equal(end.player.hidden,true);assert.equal(end.rope,0);
- assert.ok(end.heli.x>end.pick+500&&end.heli.y<Outro.GROUND-350,'the helicopter is gone up and to the east');assert.ok(end.dawn>.99&&end.light<.05);
- assert.ok(at(hidAt-.02).heli.x<at(hidAt+1.2).heli.x,'it only leaves once he is aboard');assert.ok(Math.abs(at(hidAt).heli.x-6-at(hidAt).pick)<2);
+ assert.ok(arrived>3&&arrived<3.4,'reaches the cabin after a real run: '+arrived);assert.ok(Math.abs(hidAt-Outro.BOARD)<.02);assert.ok(hidAt>arrived+.2,'the hop aboard takes a moment');
+ const waiting=at(arrived);assert.ok(waiting.light>.95,'the helicopter is already down when he arrives');assert.ok(at(1).player.vx<-100&&at(1).player.vx>-170);assert.equal(at(arrived+.05).player.vx,0);
+ const end=at(Outro.DURATION);assert.equal(end.done,true);assert.equal(end.player.hidden,true);
+ assert.ok(end.heli.x>end.pick+600&&end.heli.y<Outro.GROUND-300,'the helicopter is gone up and to the east');assert.ok(end.dawn>.99&&end.light<.05);
+ assert.ok(Math.abs(at(hidAt+.4).heli.x-at(hidAt).heli.x)<2,'it only leaves once he is aboard');assert.ok(at(hidAt+2).heli.x>at(hidAt).heli.x+100);
 });
 test('mission 2 exit draws nothing without art and never throws on a bare canvas',()=>{
  const c=canvas();Outro.draw(c,3,17500,null,0);assert.equal(c.calls.length,0);

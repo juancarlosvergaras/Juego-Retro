@@ -15,7 +15,7 @@
   n.shot-=dt;if(n.shot<=0){const x=n.x+n.facing*(n.kind==='alienPilot'?46:25),y=n.y-32,a=Math.atan2(p.y-27-y,p.x-x);for(const o of n.kind==='alienElite'?[-.13,0,.13]:[0])bullets.push({x,y,vx:Math.cos(a+o)*350,vy:Math.sin(a+o)*350,life:2.7,enemy:true,alienLaser:true,fromSoldier:true});n.flash=.18;n.shot=n.kind==='alienPilot'?1.65:2;}
   return true;
  }
- function bossUpdate(s,p,e,dt){const b=s.boss;if(s.floor!==2||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;emit(s,'checkpoint',{text:'CHECK POINT · Núcleo alienígena'});}if(b.hp<=0){s.ending=0;e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:12000,text:'Soberano derrotado'});emit(s,'unlock');}emit(s,'ending');return;}
+ function bossUpdate(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(s.floor!==2||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;emit(s,'checkpoint',{text:'CHECK POINT · Núcleo alienígena'});}if(b.hp<=0){s.ending=0;e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:12000,text:'Soberano derrotado'});emit(s,'unlock');}emit(s,'ending');return;}
   b.anim=(b.anim||0)+dt;b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.7:1);const next=phase=>{b.phase=phase;b.age=0;};
   if(b.phase==='arrival'&&b.age>3)next('lashWarn');
   else if(b.phase==='lashWarn'){if(!b.targets.length)b.targets=[clamp(p.x,60,880)];if(b.age>1.1){s.hazards.push({type:'tentacle',x:b.targets[0],y:FLOOR,age:0,life:.75,radius:65});b.targets=[];next('lash');}}

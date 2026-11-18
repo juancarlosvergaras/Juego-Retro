@@ -24,13 +24,29 @@ test('escorts that share a lane never share the same spot on it',()=>{
 });
 test('the jetpack soldier over the road is hit where he is drawn',()=>{
  const jet=Array.from({length:12},(_,i)=>R.spawn(R.create({},1),i+1)).find(n=>n.type==='jetSoldier');
- assert.ok(jet.h>=Expansion.JET_HEIGHT&&jet.h<=Expansion.JET_HEIGHT+8,jet.h+' vs '+Expansion.JET_HEIGHT);
+ const drawn=Expansion.JET_HEIGHT*R.JET_SCALE;assert.ok(jet.h>=drawn&&jet.h<=drawn+8,jet.h+' vs '+drawn);
+ // Riders on the road are drawn larger than soldiers on foot, and he grows with them.
+ assert.ok(drawn>=52&&drawn<=64,'as big as a seated rider: '+drawn);assert.ok(read('road-renderer.js').includes('scale:War?.JET_SCALE'));assert.ok(read('expansion-enemies.js').includes('const k=n.scale||1'));
 });
-test('when the rig arrives the escort clears the road instead of piling on top of it',()=>{
- const g=game(R.LENGTH-30);g.e.invincible=999;g.s.wave=R.WAVES;g.s.enemies=[1,2,3,4].map(i=>({...R.spawn(g.s,i),x:520+i*60}));
+test('when the rig arrives the escort clears the road and only its two guards ride with it',()=>{
+ const g=game(R.LENGTH-30);g.e.invincible=1e9;g.s.wave=R.WAVES;g.s.enemies=[1,2,3,4].map(i=>({...R.spawn(g.s,i),x:520+i*60}));
  const events=tick(g,1,{run:true});assert.equal(events.filter(ev=>ev.type==='boss').length,1);assert.ok(g.s.boss.active);
- const shots=g.s.bullets.length;tick(g,.2);for(const n of g.s.enemies)assert.ok(n.type==='jetSoldier'?n.y<235:n.x>520,'everyone is leaving');
- tick(g,6);assert.equal(g.s.enemies.length,0,'nobody is left over the boss');assert.ok(shots>=0);
+ tick(g,.2);for(const n of g.s.enemies.filter(n=>!n.guard))assert.ok(n.type==='jetSoldier'?n.y<235:n.x>520,'the old escort is leaving');
+ tick(g,6);const guards=g.s.enemies.filter(n=>n.guard);
+ assert.equal(g.s.enemies.length,R.GUARDS,'nobody else is left over the boss');assert.equal(guards.length,2);assert.equal(R.GUARDS,2);
+ assert.deepEqual(guards.map(n=>n.y).sort((a,b)=>a-b),[R.LANES[0],R.LANES[2]],'one on each outer lane, the middle stays open');
+ for(const n of guards){assert.equal(n.type,'bike');assert.ok(n.x>300&&n.x<560,'between the hunter and the rig: '+n.x);}
+ // They stay for the whole fight instead of retiring like the road escort.
+ tick(g,22);assert.equal(g.s.enemies.filter(n=>n.guard&&n.hp>0).length,2);
+ // Once destroyed they pay like a bike and never come back, not even after a retry.
+ for(const n of g.s.enemies)n.hp=0;const points=tick(g,.1).filter(ev=>ev.type==='points');assert.equal(points.length,2);assert.ok(points.every(ev=>ev.amount===100));
+ tick(g,4);assert.equal(g.s.enemies.length,0);assert.equal(R.tally(g.s).total,R.WAVES,'guards do not change the road count');
+ const again={s:R.retry(g.s),p:g.p,e:g.e};again.s.distance=R.LENGTH-5;tick(again,1,{run:true});assert.ok(again.s.boss.active);assert.equal(again.s.enemies.filter(n=>n.guard).length,0);
+});
+test('a pothole always throws the bike, even when the hit itself is spared',()=>{
+ for(const spared of [false,true]){const g=game(100);g.s.obstacles=[{id:0,distance:104,lane:414,type:'pothole',used:false}];g.e.invincible=0;g.s.hitWait=spared?5:0;const hp=g.e.hp;
+  tick(g,.2);assert.ok(g.s.crash>0,'thrown'+(spared?' while protected':''));assert.equal(g.e.hp,spared?hp:hp-1);}
+ const air=game(100);air.s.obstacles=[{id:0,distance:104,lane:414,type:'pothole',used:false}];air.s.jump=60;air.s.jumpV=200;tick(air,.2);assert.equal(air.s.crash,0,'jumping still clears it');
 });
 test('play time survives a retry and a reload, and the introduction does not count',()=>{
  const g=game(0);tick(g,3);assert.equal(g.s.elapsed,0);R.skipIntro(g.s);assert.equal(g.s.intro,R.INTRO);g.e.invincible=999;tick(g,2);assert.ok(Math.abs(g.s.elapsed-2)<.02);
@@ -105,6 +121,20 @@ test('mission 4 has its briefing, objectives and a radio that follows the chase'
  assert.deepEqual(fired({bossActive:true,bossStage:2}),['boss','turret','last']);assert.deepEqual(fired({reward:true}),['tank','sea']);
  assert.equal(Story.beats.find(b=>b.id==='sea').after,'tank');
  for(const b of Story.beats)assert.ok(!Story.config.ambient.test(b.id)||!/^(start|boss|turret|last|tank|sea)$/.test(b.id),'key beats are never skipped as ambient: '+b.id);
+});
+test('the fire on the wreck sits on the wreck and is made of flames, not bars',()=>{
+ const renderer=read('road-renderer.js'),spots=JSON.parse(renderer.match(/const HOT=(\[\[.*?\]\]),STACKS/)[1].replace(/(^|[\[,])\./g,'$10.')),stacks=JSON.parse(renderer.match(/STACKS=(\[\[.*?\]\]),rnd/)[1].replace(/(^|[\[,])\./g,'$10.'));
+ // Top of the wrecked heap along its width, measured on the art (left to right, as a fraction of its height).
+ const top=[[.1,.673],[.2,.591],[.3,.89],[.4,.833],[.5,.598],[.6,.633],[.7,.673],[.8,.701],[.9,.423]],height=x=>{let best=top[0];for(const t of top)if(Math.abs(t[0]-x)<Math.abs(best[0]-x))best=t;return best[1];};
+ assert.equal(spots.length,5);for(const [x,y,size] of spots){assert.ok(x>.05&&x<.95);assert.ok(y<=height(x)+.02,'flame at '+x+' starts on the wreck, not above it: '+y+' vs '+height(x));assert.ok(size<=1.15,'a flame is never stretched into separate bars');}
+ for(const [x,y] of stacks)assert.ok(y<=height(x)+.02,'smoke rises from the heap');
+ assert.ok(!renderer.includes('spot[2]*2.1'));assert.match(renderer,/Fire\.flame\(c,fx-6,fy\+1.*Fire\.flame\(c,fx\+6,fy\+1.*Fire\.flame\(c,fx,fy,spot\[2\]/,'a bigger fire is several flames side by side');
+});
+test('one mission selector in every mission: the map',()=>{
+ for(const page of ['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html']){const html=read(page);
+  assert.ok(html.includes('mission-map.css'),page+' styles the map');assert.ok(html.includes('"mission-map.js"'),page+' loads the map');assert.ok(html.indexOf('"main-menu.js"')<html.indexOf('"mission-map.js"'),page+': the map mounts over the menu list');
+  assert.ok(html.includes('class="level-choices"'),page+' keeps the list the map replaces');}
+ const map=read('mission-map.js');assert.ok(map.includes('list.hidden=true'),'the plain list is never shown next to the map');
 });
 test('mission 4 is wired to the shared systems of missions 1 to 3',()=>{
  const html=read('level-four.html'),source=read('level-four-game.js'),renderer=read('road-renderer.js'),order=name=>{const i=html.indexOf('"'+name+'"');assert.ok(i>0,'loads '+name);return i;};

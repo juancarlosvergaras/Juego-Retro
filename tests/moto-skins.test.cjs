@@ -42,6 +42,26 @@ test('no crash frame crosses into the next cell, and the fallen zombie matches t
  // The old sheet let the thrown rider's hand spill into the second frame.
  const edge=Math.round(old.width/4);assert.ok(count(old,[edge,y0,edge+3,y1],any)>0,'the defect this sheet fixes');
 });
+test('the soldier on the bike has the head of the soldier on foot',()=>{
+ const old=art('motos-carretera-v1.png'),now=art('motos-carretera-v2.png'),CW=384,CH=341,any=()=>true;
+ const skin=(r,g,b)=>r>170&&g>100&&g<190&&b<150&&r>g*1.15&&g>b*1.1;
+ for(let frame=0;frame<4;frame++){const x0=frame*CW;
+  // Highest opaque row is the helmet; the on-foot helmet is taller and wider than the one he wore.
+  const top=image=>{for(let y=0;y<CH;y++)if(count(image,[x0,y,x0+CW,y+1],any))return y;return CH;},width=(image,y)=>{let a=CW,b=0;for(let yy=y;yy<y+30;yy++)for(let x=x0;x<x0+CW;x++){const i=(yy*image.width+x)*4;if(image.data[i+3]>200){a=Math.min(a,x-x0);b=Math.max(b,x-x0);}}return b-a+1;};
+  const before=top(old),after=top(now);assert.ok(after<before,'frame '+frame+': a taller head ('+after+' vs '+before+')');
+  assert.ok(width(now,after)>=68&&width(now,after)<=84,'frame '+frame+': the big helmet, '+width(now,after)+' px');
+  // More face shows under the helmet than the old man with sunglasses had.
+  const head=[x0,after,x0+CW,after+74];assert.ok(count(now,head,skin)>count(old,[x0,before,x0+CW,before+60],skin),'frame '+frame+': his face is visible');
+  // Below the shoulders nothing moved: same bike, same wheels.
+  for(let y=230;y<CH;y+=2)for(let x=x0;x<x0+CW;x+=2){const i=(y*old.width+x)*4;for(let k=0;k<4;k++)if(old.data[i+k]!==now.data[i+k])assert.fail('frame '+frame+' changed at '+x+','+y);}}
+ // The other riders on this sheet are untouched.
+ for(let y=CH;y<old.height;y+=3)for(let x=0;x<old.width;x+=3){const i=(y*old.width+x)*4;for(let k=0;k<4;k++)if(old.data[i+k]!==now.data[i+k])assert.fail('pixel '+x+','+y+' changed');}
+ for(const file of ['level-four-game.js','level-three-game.js','mission-four-scenes.js'])assert.ok(read(file).includes('motos-carretera-v2.png')&&!read(file).includes('motos-carretera-v1.png'),file+' uses the unified soldier');
+});
+test('on the bike the shield covers rider and machine',()=>{
+ const powers=read('powers.js');assert.ok(powers.includes('ride=!!p.onMotorcycle'));assert.ok(powers.includes('ride?136:wolf?78:58'),'wide enough for both wheels');
+ assert.ok(read('power-fx.js').includes('ride?64:wolf?36:27'),'the hit ring grows with it');assert.ok(read('level-four-game.js').includes('onMotorcycle:true'));
+});
 test('mission 4 rides, falls and shows its cards with the unified skins',()=>{
  const game=read('level-four-game.js'),renderer=read('road-renderer.js');
  assert.ok(game.includes("actions:'assets/sprites/motos-personajes-acciones-v2.png'"));assert.ok(game.includes("crashes:'assets/sprites/caidas-carretera-v3.png'"));
@@ -49,6 +69,19 @@ test('mission 4 rides, falls and shows its cards with the unified skins',()=>{
  // The character cards use the same art the player rides, not the old green zombie or the bare chrome robot.
  assert.ok(game.includes("zombie:own('actions',renderer.actions,1)"));assert.ok(game.includes("robot:own('mounted',renderer.mounted,0)"));assert.ok(game.includes("fighter=own('mounted',renderer.mounted,4)"));
  assert.ok(renderer.includes('riders,actions,mounted,crashes,rig'),'the renderer exposes the sheets the cards need');
- // Soldier and robot have no crash art of their own: both tumble with the bike they ride.
- assert.ok(renderer.includes("wipeout(c,images.mounted,mounted[0],x,p.lane,104,s.crashAge)"));assert.ok(renderer.includes("wipeout(c,images.riders,riders[0],x,p.lane,104,s.crashAge)"));
+ // Every skin really falls: the soldier has his own frames and the robot keeps its own.
+ assert.ok(game.includes("soldierCrash:'assets/sprites/caidas-soldado-v1.png'"));assert.ok(renderer.includes('soldierCrash[Math.min(3,Math.floor(s.crashAge/.55))]'));
+ assert.ok(!renderer.includes('wipeout(c,images.mounted'),'the robot falls with its own crash art');
+});
+test('the soldier has his own fall: thrown, on the ground, lifting the bike, back in the saddle',()=>{
+ const sheet=art('caidas-soldado-v1.png'),cw=sheet.width/4,any=()=>true,face=(r,g,b)=>r>170&&g>100&&g<190&&b<150&&r>g*1.15&&g>b*1.1;
+ assert.equal(sheet.width,1254);
+ const top=col=>{for(let y=0;y<sheet.height;y++)if(count(sheet,[Math.round(col*cw),y,Math.round((col+1)*cw),y+1],any))return y;return sheet.height;};
+ for(let col=0;col<4;col++){const x0=Math.round(col*cw),x1=Math.round((col+1)*cw),box=[x0,0,x1,sheet.height];
+  assert.ok(count(sheet,box,any)>20000,'frame '+col+' has its art');
+  assert.equal(count(sheet,[x0,0,x0+3,sheet.height],any)+count(sheet,[x1-3,0,x1,sheet.height],any),0,'frame '+col+' stays inside its cell');
+  assert.ok(count(sheet,box,sickGreen)<80,'frame '+col+' is no zombie: '+count(sheet,box,sickGreen));assert.ok(count(sheet,box,cyan)<6,'no glowing eyes in frame '+col);
+  assert.ok(count(sheet,box,face)>120,'frame '+col+' shows the soldier\'s face: '+count(sheet,box,face));}
+ // On the ground the whole figure is low; thrown and riding it stands tall.
+ assert.ok(top(1)>top(0)+80&&top(1)>top(3)+80,'the second frame lies on the asphalt');
 });

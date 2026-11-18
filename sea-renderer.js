@@ -13,7 +13,7 @@
    for(let i=0;i<7;i++){c.fillStyle='#79e9fa';c.globalAlpha=.035+(1-cam.y/2400)*.04;c.beginPath();const x=i*190-(cam.x*.05%190);c.moveTo(x,0);c.lineTo(x+25,0);c.lineTo(x+180,540);c.lineTo(x+60,540);c.fill();}c.globalAlpha=1;
    for(let i=0;i<38;i++){const x=((i*173-cam.x*.35+s.time*7)%1040+1040)%1040-30,y=((i*91-cam.y*.27-s.time*(8+i%9))%590+590)%590;c.strokeStyle=i%3?'#78bfcd55':'#c0f9ff88';c.strokeRect(Math.round(x),Math.round(y),2+i%3,2+i%3);}
   }
-  function player(c,s,p){if(root.ArcadeFormTransition?.compose(c,{...p,swimming:!s.inside,onMotorcycle:false},q=>player(c,s,q),s.inside?'ground':'swim'))return;if(p.hurt>0&&Math.floor(s.time*18)%2)c.globalAlpha=.45;
+  function player(c,s,p){if(p.cloak>0&&Math.floor(p.cloak*9)%4!==0)return;if(root.ArcadeFormTransition?.compose(c,{...p,swimming:!s.inside,onMotorcycle:false},q=>player(c,s,q),s.inside?'ground':'swim'))return;if(p.hurt>0&&Math.floor(s.time*18)%2)c.globalAlpha=.45;
    if(root.ArcadeFormTransition?.draw(c,p)){c.globalAlpha=1;return;}
    if(root.ArcadeAdvancedForms.draw(c,p)){c.globalAlpha=1;return;}
    if(!s.inside&&p.form==='robot'){root.ArcadeRobotForm.draw(c,p);root.ArcadeWeaponRenderer.draw(c,p,{inventory:s.inventory,flash:s.flash});}

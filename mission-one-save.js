@@ -12,7 +12,7 @@
   e.won=s.won===true;e.finalWon=e.won&&s.finalWon===true;
   if(e.won)e.boss.hp=0;if(e.finalWon){Object.assign(e.finalBoss,{hp:0,stage:2,phase:'dead',death:0,active:false});}
   progression.apply(profile,p,e,true);
-  p.form=s.form==='tank'&&p.tankUnlocked?'tank':s.form==='fighter'&&p.fighterUnlocked?'fighter':s.form==='robot'&&p.robotUnlocked?'robot':s.form==='zombie'&&p.zombieUnlocked?'zombie':s.form==='wolf'&&(e.won||p.zombieUnlocked)?'wolf':'soldier';p.h=p.form==='tank'?53:p.form==='fighter'?57:p.form==='wolf'?64:p.form==='zombie'?68:p.form==='robot'?54:46;
+  p.form=s.form==='hero'&&p.heroUnlocked?'hero':s.form==='tank'&&p.tankUnlocked?'tank':s.form==='fighter'&&p.fighterUnlocked?'fighter':s.form==='robot'&&p.robotUnlocked?'robot':s.form==='zombie'&&p.zombieUnlocked?'zombie':s.form==='wolf'&&(e.won||p.zombieUnlocked)?'wolf':'soldier';p.h=p.form==='tank'?53:p.form==='fighter'?57:p.form==='wolf'?64:p.form==='zombie'?68:p.form==='robot'?54:46;
   p.fuel=Math.min(p.fuelMax,n(s.fuel,p.fuelMax));p.shield=Math.min(10,n(s.shield));p.formCooldown=Math.min(5,n(s.formCooldown));if(s.dead)e.invincible=3;e.hp=s.dead?e.maxHp:Math.max(1,Math.min(e.maxHp,n(s.hp,e.maxHp)));e.inventory=campaign.inventory(s.inventory);
   const contains=(list,id)=>Array.isArray(list)&&list.includes(id);
   for(const enemy of e.enemies)if(contains(s.defeated,enemy.id)){enemy.hp=0;enemy.death=0;}

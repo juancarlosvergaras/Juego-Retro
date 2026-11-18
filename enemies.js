@@ -19,7 +19,7 @@
     return spawns.map(createSoldier);
   }
   function createSoldier(spawn,id){return Object.assign(P.createPlayer(),{facing:-1,kind:'rifle'},spawn,{id,memory:0,lastKnown:null,hp:3,maxHp:3,shot:1.4+id*.2,jumpWait:0,flash:0,hit:0,death:0,alert:false,attackAge:null,strikePending:false,burst:0,runCycle:0});}
-  function contact(n,p,platforms,segmentHit){
+  function contact(n,p,platforms,segmentHit){if(p.cloak>0)return false;
     if(n.hp<=0||n.ramHit)return false;
     if(n.kind==='mallGiant'||n.kind==='alienBoss'||n.kind==='cityBoss')return false;
     if(n.kind==='mecha')return n.active&&(Math.abs(n.x-p.x)<64&&Math.abs(n.y-p.y)<145||n.waves.some(w=>Math.abs(w.x-p.x)<23&&p.y>n.y-24&&p.y<=n.y+8));
@@ -99,6 +99,7 @@
   }
   function update(list,p,elapsed,platforms,bullets,segmentHit,noises=[],view){
     for(const n of list){
+      if(p.cloak>0&&n.hp>0&&!n.ramHit){n.alert=false;n.memory=0;n.strikePending=false;n.flash=0;n.vx=0;n.shot=Math.max(n.shot||0,.3);continue;}
       const dt=elapsed*(n.sticky>0?.45:1);
       if(n.kind==='mallGiant'||n.kind==='alienBoss'||n.kind==='cityBoss')continue;
       if(['alien','alienElite','alienPilot'].includes(n.kind)&&(typeof module!=='undefined'&&module.exports?require('./space-world'):root.ArcadeSpaceWorld).enemyUpdate(n,p,dt,bullets))continue;

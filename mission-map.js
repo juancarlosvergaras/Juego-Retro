@@ -6,16 +6,12 @@
   // menú: iniciar una misión funciona igual que antes.
   const lanes=[{id:'sky',name:'RUTA ALTA · CIELO Y ESPACIO',y:18},{id:'land',name:'RUTA CENTRAL · TIERRA',y:50},{id:'sea',name:'RUTA BAJA · MAR Y BASES',y:82}];
   const COLUMNS=6;
-  // Mundos reservados: ya ocupan su sitio en la segunda bifurcación.
-  const upcoming={
-    chase:{name:'Persecución',label:'MUNDO EXTRA · PRÓXIMAMENTE',text:'Una persecución de coches a toda velocidad por la autopista, con vista trasera y tráfico que esquivar.',tags:'Conducción arcade · Vista trasera · Contrarreloj'},
-    assault:{name:'Asalto frontal',label:'MUNDO EXTRA · PRÓXIMAMENTE',text:'Disparos en tercera persona avanzando hacia el fondo de la pantalla, pasillo a pasillo, hasta el núcleo enemigo.',tags:'Tercera persona · Perspectiva 3D · Asalto a la base'}
-  };
+  const upcoming={};
   const plan=[
     {id:'m1',mission:1,col:0,lane:'land'},{id:'m2',mission:2,col:1,lane:'land'},
     {id:'m3',mission:3,col:2,lane:'sky'},{id:'m4',mission:4,col:2,lane:'land'},{id:'m5',mission:5,col:2,lane:'sea'},
     {id:'m6',mission:6,col:3,lane:'land'},
-    {id:'m7',mission:7,col:4,lane:'sky'},{id:'chase',soon:true,col:4,lane:'land'},{id:'assault',soon:true,col:4,lane:'sea'},
+    {id:'m7',mission:7,col:4,lane:'sky'},{id:'chase',special:true,col:4,lane:'land'},{id:'assault',special:true,col:4,lane:'sea'},
     {id:'m8',mission:8,col:5,lane:'land'}
   ];
   const links=[['m1','m2'],['m2','m3'],['m2','m4'],['m2','m5'],['m3','m6'],['m4','m6'],['m5','m6'],['m6','m7'],['m6','chase'],['m6','assault'],['m7','m8'],['chase','m8'],['assault','m8']];
@@ -31,9 +27,9 @@
   function route(a,b){const mid=(a.x+b.x)/2;return'M'+a.x+' '+a.y+' C'+mid+' '+a.y+' '+mid+' '+b.y+' '+b.x+' '+b.y;}
   // done: ya superada · current: la misión de la campaña · choice: alternativa
   // de la misma bifurcación · open: disponible · soon: mundo aún por construir.
-  function states(level,nodes){
+  function states(level,nodes,specialCleared=false,chaseCleared=false){
     const last=Math.max(...nodes.filter(n=>n.mission).map(n=>n.mission)),current=Math.max(1,Math.min(last,Math.floor(Number(level)||1))),here=nodes.find(n=>n.mission===current);
-    return nodes.map(n=>n.soon?'soon':n.mission===current?'current':n.col===here.col?'choice':n.col<here.col?'done':'open');
+    return nodes.map(n=>n.soon?'soon':n.special?((n.id==='assault'?chaseCleared:specialCleared)?'done':n.col===here.col?'choice':'open'):n.mission===current?'current':n.col===here.col?'choice':n.col<here.col?'done':'open');
   }
   // Un tramo está recorrido cuando lleva a la misión actual o queda detrás de ella.
   function travelled(edge,list,nodes){const state=n=>list[nodes.indexOf(n)];return !edge.soon&&state(edge.from)==='done'&&['done','current','choice'].includes(state(edge.to));}
@@ -47,6 +43,14 @@
     roads.forEach(lit=>svg.append(lit));map.append(svg);
     for(const fork of forks){const sign=doc.createElement('div');sign.className='map-fork';sign.style.left=fork.x+'%';sign.innerHTML='<i aria-hidden="true">◆</i><span>BIFURCACIÓN</span><small>elige una ruta</small>';map.append(sign);}
     const cards=nodes.map(node=>{
+      if(node.id==='assault'){
+        const card=doc.createElement('a');card.className='secondary mission-card';card.href='fuga.html';card.innerHTML='<img src="assets/worlds/fuga-costa.webp" alt=""><div><small>ESPECIAL 02 · PERSECUCIÓN</small><strong>Fuga del Sol</strong><span>Persigue al coupé negro por la costa y cruza su escolta antes del peaje.</span><em>Premio · Invisibilidad</em></div>';return card;
+      }
+      if(node.special){
+        const card=doc.createElement('a');card.className='secondary mission-card';card.href='quimera.html';
+        card.innerHTML='<img src="assets/worlds/distrito-quimera.png" alt=""><div><small>ESPECIAL 01 · COMBATE CALLEJERO</small><strong>Distrito Quimera</strong><span>Cruza el muelle con el luchador y enfréntate al doctor Varela en su laboratorio.</span><em>Premio: Centella Azul · Vuelo, rayos oculares y rebote de balas</em></div>';
+        return card;
+      }
       if(!node.soon){const card=source[node.mission-1];return card;}
       const u=upcoming[node.id],card=doc.createElement('div');card.className='secondary mission-card map-soon-card';card.innerHTML='<div class="map-soon-art" aria-hidden="true">?</div><div><small></small><strong></strong><span></span><em></em></div>';
       card.querySelector('small').textContent=u.label;card.querySelector('strong').textContent=u.name;card.querySelector('span').textContent=u.text;card.querySelector('em').textContent=u.tags;return card;});
@@ -57,7 +61,7 @@
       button.type='button';button.className='map-node lane-'+node.lane;button.style.left=node.x+'%';button.style.top=node.y+'%';
       button.innerHTML='<span class="map-thumb"></span><b></b><span class="map-name"></span>';
       if(img)button.querySelector('.map-thumb').style.backgroundImage='url("'+img.getAttribute('src')+'")';
-      button.querySelector('b').textContent=node.soon?'?':String(node.mission);button.querySelector('.map-name').textContent=title;
+      button.querySelector('b').textContent=node.soon?'?':node.special?'★':String(node.mission);button.querySelector('.map-name').textContent=title;
       button.onclick=()=>select(i,true);
       button.addEventListener('keydown',e=>{
         let next=-1;
@@ -72,9 +76,9 @@
     function select(index,user){selected=index;buttons.forEach((n,i)=>{n.classList.toggle('selected',i===index);n.setAttribute('aria-pressed',String(i===index));});cards.forEach((card,i)=>{if(card)card.hidden=i!==index;});if(user)cards[index]?.scrollIntoView?.({block:'nearest',behavior:'smooth'});}
     const words={done:' · completada',current:' · misión actual',choice:' · ruta alternativa',soon:' · próximamente',open:''};
     function refresh(){
-      let level=1;try{const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;level=root.ArcadeCampaign?.read(store)?.level||1;}catch{}
-      current=states(level,nodes);
-      buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.setAttribute('aria-label',(nodes[i].soon?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+words[current[i]]);});
+      let level=1,specialCleared=false,chaseCleared=false;try{const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;level=root.ArcadeCampaign?.read(store)?.level||1;const profile=root.ArcadeProgression?.load(store);specialCleared=!!profile?.heroUnlocked;chaseCleared=!!profile?.owned.includes('cloak');}catch{}
+      current=states(level,nodes,specialCleared,chaseCleared);
+      buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.setAttribute('aria-label',(nodes[i].soon||nodes[i].special?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+words[current[i]]);});
       roads.forEach((lit,i)=>lit.style.display=travelled(edges[i],current,nodes)?'':'none');
       select(Math.max(0,current.indexOf('current')),false);
     }

@@ -17,6 +17,11 @@ const rows={flame:[0,184],drone:[198,382],turret:[386,582],wave:[582,813],cryo:[
 function setSpriteSheet(image){sheet=harden(image);}
 function frame(age,fps=12){return Math.floor(age*fps)%4;}
 function draw(ctx,kind,index,x,y,w,h,alpha=1){
+ if(kind==='cloak'){
+   ctx.save();ctx.globalAlpha*=alpha;ctx.translate(x,y);ctx.scale(w/64,h/44);
+   ctx.strokeStyle='#69e7df';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-24,0);ctx.quadraticCurveTo(0,-24,24,0);ctx.quadraticCurveTo(0,24,-24,0);ctx.stroke();
+   ctx.beginPath();ctx.arc(0,0,6,0,Math.PI*2);ctx.stroke();ctx.strokeStyle='#f6ca72';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-19,16);ctx.lineTo(19,-16);ctx.stroke();ctx.restore();return true;
+ }
  if((kind==='alien'||kind==='alienShot')&&alienSheet){const cw=alienSheet.width/4,ch=alienSheet.height/2;ctx.save();ctx.globalAlpha*=alpha;ctx.imageSmoothingEnabled=false;ctx.drawImage(alienSheet,index*cw,kind==='alien'?0:ch,cw,ch,Math.round(x-w/2),Math.round(y-h/2),w,h);ctx.restore();return true;}
  if(!sheet)return false;
  const row=rows[kind],cw=sheet.width/4;

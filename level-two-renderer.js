@@ -143,7 +143,8 @@
         // Tanks occupy the city only. Their opacity never changes with the player's position.
         battle(c,s.time,cam,w);
       }
-      root.ArcadeWorldLighting?.sky(c,cam,w,h,s.time,{inside:s.inside,night:env.cemetery>.5});
+      // Indoors the painted window light is the light: procedural beams used to cross it the wrong way.
+      if(s.inside)root.ArcadeWorldLighting?.dust(c,cam,w,Math.round(base+112-650),s.time);else root.ArcadeWorldLighting?.sky(c,cam,w,h,s.time,{night:env.cemetery>.5});
       if(!s.inside)root.ArcadeWorldLighting?.storm(c,s.weather,images.lightning,cam,w,h);
       c.save();const shake=s.inside?(s.king?.shake||0)*3:0;c.translate(-Math.round(cam.x)+Math.sin(s.time*79)*shake,-Math.round(cam.y)+Math.cos(s.time*83)*shake*.55);
       // Draw the walking plane first; feet and pedestal bases stay visible on top.

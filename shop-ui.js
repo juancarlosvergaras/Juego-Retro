@@ -48,8 +48,8 @@
     for(const c of catalog.filter(c=>active==='powers'?c.kind==='power':c.kind!=='power')){
       const level=profile.levels[c.id]||0,owned=profile.owned.includes(c.id),equipped=profile.equipped===c.id,full=c.kind==='upgrade'?level>=c.max:c.kind==='shield'?profile.shield>=10:owned,can=wallet>=c.cost,reward=c.rewardOnly&&!owned;
       const meta=c.kind==='upgrade'?pips(level,c.max):c.kind==='shield'?pips(profile.shield,10):null;
-      card(c,{title:c.name,meta,body:c.text,price:owned||full||reward?null:c.cost,label:reward?'Recompensa · Misión 7':owned?(equipped?'Equipado':'Equipar'):full?'Al máximo':'Comprar',disabled:reward||(owned?equipped:full||!can),
-        status:reward?'Derrota al Soberano':owned?'Poder adquirido':full?'Mejora completa':can?'Puedes comprarlo':'Te faltan '+money(c.cost-wallet)+' puntos',tone:equipped?'equipped':owned?'owned':full?'maxed':reward?'locked':can?'affordable':'locked',onClick:()=>owned?state.onEquip(c.id):state.onBuy(c.id)});
+      card(c,{title:c.name,meta,body:c.text,price:owned||full||reward?null:c.cost,label:reward?(c.rewardLabel||'Recompensa · Misión 7'):owned?(equipped?'Equipado':'Equipar'):full?'Al máximo':'Comprar',disabled:reward||(owned?equipped:full||!can),
+        status:reward?(c.rewardHint||'Derrota al Soberano'):owned?'Poder adquirido':full?'Mejora completa':can?'Puedes comprarlo':'Te faltan '+money(c.cost-wallet)+' puntos',tone:equipped?'equipped':owned?'owned':full?'maxed':reward?'locked':can?'affordable':'locked',onClick:()=>owned?state.onEquip(c.id):state.onBuy(c.id)});
     }
   }
   root.ArcadeShopUI={render,glyph,get tab(){return active;},set tab(id){if(tabs.some(t=>t[0]===id))active=id;}};

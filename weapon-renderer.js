@@ -94,7 +94,7 @@
     return itemSprites.get(slot);
   }
   function draw(ctx,p,e,body,frames,row,frame,scale){
-    if(p.form==='tank'||p.form==='fighter')return;
+    if(p.form==='hero'||p.form==='tank'||p.form==='fighter')return;
     if(p.form==='robot'&&!e.robotArm){
       const R=root.ArcadeRobotForm,inv=e.inventory;
       // On a motorcycle or in the water the body is a different drawing; keep the simple mount there.

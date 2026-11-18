@@ -47,10 +47,10 @@
       else{
         b.vy+=(b.gravity||0)*dt;const dx=b.vx*dt,dy=b.vy*dt;let contact=null,target=null,contactPlatform=null;
         for(const pl of platforms){if(!N.blocksShot(b,pl))continue;const t=hit(b.x,b.y,dx,dy,pl);if(t!==null&&(contact===null||t<contact)){contact=t;target=null;contactPlatform=pl;}}
-        for(const n of b.enemy?[p]:[...e.enemies,...(e.tank?[e.tank]:[]),...(K.targetable(e.king)?[e.king]:[])]){if(n!==p&&n.hp<=0||n.kind==='zombie'&&(n.phase==='dormant'&&n.spawnType!=='sleep'||n.phase==='waking'&&n.spawnType!=='sleep'&&n.wakeAge<=.72))continue;const boxes=n===e.tank?[T.box(n),T.crewBox(n)].filter(Boolean):[{x:n.x-(n.w||28)/2,y:n.y-(n.h||46),w:n.w||28,thickness:n.h||46}];for(const box of boxes){const t=hit(b.x,b.y,dx,dy,box);if(t!==null&&(contact===null||t<contact)){contact=t;target=n;contactPlatform=null;}}}
+        for(const n of b.enemy?(p.cloak>0?[]:[p]):[...e.enemies,...(e.tank?[e.tank]:[]),...(K.targetable(e.king)?[e.king]:[])]){if(n!==p&&n.hp<=0||n.kind==='zombie'&&(n.phase==='dormant'&&n.spawnType!=='sleep'||n.phase==='waking'&&n.spawnType!=='sleep'&&n.wakeAge<=.72))continue;const boxes=n===e.tank?[T.box(n),T.crewBox(n)].filter(Boolean):[{x:n.x-(n.w||28)/2,y:n.y-(n.h||46),w:n.w||28,thickness:n.h||46}];for(const box of boxes){const t=hit(b.x,b.y,dx,dy,box);if(t!==null&&(contact===null||t<contact)){contact=t;target=n;contactPlatform=null;}}}
         b.x+=dx*(contact??1);b.y+=dy*(contact??1);b.life=contact===null?b.life-dt:0;
         if(contactPlatform?.kind==='wreck'&&!b.enemy)e.damageCar?.(contactPlatform.car,b.carShot);
-        if(target===p){if(!b.tankShell&&!b.tankMissile)E.hurtPlayer(e,p,b.x-b.vx*.05,true,b.damage||1);}
+        if(target===p){if(A.reflect(p,b))continue;if(!b.tankShell&&!b.tankMissile)E.hurtPlayer(e,p,b.x-b.vx*.05,true,b.damage||1);}
         else if(target&&b.slot!==6){if(target===e.tank)T.damage(target,b.damage||1);else if(target===e.king)K.damage(target,b.damage||1);else N.damage(target,b.damage||1);}
         else if(contact!==null&&b.slot!==6&&!b.zombiePlasma)E.chip(e,b.x,b.y,{kind:'deck'});
       }

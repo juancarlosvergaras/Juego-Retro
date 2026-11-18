@@ -104,7 +104,7 @@
       if(t.life<4){const w=snap(28*clamp(t.life/4));c.fillStyle='#1c1e1a';c.fillRect(snap(t.x-15),snap(t.y-26),30,B*2);c.fillStyle=t.life<1.5?'#d8523a':ink[1];c.fillRect(snap(t.x-14),snap(t.y-26),w,B);}
     }
     if(s.flame>0&&p){const a=p.aim||{x:p.facing||1,y:0};for(let i=0;i<8;i++){const d=40+hash(i+Math.floor((s.age||0)*30))*90;dot(c,p.x+a.x*d+(hash(i)-.5)*14,p.y-30+a.y*d-hash(i+3)*10,i%3?INK.flame[1]:INK.flame[2]);}}
-    if(p&&!p.burrow&&s.shieldFlash>0){const wolf=p.form==='wolf',cy=p.y-(wolf?38:26),hit=clamp(s.shieldFlash/.3);ring(c,p.x,cy,(wolf?36:27)+(1-hit)*12,(wolf?46:35)+(1-hit)*12,INK.shield,.8,9);for(let i=0;i<6;i++)spark(c,p.x+Math.cos(i*1.05)*(30+(1-hit)*14),cy+Math.sin(i*1.05)*(38+(1-hit)*14),INK.shield,0);}
+    if(p&&!p.burrow&&s.shieldFlash>0){const wolf=p.form==='wolf',ride=!!p.onMotorcycle,cy=p.y-(ride?36:wolf?38:26),hit=clamp(s.shieldFlash/.3);ring(c,p.x,cy,(ride?64:wolf?36:27)+(1-hit)*12,(ride?46:wolf?46:35)+(1-hit)*12,INK.shield,.8,9);for(let i=0;i<6;i++)spark(c,p.x+Math.cos(i*1.05)*(30+(1-hit)*14),cy+Math.sin(i*1.05)*(38+(1-hit)*14),INK.shield,0);}
     // Escarcha sobre los enemigos congelados.
     if(e)for(const n of e.enemies||[])if(n.hp>0&&n.frozen>0)for(let i=0;i<5;i++){const k=((s.age||0)*.8+hash(i+n.x))%1;dot(c,n.x+(hash(i+n.x*.1)-.5)*30,n.y-44+k*40,i%2?INK.cryo[1]:INK.cryo[2]);}
     c.restore();

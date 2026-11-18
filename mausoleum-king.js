@@ -44,7 +44,7 @@
   for(const a of k.pools){a.life-=dt;a.age+=dt;if(a.life>.35&&Math.abs(p.x-a.x)<a.r+10&&p.y>FLOOR-8&&p.y-(p.h||46)<FLOOR+6)hurt(a.x,1);}k.pools=k.pools.filter(a=>a.life>0);
   for(const d of k.chips){d.life-=dt;d.vy+=650*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.angle+=d.spin*dt;if(d.y>FLOOR-d.size/2){d.y=FLOOR-d.size/2;d.vy=0;d.vx*=.9;d.spin=0;}}k.chips=k.chips.filter(d=>d.life>0);
  }
- function update(k,p,dt,hurt=()=>{},enemies=[],platforms=[]){
+ function update(k,p,dt,hurt=()=>{},enemies=[],platforms=[]){if(p.cloak>0&&k?.hp>0)return;
   if(!k)return;k.anim+=dt;k.hit=Math.max(0,k.hit-dt);k.shake=Math.max(0,k.shake-dt*2);k.events.length=0;
   if(k.defeated)return;
   // Recover interrupted/old zero-health states before freeze or attack logic can stall them.

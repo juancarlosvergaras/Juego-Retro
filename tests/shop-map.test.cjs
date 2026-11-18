@@ -58,22 +58,24 @@ test('desde la primera misión se llega a la última saltándose mundos de cada 
   for(const path of paths){assert.equal(path.length,6);assert.ok(path.includes('m2')&&path.includes('m6'));}
   // Con los mundos ya construidos basta una misión de la primera bifurcación.
   const playable=paths.filter(path=>path.every(id=>!nodes.find(n=>n.id===id).soon));
-  assert.deepEqual(playable.map(p=>p[2]).sort(),['m3','m4','m5']);
+  assert.deepEqual([...new Set(playable.map(p=>p[2]))].sort(),['m3','m4','m5']);
+  assert.deepEqual([...new Set(playable.map(p=>p[4]))].sort(),['assault','chase','m7']);
   for(const e of edges)assert.equal(e.to.col,e.from.col+1,'cada tramo avanza una columna');
 });
-test('los dos mundos reservados ocupan la segunda bifurcación',()=>{
+test('los dos especiales ocupan la segunda bifurcación',()=>{
   const {nodes,edges}=Map.graph(),soon=nodes.filter(n=>n.soon);
-  assert.deepEqual(soon.map(n=>n.id),['chase','assault']);
-  for(const n of soon){
-    const u=Map.upcoming[n.id];assert.ok(u.name&&u.text.length>40&&u.tags);
+  assert.deepEqual(soon,[]);assert.ok(nodes.find(n=>n.id==='assault').special);
+  const completed=Map.states(8,nodes,false,true);assert.equal(completed[nodes.findIndex(n=>n.id==='assault')],'done');assert.equal(completed[nodes.findIndex(n=>n.id==='chase')],'open');
+  assert.equal(nodes.find(n=>n.id==='chase').special,true);
+  for(const n of nodes.filter(n=>n.special)){
     assert.equal(n.col,nodes.find(m=>m.id==='m7').col);
-    assert.ok(edges.some(e=>e.from.id==='m6'&&e.to===n&&e.soon));
-    assert.ok(edges.some(e=>e.from===n&&e.to.id==='m8'&&e.soon));
+    assert.ok(edges.some(e=>e.from.id==='m6'&&e.to===n&&!e.soon));
+    assert.ok(edges.some(e=>e.from===n&&e.to.id==='m8'&&!e.soon));
   }
 });
 test('el estado del mapa distingue superadas, actual, alternativas y pendientes',()=>{
   const {nodes,edges}=Map.graph(),at=level=>Object.fromEntries(Map.states(level,nodes).map((s,i)=>[nodes[i].id,s]));
-  assert.deepEqual(at(1),{m1:'current',m2:'open',m3:'open',m4:'open',m5:'open',m6:'open',m7:'open',chase:'soon',assault:'soon',m8:'open'});
+  assert.deepEqual(at(1),{m1:'current',m2:'open',m3:'open',m4:'open',m5:'open',m6:'open',m7:'open',chase:'open',assault:'open',m8:'open'});
   const fork=at(4);
   assert.equal(fork.m4,'current');assert.equal(fork.m3,'choice');assert.equal(fork.m5,'choice');assert.equal(fork.m2,'done');assert.equal(fork.m6,'open');
   const late=at(6);

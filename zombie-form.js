@@ -2,14 +2,14 @@
  'use strict';
  const common=typeof module!=='undefined'&&module.exports;
  const apiOf=(name,file)=>common?require(file):root[name];
- const label=form=>form==='tank'?'Mini tanque':form==='fighter'?'Luchador':form==='robot'?'Robot':form==='zombie'?'Zombi':form==='wolf'?'Lobo':'Soldado';
- function forms(p,won){return ['soldier',...(won||p.zombieUnlocked?['wolf']:[]),...(p.zombieUnlocked?['zombie']:[]),...(p.robotUnlocked?['robot']:[]),...(p.tankUnlocked?['tank']:[]),...(p.fighterUnlocked?['fighter']:[])];}
+ const label=form=>form==='hero'?'Centella Azul':form==='tank'?'Mini tanque':form==='fighter'?'Luchador':form==='robot'?'Robot':form==='zombie'?'Zombi':form==='wolf'?'Lobo':'Soldado';
+ function forms(p,won){return ['soldier',...(won||p.zombieUnlocked?['wolf']:[]),...(p.zombieUnlocked?['zombie']:[]),...(p.robotUnlocked?['robot']:[]),...(p.tankUnlocked?['tank']:[]),...(p.fighterUnlocked?['fighter']:[]),...(p.heroUnlocked?['hero']:[])];}
  function change(e,p,target){
   const list=forms(p,e.won),from=p.form||'soldier';target=target||list[(list.indexOf(from)+1)%list.length];
   if(e.dead||p.transform>0||p.formCooldown>0||p.burrow||p.rope||p.ladder||target===from||!list.includes(target))return false;
   e.robotWait=null;p.wolfSprintJump=false;p.ramCooldown=0;p.ramBuffer=0;p.idleTime=0;p.idleGesture=false;p.transformFrom=from;p.form=target;p.h=target==='tank'?53:target==='fighter'?57:target==='wolf'?64:target==='zombie'?68:target==='robot'?54:46;p.w=target==='tank'?64:24;p.transform=1.2;p.formCooldown=5;
   if(target==='robot'&&e.inventory?.selected<3)e.inventory.selected=e.inventory.owned.find(n=>n>=3)||e.inventory.selected;
-  p.jetpack=false;p.claw=0;p.kick=0;p.slide=0;p.ram=null;p.wolfAttack=null;p.wolfQueued=null;p.vx=0;e.weaponAction=null;e.cooldown=1.2;
+  p.heroFlight=false;p.jetpack=false;p.claw=0;p.kick=0;p.slide=0;p.ram=null;p.wolfAttack=null;p.wolfQueued=null;p.vx=0;e.weaponAction=null;e.cooldown=1.2;
   return true;
  }
  function tick(p,dt){apiOf('ArcadeAdvancedForms','./advanced-forms')?.tick(p,dt);p.formCooldown=Math.max(0,(p.formCooldown||0)-dt);p.zombiePose=Math.max(0,(p.zombiePose||0)-dt);p.emerging=Math.max(0,(p.emerging||0)-dt);}

@@ -26,7 +26,7 @@
   }
   function melee(b,p,range,amount){if(b&&Math.abs(b.y-p.y)<70&&Math.abs(b.x-p.x)<range+20&&(b.x-p.x)*p.facing>=-10)damage(b,amount);}
   function area(b,x,y,r,amount){if(!b)return;const q=box(b);if(Math.hypot(x-Math.max(q.x,Math.min(q.x+q.w,x)),y-Math.max(q.y,Math.min(q.y+q.h,y)))<=r)damage(b,amount);}
-  function update(e,p,dt,hurt,platforms=[]){
+  function update(e,p,dt,hurt,platforms=[]){if(p.cloak>0&&e.finalBoss?.hp>0)return;
     const b=e.finalBoss;if(!b)return;
     b.t+=dt;b.hit=Math.max(0,b.hit-dt);b.age+=dt;
     if(b.discarded){const d=b.discarded;d.life-=dt;d.vy+=500*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.angle+=dt*5;if(d.life<=0)b.discarded=null;}

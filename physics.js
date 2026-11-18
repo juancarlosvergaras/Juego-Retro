@@ -108,17 +108,20 @@
     const dir=(input.right?1:0)-(input.left?1:0);
     if(dir)p.facing=dir;
     if(p.fuel===undefined)p.fuel=EXTENSION.tileHeight*4;
+    const hero=p.form==='hero';
+    if(!hero)p.heroFlight=false;
+    if(hero&&input.jetpackPressed){p.heroFlight=!p.heroFlight;p.vx=p.vy=0;if(p.heroFlight){p.y-=2;p.grounded=false;p.ground=null;}p.ladder=null;}
     if((p.form||'soldier')!=='soldier'||p.fuel<=0)p.jetpack=false;
-    if(input.jetpackPressed&&!p.rope&&p.form!=='wolf'&&p.form!=='zombie'&&p.form!=='robot'&&p.form!=='tank'&&p.form!=='fighter'&&p.fuel>0){
+    if(!hero&&input.jetpackPressed&&!p.rope&&p.form!=='wolf'&&p.form!=='zombie'&&p.form!=='robot'&&p.form!=='tank'&&p.form!=='fighter'&&p.fuel>0){
       p.jetpack=!p.jetpack;p.rope=null;p.ladder=null;p.slide=0;p.buffer=0;p.coyote=0;p.vx=0;p.vy=0;p.landing=0;
       if(p.jetpack){const lift=p.grounded?Math.min(3,p.fuel):0;p.y-=lift;p.fuel-=lift;p.grounded=false;p.ground=null;}
     }
-    if(p.jetpack){
+    if(p.jetpack||p.heroFlight){
       const vertical=(input.down?1:0)-(input.up?1:0),length=Math.hypot(dir,vertical)||1,oldY=p.y;
       p.jetBoost=!!input.run&&!!(dir||vertical);
       const speed=(p.jetBoost?280:160)*(p.jetpackMk2?2:1),burn=dir||vertical?(p.jetBoost?320:160):40;
       p.rope=null;p.ladder=null;p.slide=0;p.buffer=0;p.coyote=0;p.jumps=0;p.dropping=false;
-      const used=Math.min(p.fuel,burn*dt),flightDt=used/burn;p.fuel=Math.max(0,p.fuel-used);
+      const used=hero?0:Math.min(p.fuel,burn*dt),flightDt=hero?dt:used/burn;p.fuel=Math.max(0,p.fuel-used);
       p.vx=dir/length*speed;p.vy=vertical/length*speed;dt=flightDt;
       p.x=Math.max(p.w/2+8,Math.min(WORLD.width-p.w/2-8,p.x+p.vx*dt));
       const floor=platforms.find(s=>s.kind==='ground'&&p.x>=s.x&&p.x<=s.x+s.w);
@@ -127,7 +130,7 @@
       if(!vertical)p.vy=0;
       if(p.fuel<=0){p.jetpack=false;p.jetBoost=false;}
       p.fallPeak=p.y;
-      return{flying:!!p.jetpack,boosting:p.jetBoost,hovering:!dir&&!vertical,crouching:false,sliding:false};
+      return{flying:!!(p.jetpack||p.heroFlight),boosting:p.jetBoost,hovering:!dir&&!vertical,crouching:false,sliding:false};
     }
     if(input.down&&input.jumpPressed&&p.grounded){
       const support=p.ground||platforms.find(s=>Math.abs(s.y-p.y)<1&&p.x+p.w/2>s.x&&p.x-p.w/2<s.x+s.w);

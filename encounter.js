@@ -43,7 +43,7 @@
     g.life=Math.max(0,g.life-dt);if(g.life<1e-9)g.life=0;
   }
   function hurtPlayer(e,p,sourceX,projectile=false,amount=1){
-    if(e.developerInvulnerable||e.invincible||e.dead||p.burrow)return false;
+    if(e.developerInvulnerable||e.invincible||e.dead||p.burrow||(projectile&&p.cloak>0))return false;
     if(projectile&&p.shield>0){p.shield--;p.shieldFlash=.2;return false;}
     amount*=(e.combatDamage||1)*(p.form==='zombie'?.5:1);
     e.damageTaken=(e.damageTaken||0)+amount;e.hp=Math.max(0,e.hp-amount);if(e.hp===0)e.dead=true;e.invincible=e.hitProtection||1.2;p.hurt=.32;p.hitDirection=p.x<sourceX?-1:1;p.vx=p.hitDirection*210;
@@ -177,9 +177,9 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
     Final.update(e,p,dt*(e.finalBoss.hp>0&&e.finalBoss.sticky>0?.45:1),hurtPlayer,platforms);
     b.flash=Math.max(0,(b.flash||0)-dt);
     // Wake after a checkpoint too: nearby gunfire and damage do not require reaching the roof.
-    if(!e.won&&b.hp>0&&(p.y<=320||b.hp<b.maxHp||noises.some(n=>Math.hypot(n.x-b.x,n.y-(b.y-35))<n.radius)))b.active=true;
+    if(!(p.cloak>0)&&!e.won&&b.hp>0&&(p.y<=320||b.hp<b.maxHp||noises.some(n=>Math.hypot(n.x-b.x,n.y-(b.y-35))<n.radius)))b.active=true;
     b.frozen=Math.max(0,(b.frozen||0)-dt);
-    if(b.active&&!b.frozen){
+    if(b.active&&!b.frozen&&!(p.cloak>0)){
       const bossDt=dt*(b.sticky>0?.45:1);
       b.t+=bossDt;b.shot-=bossDt;b.kickWait=Math.max(0,(b.kickWait||0)-bossDt);
       const dx=p.x-b.x,near=Math.abs(dx)<100&&Math.abs(p.y-b.y)<60;
@@ -235,7 +235,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
       for(const pl of platforms){if(!Enemies.blocksShot(bullet,pl))continue;const t=segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:pl.x,y:pl.y,w:pl.w,h:pl.thickness||12,terrain:pl.terrain});if(t!==null&&t<surfaceT){surface=pl;surfaceT=t;}}
       if(surface){chip(e,oldX+(bullet.x-oldX)*surfaceT,oldY+(bullet.y-oldY)*surfaceT,surface);bullet.life=0;continue;}
       if(bullet.life>0&&b.hp>0&&!bullet.enemy&&segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:b.x-30,y:b.y-75,w:60,h:75})!==null){b.hp=Math.max(0,b.hp-(bullet.damage||1));b.active=b.hp>0;bullet.life=0;if(!b.hp){transformWolf(e,p);return;}}
-      if(bullet.enemy&&!e.invincible&&Math.abs(bullet.x-p.x)<15&&bullet.y>p.y-(p.h||46)&&bullet.y<p.y){hurtPlayer(e,p,bullet.x-bullet.vx*.05,true);bullet.life=0;}
+      if(bullet.enemy&&!(p.cloak>0)&&Math.abs(bullet.x-p.x)<15&&bullet.y>p.y-(p.h||46)&&bullet.y<p.y){if(Arsenal.reflect(p,bullet))continue;if(e.invincible)continue;hurtPlayer(e,p,bullet.x-bullet.vx*.05,true);bullet.life=0;}
     }
     for(const n of e.enemies)if(Enemies.contact(n,p,platforms,segmentHit))hurtPlayer(e,p,n.x,n.kind==='knife');
     if(b.active&&!e.invincible&&Math.abs(p.x-b.x)<36&&Math.abs(p.y-b.y)<55){hurtPlayer(e,p,b.x);}

@@ -62,7 +62,7 @@
       }
     };
   }
-  function movementInput(p,input){return input.fire&&!input.jumpPressed&&!p.rope&&!p.jetpack&&!input.jetpackPressed&&p.form!=='wolf'?{...input,up:false,down:false}:input;}
+  function movementInput(p,input){return input.fire&&!input.jumpPressed&&!p.rope&&!p.jetpack&&!p.heroFlight&&!input.jetpackPressed&&p.form!=='wolf'?{...input,up:false,down:false}:input;}
   function firingAim(input,facing,queuedAim){
     // Key releases can straddle simulation frames. A queued tap keeps the
     // direction at trigger time; a held trigger continues to track live aim.
@@ -88,8 +88,12 @@
     const a=p.aim||{x:p.facing,y:0},hand=A.grip(p,{}, {inventory:{selected:slot},weaponAction:{slot,age:0}}),grip=A.weaponGrip(slot),angle=Math.atan2(a.y,a.x*p.facing),dx=(slot===7?32:26)-grip.x,dy=-grip.y;
     return{x:p.x+p.facing*(hand.x+Math.cos(angle)*dx-Math.sin(angle)*dy),y:p.y+hand.y+Math.sin(angle)*dx+Math.cos(angle)*dy};
   }
+  function reflect(p,b){
+    if(p.form!=='hero'||!b.enemy||b.slot===6||b.slot===9||b.gravity||b.type==='missile'||b.type==='torpedo'||b.plasma||b.zombiePlasma||b.stormRay||b.tankShell||b.tankMissile||b.tankGrenade||b.alienLaser)return false;
+    b.enemy=false;b.vx=-b.vx;b.vy=-b.vy;b.life=Math.max(b.life,.9);b.damage=b.damage||2;b.reflected=true;return true;
+  }
   function fire(inv,p){
-      if(p.form==='tank'||p.form==='fighter')return (typeof module!=='undefined'&&module.exports?require('./advanced-forms'):root.ArcadeAdvancedForms).shot(p);
+      if(p.form==='tank'||p.form==='fighter'||p.form==='hero')return (typeof module!=='undefined'&&module.exports?require('./advanced-forms'):root.ArcadeAdvancedForms).shot(p);
       if(p.form==='robot'&&!p.singleArm){const guns=inv.owned.filter(n=>n>=3),primary=guns.includes(inv.selected)?inv.selected:guns[0];if(!primary)return null;const secondary=guns.includes(inv.secondary)?inv.secondary:primary;const a=fire({...inv,selected:primary},{...p,singleArm:true,robotArm:0}),b=fire({...inv,selected:secondary},{...p,singleArm:true,robotArm:1});if(!a&&!b)return null;return{weapon:{...(a||b).weapon,rate:Math.max(a?.weapon.rate||0,b?.weapon.rate||0)},bullets:[...(a?.bullets||[]),...(b?.bullets||[])]};}
       const w=weapons[inv.selected];if(w.ammo!==null&&!(inv.ammo[inv.selected]>0))return null;if(w.ammo!==null)inv.ammo[inv.selected]--;const bullets=[],a=p.aim||{x:p.facing,y:0},origin=p.form==='robot'?robotMuzzle(p,p.robotArm||0):muzzle(p,inv.selected);
     if(!w.range)for(let i=0;i<(w.pellets||1);i++){const angle=Math.atan2(a.y,a.x)+(i-((w.pellets||1)-1)/2)*.08;bullets.push({x:origin.x,y:origin.y,vx:Math.cos(angle)*w.speed,vy:Math.sin(angle)*w.speed-(inv.selected===9&&a.y===0?150:0),gravity:w.gravity||0,life:w.life||1.8,damage:w.damage*(p.damageBonus||1),slot:inv.selected,robotArm:p.robotArm,enemy:false});}
@@ -103,6 +107,6 @@
     if(!shots.length)return null;
     return{weapon:{...shots[0].weapon,rate:Math.max(.001,Math.min(...e.robotWait))*(p.rateBonus||1)},bullets:shots.flatMap(s=>s.bullets)};
   }
-  const api={robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
+  const api={reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
 })(typeof window!=='undefined'?window:globalThis);
 

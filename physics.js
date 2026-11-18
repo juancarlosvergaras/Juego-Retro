@@ -212,8 +212,11 @@
       if(!p.grounded&&p.coyote<=0&&p.jumps===0)p.jumps=1;
       const second=p.jumps>=1;
       p.wolfSprintJump=p.form==='wolf'&&!!input.run&&!!dir&&Math.abs(p.vx)>170;
-      p.vy=p.form==='wolf'?(second?-420:-510):(second?-350:-430);p.jumps++;p.grounded=false;p.coyote=0;p.buffer=0;p.slide=0;
+      p.vy=p.form==='wolf'?(second?-420:-510):(second?-350:-430);p.jumps++;p.grounded=false;p.coyote=0;p.buffer=0;p.slide=0;p.jumpRising=true;
     }
+    // Variable jump height: releasing the button early trims the ascent. Callers
+    // that do not report `jumpHeld` (enemies, tests) always get the full jump.
+    if(p.jumpRising){if(p.vy>=0||p.grounded)p.jumpRising=false;else if(input.jumpHeld===false){p.jumpRising=false;p.vy=Math.max(p.vy,-190);}}
     const oldX=p.x,oldY=p.y;
     p.fallPeak=Math.min(p.fallPeak??oldY,oldY);
     p.vy=Math.min(p.vy+1050*dt,720);

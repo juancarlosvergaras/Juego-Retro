@@ -34,7 +34,8 @@ function update(s,dt,actors=[],noises=[]){s.t+=dt;
  for(const a of actors)if(a&&!a.ladder&&!a.rope&&!a.jetpack&&!a.traverse&&Math.abs(a.y-p.y)<.6&&a.x>=old-8&&a.x<=old+p.w+8&&(a.grounded||a.vy===0)){a.x+=dx;if(a.ground===p)a.y=p.y;}}
 }
 function plane(c,x,y,dir,enemy,t){sprite(c,enemy?1:0,Math.floor(t*12),x,y,48,48,dir,.82);if(Math.floor(t*12)%4>0)for(let i=0;i<3;i++)sprite(c,3,Math.floor(t*12),x+dir*(30+i*18+(t*98)%15),y+1,7,2,dir,.65);}
-function cityPlacement(camera,ground){return{x:-20-camera.x*.12,y:340+(ground-camera.y)*.12-640,w:960,h:640};}
+// With a tall view the skyline must still reach the street: never leave a bare band above the ground.
+function cityPlacement(camera,ground,viewHeight){const base=340+(ground-camera.y)*.12-640;return{x:-20-camera.x*.12,y:viewHeight?Math.max(base,Math.min(viewHeight,ground-camera.y)-640):base,w:960,h:640};}
 function flightPositions(s,camera){
  // Flight lanes have fixed world altitudes. Camera motion only changes their projection.
  const flights=[];
@@ -47,7 +48,7 @@ function flightPositions(s,camera){
  return flights;
 }
 function background(c,s,camera,width,height){c.save();
- const city=cityPlacement(camera,s.ground),bx=35-camera.x*.12,by=city.y+500;
+ const city=cityPlacement(camera,s.ground,height),bx=35-camera.x*.12,by=city.y+500;
  for(let i=0;i<6;i++){const x=bx-14+(i%2)*35,y=by-156+Math.floor(i/2)*47;sprite(c,3,Math.floor(s.t*10+i),x,y,22,31);}
  for(let i=0;i<7;i++){const u=(s.t*.09+i/7)%1;sprite(c,4,Math.floor(s.t*6+i),bx+u*28,by-180-u*120,38+u*50,38+u*50,1,(1-u)*.55);}
  // Small flames on distant central windows remain behind every foreground pillar.

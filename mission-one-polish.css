@@ -1,0 +1,44 @@
+/* Misión 01 · ajustes de presentación. Se carga después de styles.css y solo en index.html. */
+
+/* El nivel es vertical: la escena ocupa toda la altura útil y limita su anchura
+   para no perder campo de visión vertical en pantallas panorámicas. */
+@media (min-width:721px){
+  :root:not(.mobile-play){--scene-height:clamp(390px,calc(100dvh - 196px),1050px)}
+  :root:not(.mobile-play) body>.header,
+  :root:not(.mobile-play) body>.page-footer{display:none}
+  :root:not(.mobile-play) main{max-width:calc(var(--scene-height)*1.45 + 42px);padding:8px 20px 0}
+  :root:not(.mobile-play) .game-card .viewport{height:var(--scene-height)}
+  :root:not(.mobile-play) #power-status{display:none}
+}
+
+/* Sin poderes comprados no hay rueda que mostrar. */
+#power-wheel:has(.power-cards.empty){display:none}
+
+/* Transmisiones de radio de la historia. */
+#radio{position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:7;display:flex;gap:10px;align-items:flex-start;width:min(460px,62%);padding:9px 12px;border:1px solid #6fb7a8;border-left:4px solid #8fe3cf;border-radius:5px;background:rgba(9,22,30,.9);box-shadow:0 8px 24px #0007;color:#e4f1ee;pointer-events:none;transition:opacity .35s,transform .35s}
+#radio[hidden]{display:none}
+#radio.leaving{opacity:0;transform:translate(-50%,-8px)}
+#radio .radio-icon{flex:none;width:30px;height:30px;border-radius:4px;background:#12313a;border:1px solid #3d7f78;display:grid;place-items:center;font-size:15px;color:#8fe3cf;animation:radio-pulse 1s steps(2) infinite}
+#radio .radio-speaker{display:block;font-size:9px;letter-spacing:2px;color:#8fe3cf;margin-bottom:3px}
+#radio .radio-text{font-size:12px;line-height:1.5}
+@keyframes radio-pulse{50%{background:#1b4a50}}
+
+/* Informe previo a la misión. */
+#briefing{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#16283a 0,#070c13 72%);color:#e8eef2;padding:24px}
+#briefing[hidden]{display:none}
+#briefing .briefing-card{width:min(680px,100%);border:1px solid #3c4d5e;border-top:4px solid #f7b64c;border-radius:8px;background:#0e1823f2;padding:28px 32px;box-shadow:0 24px 70px #000a}
+#briefing .eyebrow{display:block;font-size:10px;letter-spacing:4px;color:#f7b64c;margin-bottom:10px}
+#briefing h2{margin:0 0 14px;font-size:26px;letter-spacing:1px}
+#briefing .briefing-text{min-height:132px;font:14px/1.75 Consolas,monospace;color:#cfdbe2;white-space:pre-wrap}
+#briefing .briefing-text::after{content:'▌';color:#f7b64c;animation:radio-pulse 1s steps(2) infinite}
+#briefing .briefing-objectives{margin:16px 0 0;padding:12px 16px;list-style:none;border-left:3px solid #8fe3cf;background:#101f2b;font-size:12px;line-height:1.9;color:#bfe9df}
+#briefing .briefing-objectives[hidden]{display:none}
+#briefing .briefing-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
+#briefing .briefing-step{font-size:10px;letter-spacing:2px;color:#7f93a4}
+#briefing button{font:inherit;font-weight:700;font-size:13px;padding:10px 22px;border-radius:4px;cursor:pointer}
+#briefing .briefing-next{background:#f7b64c;border:1px solid #f7b64c;color:#1a1408}
+#briefing .briefing-skip{background:transparent;border:1px solid #4a5b6b;color:#b8c5d0}
+@media (prefers-reduced-motion:reduce){#radio .radio-icon,#briefing .briefing-text::after{animation:none}}
+
+/* El aviso vacío del arranque no debe dibujar una caja oscura sobre el suelo. */
+.toast:empty{display:none}

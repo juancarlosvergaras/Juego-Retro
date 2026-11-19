@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T180830Z
+
+El centro comercial estrena la transición de ambiente por el rellano y el lanzamiento dirigido del Coloso. Se revisó el alcance de los jefes de las ocho misiones y los dos especiales. [Registro de publicación y encuentros](releases/20261119T180830Z.md)
+
 ## Publicado en Mac mini · 20261119T140406Z
 
 En la misión seis, las escaleras desembocan directamente en los pasillos de las galerías, los restaurantes y la azotea. La cámara sigue el mismo rellano durante el cruce. [Registro de la publicación](releases/20261119T140406Z.md)

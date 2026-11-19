@@ -20,7 +20,7 @@
   const CREW=[[28,159,288,317,168],[418,159,293,311,552],[793,159,315,311,936],[1171,159,345,311,1320],[32,603,396,301,168],[448,603,323,301,552],[791,603,296,301,936],[1194,603,287,301,1320]];
   function create(saved={},healthScale=1){const maxHp=Math.round(48*healthScale),t={x:Number.isFinite(saved.x)?Math.max(LEFT,Math.min(RIGHT,saved.x)):CENTER,y:620,w:184*SIZE,h:102*SIZE,hp:Number.isFinite(saved.hp)?Math.max(0,Math.min(maxHp,saved.hp)):maxHp,maxHp,active:false,drive:1,speed:0,facing:-1,age:0,travel:0,treadTravel:0,cannon:1.5,missile:4.5,flash:0,launchFlash:0,hit:0,deathAge:saved.hp===0?30:0,deathEvent:saved.hp===0?DESTRUCTION.length:0,deadHandled:saved.hp===0,crewCooldown:5.6,crewAge:null,crewThrown:false,crewFacing:-1,fragments:[]};t.damageStage=stage(t);return t;}
   const box=t=>({x:t.x-t.w/2,y:t.y-t.h,w:t.w,thickness:t.h});
-  function damage(t,amount){if(!t||t.hp<=0)return;t.hp=Math.max(0,t.hp-amount);t.hit=.18;}
+  function damage(t,amount){if(!t||t.hp<=0)return;t.hp=Math.max(0,t.hp-amount);t.hit=.18;if(amount>0)t.returnFire=5;}
   function crewPose(t){if(t.hp<=0||t.crewAge===null)return null;const a=t.crewAge;return{frame:a<.3?0:a<.6?1:a<.9?2:a<1.25?3:a<1.43?4:a<1.65?5:a<1.9?6:7,rise:a<.3?a/.3:a>1.9?Math.max(0,1-(a-1.9)/.4):1};}
   function mount(t,x,y){const m=motion(t);return{x:t.x+t.facing*(x-m.recoil)*SIZE,y:t.y+(y+m.bob)*SIZE};}
   function crewBox(t){const pose=crewPose(t),h=mount(t,HATCH.x,HATCH.y),s=SIZE*CREW_RATIO;return pose&&pose.rise>.2?{x:h.x-13*s,y:h.y-pose.rise*36*s,w:26*s,thickness:pose.rise*36*s}:null;}
@@ -46,8 +46,9 @@
         if(event.launch){releasePart(t,3);releasePart(t,4);}
       }return;}
     const visible=!view||(t.x>view.left+40&&t.x<view.right-40&&t.y>view.top+25&&t.y-t.h<view.bottom-20);
-    const near=Math.abs(p.x-t.x)<780&&visible;
-    if(!visible){t.active=false;t.speed=0;t.cannonAim=null;t.crewAge=null;t.crewCooldown=Math.max(2,t.crewCooldown);return;}
+    t.returnFire=Math.max(0,(t.returnFire||0)-dt);
+    const provoked=t.returnFire>0,near=provoked||Math.abs(p.x-t.x)<780&&visible;
+    if(!visible&&!provoked){t.active=false;t.speed=0;t.cannonAim=null;t.crewAge=null;t.crewCooldown=Math.max(2,t.crewCooldown);return;}
     if(!t.active&&near){t.active=true;t.cannon=1.5;t.missile=4.5;}
     if(!t.active||!near){t.speed=0;return;}
     if(t.frozen>0){t.frozen=Math.max(0,t.frozen-dt);t.speed=0;return;}
@@ -63,7 +64,7 @@
     const oldX=t.x;t.speed+=(t.drive*62-t.speed)*(1-Math.exp(-3.5*dt));t.x=Math.max(LEFT,Math.min(RIGHT,t.x+t.speed*dt));if(t.x===LEFT&&t.drive<0||t.x===RIGHT&&t.drive>0)t.drive*=-1;t.travel+=Math.abs(t.x-oldX);t.treadTravel+=t.x-oldX;
     t.cannon-=dt;t.missile-=dt;
     if(t.cannon<=.75&&!t.cannonAim)t.cannonAim={x:p.x,y:p.y-24};
-    if(t.cannon<=0){const {x,y}=mount(t,107,-79),aim=t.cannonAim||p,angle=Math.atan2(aim.y-y,aim.x-x);bullets.push({x,y,vx:Math.cos(angle)*310,vy:Math.sin(angle)*310,life:3.5,age:0,enemy:true,tankShell:true,damage:2});t.flash=.3;t.cannon=3.6;t.cannonAim=null;}
+    if(t.cannon<=0){const {x,y}=mount(t,107,-79),aim=t.cannonAim||p,angle=Math.atan2(aim.y-y,aim.x-x);bullets.push({x,y,vx:Math.cos(angle)*310,vy:Math.sin(angle)*310,life:Math.max(3.5,Math.hypot(aim.x-x,aim.y-y)/310+.15),age:0,enemy:true,tankShell:true,damage:2});t.flash=.3;t.cannon=3.6;t.cannonAim=null;}
     if(t.missile<=0){for(const offset of [RACK.x+8,RACK.x+25])bullets.push({...mount(t,offset,RACK.y),vx:t.facing*75,vy:-175,life:4.5,age:0,enemy:true,tankMissile:true,damage:2,target:{x:p.x,y:p.y-22}});t.launchFlash=.35;t.missile=6.2;}
   }
   function steer(b,dt){if(b.slot!==9)b.age=(b.age||0)+dt;if(!b.tankMissile||b.age<.3||b.age>1.15)return;const dx=b.target.x-b.x,dy=b.target.y-b.y,d=Math.hypot(dx,dy)||1,k=1-Math.exp(-5*dt);b.vx+=(dx/d*235-b.vx)*k;b.vy+=(dy/d*235-b.vy)*k;}

@@ -13,8 +13,10 @@
     if(b.phase==='crouch'){if(b.age>=.55){b.phase='leap';b.age=0;b.launchY=b.y;}return;}
     if(b.phase==='leap'){b.y=b.launchY-1200*b.age;if(b.age>=.6){b.phase='track';b.age=0;b.y=Math.min(ARENA.y-900,p.y-900);b.marker=groundTarget(p,platforms);}return;}
     if(b.phase==='track'){b.marker=groundTarget(p,platforms);if(b.age>=1.1){b.phase='lock';b.age=0;}return;}
-    if(b.phase==='lock'){if(b.age>=.75){b.phase='slam';b.age=0;b.x=b.marker.x;b.slamStart=b.marker.y-650;}return;}
-    if(b.phase==='slam'){const t=Math.min(1,b.age/.45);b.y=b.slamStart+650*t*t;if(t===1){b.y=b.marker.y;b.marker=null;b.phase='impact';b.age=0;e.explosions.push({x:b.x,y:b.y-3,radius:100,life:.65});if(Math.abs(p.x-b.x)<100&&p.y>b.y-105&&p.y<b.y+25)hurt(e,p,b.x,false,2);}return;}
+    if(b.phase==='lock'){if(b.age>=.75){b.phase='slam';b.age=0;b.x=b.marker.x;b.slamStart=Math.min(b.marker.y-650,b.y);b.slamHit=false;}return;}
+    if(b.phase==='slam'){const t=Math.min(1,b.age/.45);const previousY=b.y;b.y=b.slamStart+(b.marker.y-b.slamStart)*t*t;
+      if(!b.slamHit&&Math.abs(p.x-b.x)<52&&b.y>=p.y-(p.h||46)&&previousY<=p.y){hurt(e,p,b.x,false,2);b.slamHit=true;}
+      if(t===1){b.y=b.marker.y;b.marker=null;b.phase='impact';b.age=0;e.explosions.push({x:b.x,y:b.y-3,radius:100,life:.65});if(!b.slamHit&&Math.abs(p.x-b.x)<100&&p.y>b.y-105&&p.y<b.y+25)hurt(e,p,b.x,false,2);}return;}
     if(b.phase==='impact'){if(b.age>=1.1){b.phase='chase';b.age=0;b.leapWait=4.5;}return;}
     b.leapWait-=dt;
     if(b.phase==='chase'&&b.leapWait<=0){b.phase='crouch';b.age=0;return;}
@@ -54,7 +56,7 @@
     if(b.phase==='chase'&&b.missileWait<=0){b.phase='charge';b.age=0;}
     if(b.phase==='charge'){
       if(b.age>=.8){const port=cannon(b),first=Math.max(20,Math.min(709,p.x)),second=first>364?first-140:first+140;
-        for(const [i,targetX] of [first,second,first>364?Math.max(20,first-280):Math.min(709,first+280)].entries()){const support=platforms.filter(s=>s.y>=p.y-2&&targetX>=s.x&&targetX<=s.x+s.w).sort((a,b)=>a.y-b.y)[0];b.missiles.push({x:port.x+(i-1)*10,y:port.y,targetX,targetY:support?.y??Math.max(ARENA.y,p.y),t:0,hit:false});}
+        for(const [i,targetX] of [first,second,first>364?Math.max(20,first-280):Math.min(709,first+280)].entries()){const support=platforms.filter(s=>s.y>=p.y-2&&targetX>=s.x&&targetX<=s.x+s.w).sort((a,b)=>a.y-b.y)[0];b.missiles.push({x:port.x+(i-1)*10,y:port.y,targetX,targetY:i===0&&p.y<(support?.y??ARENA.y)-80?p.y-(p.h||46)/2:support?.y??Math.max(ARENA.y,p.y),t:0,hit:false});}
         b.recoil=.22;b.phase='launch';b.age=0;b.missileWait=5.2;}
 
       return;
@@ -86,8 +88,10 @@
     const facing=p.x<b.x?-1:1;
     // Grip stays at the forward fist, below the muzzle and clear of the face.
     const hand={x:b.x+facing*25,y:b.y-32};
-    const requested=Math.atan2(p.y-25-hand.y,Math.max(1,Math.abs(p.x-hand.x)));
-    const angle=Math.max(-.55,Math.min(.55,requested));
+    const airAim=p.y<b.y-65;
+    const dx=(p.x-hand.x)*facing;
+    const requested=Math.atan2(p.y-25-hand.y,airAim?dx:Math.max(1,dx));
+    const angle=Math.max(airAim?-Math.PI*.62:-.55,Math.min(.55,requested));
     return{facing,hand,angle,x:hand.x+facing*Math.cos(angle)*31,y:hand.y+Math.sin(angle)*31};
   }
   const api={deathPose,airborne,ARENA,create,box,damage,melee,area,update,pose,whiteGun,cannon,missilePosition};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeFinalBoss=api;

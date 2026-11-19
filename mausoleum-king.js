@@ -30,14 +30,14 @@
  function chips(k,count=8){for(let i=0;i<count;i++)k.chips.push({x:k.x+(i%5-2)*24,y:k.y-35-(i%4)*50,vx:(i%2?1:-1)*(35+i*9),vy:-85-i*7,angle:i*.9,spin:(i%2?1:-1)*2,life:3,size:7+i%4*3});}
  function wave(k,r=210){k.waves.push({x:k.x,age:0,r,max:r,hit:false});k.shake=1;k.events.push('explosion');chips(k,6);}
  function horizontalHit(k,p,range,height,hurt,damage=2){if((p.x-k.x)*k.facing>=-30&&Math.abs(p.x-k.x)<range&&p.y>k.y-height&&p.y-(p.h||46)<k.y+10)hurt(k.x,damage);}
- function beginAttack(k,phase,p){enter(k,phase);k.facing=Math.sign(p.x-k.x)||k.facing;k.targetX=clamp(p.x,LEFT,RIGHT);k.startX=k.x;k.streamClock=0;if(phase==='rock')k.rocks.push({target:k.targetX,age:0,warning:true,hit:false});}
+ function beginAttack(k,phase,p){enter(k,phase);k.facing=Math.sign(p.x-k.x)||k.facing;k.targetX=clamp(p.x,LEFT,RIGHT);k.startX=k.x;k.streamClock=0;k.spitAim=phase==='vomit'&&(p.y<FLOOR-130||Math.abs(p.x-k.x)>370)?{x:p.x,y:p.y-(p.h||46)/2}:null;if(phase==='rock')k.rocks.push({target:p.x,targetY:p.y<FLOOR-110?p.y-(p.h||46)/2:FLOOR,age:0,warning:true,hit:false});}
  function addPool(k,x){x=clamp(x,LEFT-100,RIGHT+100);const pool=k.pools.find(a=>Math.abs(a.x-x)<65);if(pool){pool.life=5;pool.r=Math.min(68,pool.r+2);}else k.pools.push({x,r:32,life:5,age:0});if(k.pools.length>12)k.pools.shift();}
  function mouth(k){const scale=ZOMBIE_HEIGHT/250;return{x:k.x+k.facing*(k.age<1.25?55:60)*scale,y:k.y-(k.age<1.25?158:153)*scale};}
  function updateHazards(k,p,dt,hurt){
-  for(const r of k.rocks){r.age+=dt;if(r.warning)continue;const t=clamp((r.age-r.launchAge)/r.flight,0,1);r.x=r.sx+(r.target-r.sx)*t;r.y=r.sy+(FLOOR-r.sy)*t-Math.sin(Math.PI*t)*180;
+  for(const r of k.rocks){r.age+=dt;if(r.warning||r.landed)continue;const t=(r.age-r.launchAge)/r.flight,ty=r.targetY??FLOOR;r.x=r.sx+(r.target-r.sx)*t;r.y=r.sy+(ty-r.sy)*t-600*t*(1-t);
    if(!r.hit&&Math.abs(p.x-r.x)<32&&p.y>r.y-22&&p.y-(p.h||46)<r.y+22){r.hit=true;hurt(r.x,2);}
-   if(t>=1&&!r.landed){r.landed=true;k.events.push('explosion');k.shake=.65;if(!r.hit&&Math.abs(p.x-r.target)<72&&p.y>FLOOR-35){r.hit=true;hurt(r.target,2);}for(let i=0;i<7;i++)k.chips.push({x:r.target,y:FLOOR-12,vx:(i-3)*35,vy:-100-i%3*35,angle:i,spin:3,life:1.5,size:8+i%3*3});}
-  }k.rocks=k.rocks.filter(r=>!r.landed||r.age-r.launchAge<r.flight+.35);
+   if((r.hit||r.y>=FLOOR)&&!r.landed){r.landed=true;r.impactAge=r.age;k.events.push('explosion');k.shake=.65;if(!r.hit&&Math.abs(p.x-r.x)<72&&p.y>FLOOR-35){r.hit=true;hurt(r.target,2);}for(let i=0;i<7;i++)k.chips.push({x:r.x,y:r.y-12,vx:(i-3)*35,vy:-100-i%3*35,angle:i,spin:3,life:1.5,size:8+i%3*3});}
+  }k.rocks=k.rocks.filter(r=>!r.landed||r.age-r.impactAge<.35);
   for(const w of k.waves){w.age+=dt;const radius=w.max*Math.min(1,w.age/.7);if(!w.hit&&Math.abs(Math.abs(p.x-w.x)-radius)<27&&p.y>FLOOR-20&&p.y-(p.h||46)<FLOOR+5){w.hit=true;hurt(w.x,2);}}k.waves=k.waves.filter(w=>w.age<.9);
   for(const d of k.fluid){const oldX=d.x,oldY=d.y;d.life-=dt;d.vy+=650*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.px=oldX;d.py=oldY;if(d.y>=FLOOR-2){addPool(k,d.x);d.life=0;}else if(Math.abs(d.x-p.x)<16&&d.y>p.y-(p.h||46)&&d.y<p.y){hurt(d.x,1);d.life=0;}}
   k.fluid=k.fluid.filter(d=>d.life>0);
@@ -66,13 +66,14 @@
   if(k.phase==='walk'){
    k.cooldown=Math.max(0,k.cooldown-dt);const dx=p.x-k.x;k.facing=Math.sign(dx)||k.facing;const speed=k.stage===1?27:41;
    if(Math.abs(dx)>135){const step=k.facing*speed*dt,nextX=clamp(k.x+step,LEFT,RIGHT),nextY=supportY(k,nextX,platforms);if(nextY<k.y-2){beginAttack(k,'leap',p);k.targetX=clamp(nextX+k.facing*360,LEFT,RIGHT);k.startY=k.y;k.targetY=supportY(k,k.targetX,platforms);return;}k.x=nextX;k.y=nextY;k.cycle+=Math.abs(step)/110;}
-   if(k.cooldown<=0){const phase=k.stage===1?(Math.abs(dx)>340||p.y<FLOOR-140?'rock':k.sequence%2?'stomp':'sword'):(['vomit','leap','claw'][k.sequence%3]);k.sequence++;beginAttack(k,phase,p);if(phase==='leap'){k.startY=k.y;k.targetY=supportY(k,k.targetX,platforms);}}return;
+   if(k.cooldown<=0){const phase=k.stage===1?(Math.abs(dx)>340||p.y<FLOOR-140?'rock':k.sequence%2?'stomp':'sword'):(p.y<FLOOR-130||Math.abs(dx)>370?(k.sequence%2?'leap':'vomit'):['vomit','leap','claw'][k.sequence%3]);k.sequence++;beginAttack(k,phase,p);if(phase==='leap'){k.startY=k.y;k.targetY=supportY(k,k.targetX,platforms);}}return;
   }
   if(k.phase==='sword'&&before<.83&&k.age>=.83){horizontalHit(k,p,190,175,hurt,2);k.events.push('axe');}
   if(k.phase==='claw'&&before<.78&&k.age>=.78){horizontalHit(k,p,185,165,hurt,2);k.events.push('claw');}
   if(k.phase==='stomp'&&before<1.03&&k.age>=1.03)wave(k);
   if(k.phase==='rock'&&before<1.2&&k.age>=1.2){for(const r of k.rocks)if(r.warning){r.warning=false;r.launchAge=r.age;r.flight=1.1;r.sx=k.x+k.facing*65;r.sy=k.y-195;r.x=r.sx;r.y=r.sy;}k.events.push('debris');}
-  if(k.phase==='vomit'&&k.age>=.9&&k.age<2.3){k.streamClock+=dt;while(k.streamClock>=.025){k.streamClock-=.025;const spread=Math.sin(k.anim*19),{x,y}=mouth(k);k.fluid.push({x,y,px:x,py:y,vx:k.facing*(210+spread*65),vy:65+spread*35,life:1.5,r:4+(Math.floor(k.anim*40)%3)});}if(before<.9)k.events.push('plasma');}
+  if(k.phase==='vomit'&&k.age>=.9&&k.age<2.3){k.streamClock+=dt;while(k.streamClock>=.025){k.streamClock-=.025;const spread=Math.sin(k.anim*19),{x,y}=mouth(k);const aim=k.spitAim,flight=aim?clamp(Math.hypot(aim.x-x,aim.y-y)/510,.5,2.6):0;
+    k.fluid.push({x,y,px:x,py:y,vx:aim?(aim.x-x)/flight+spread*9:k.facing*(210+spread*65),vy:aim?(aim.y-y)/flight-325*flight+spread*8:65+spread*35,life:flight+1.5,r:4+(Math.floor(k.anim*40)%3)});}if(before<.9)k.events.push('plasma');}
   if(k.phase==='leap'){const t=clamp((k.age-.65)/1.05,0,1);k.x=k.startX+(k.targetX-k.startX)*t;k.y=(k.startY??FLOOR)+((k.targetY??FLOOR)-(k.startY??FLOOR))*t-Math.sin(t*Math.PI)*190;if(before<1.7&&k.age>=1.7){k.y=k.targetY??FLOOR;wave(k,180);}}
   if(k.age>=durations[k.phase]){k.y=supportY(k,k.x,platforms);enter(k,'walk');k.cooldown=k.stage===1?1.1:.85;}
  }
@@ -149,7 +150,10 @@
  function drawRock(c,x,y,age){if(!rockAtlas)return;const f=rockAtlas.frames[Math.floor(age*9)%6],scale=48/Math.max(f.w,f.h),w=Math.round(f.w*scale),h=Math.round(f.h*scale);c.save();c.imageSmoothingEnabled=false;c.drawImage(rockAtlas.image,f.x,f.y,f.w,f.h,Math.round(x-w/2),Math.round(y-h/2),w,h);c.restore();}
  function drawEffects(c,k){if(!k)return;c.save();
   if(['sword','claw'].includes(k.phase)&&k.age>.65&&k.age<1.08)root.ArcadeBossAttackSprites?.draw(c,'slash',k.age-.65,k.x+k.facing*65,k.y-95,210,160,{flip:k.facing<0,duration:.43,loop:false});
-  for(const r of k.rocks){c.strokeStyle='#ffad58';c.lineWidth=2;c.setLineDash([5,4]);c.beginPath();c.ellipse(r.target,FLOOR-2,70,9,0,0,Math.PI*2);c.stroke();c.setLineDash([]);if(!r.warning&&!r.landed)drawRock(c,r.x,r.y,r.age);}
+  if(k.phase==='vomit'&&k.spitAim&&k.age<.9){
+   c.strokeStyle='#b8e88c';c.lineWidth=2;c.beginPath();c.arc(k.spitAim.x,k.spitAim.y,14,0,Math.PI*2);c.stroke();
+  }
+  for(const r of k.rocks){c.strokeStyle='#ffad58';c.lineWidth=2;c.setLineDash([5,4]);c.beginPath();c.ellipse(r.target,(r.targetY??FLOOR)-2,r.targetY<FLOOR?25:70,r.targetY<FLOOR?25:9,0,0,Math.PI*2);c.stroke();c.setLineDash([]);if(!r.warning&&!r.landed)drawRock(c,r.x,r.y,r.age);}
   for(const w of k.waves){const r=w.max*Math.min(1,w.age/.7);root.ArcadeBossAttackSprites?.draw(c,'shock',w.age,w.x,FLOOR,Math.max(20,r*2),42,{ground:true,alpha:Math.max(0,1-w.age/.9)});}
   if(['stomp','leap'].includes(k.phase)&&k.age<(k.phase==='stomp'?1.03:1.7)){c.globalAlpha=.3+Math.sin(k.anim*15)**2*.3;c.fillStyle='#dba857';c.beginPath();c.ellipse(k.phase==='leap'?k.targetX:k.x,FLOOR-1,k.phase==='leap'?180:210,7,0,0,Math.PI*2);c.fill();c.globalAlpha=1;}
   for(const a of k.pools)root.ArcadeBossAttackSprites?.draw(c,'pool',a.age,a.x,FLOOR,a.r*2,21,{ground:true,alpha:Math.min(1,a.life/1.2)});

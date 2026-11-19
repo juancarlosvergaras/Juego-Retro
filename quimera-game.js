@@ -454,7 +454,7 @@
     });
     for(const ray of state.tracers){c.save();c.globalAlpha=Math.min(1,(ray.until-state.age)*11);
       c.strokeStyle='#ffdb86';c.lineWidth=2;c.beginPath();c.moveTo(ray.x-state.cam,ray.y-ray.height);c.lineTo(ray.end-state.cam,ray.y-ray.height);c.stroke();c.restore();}
-    for(const b of state.shots){if(b.age<0)continue;const x=b.x-state.cam,y=b.y-45;if(b.kind==='shoot'){c.fillStyle='#ffcc76';c.fillRect(x-10,y-1,20,3);continue;}if(b.kind==='pulse'){c.fillStyle='#418cf5';c.fillRect(x-11,y-4,22,8);c.fillStyle='#cbfbff';c.fillRect(x-8,y-2,16,4);continue;}c.fillStyle='#9bff98';c.fillRect(x-5,y-3,10,7);c.fillStyle='#345c54';c.fillRect(x+4*b.dir,y-2,5,4);}
+    for(const b of state.shots){if(b.age<0)continue;const x=b.x-state.cam,y=b.y-45;if(b.kind==='shoot'){c.save();c.translate(x,y);c.rotate(Math.atan2(b.vy||0,b.vx??b.dir));c.fillStyle='#ffcc76';c.fillRect(-10,-1,20,3);c.restore();continue;}if(b.kind==='pulse'){c.fillStyle='#418cf5';c.fillRect(x-11,y-4,22,8);c.fillStyle='#cbfbff';c.fillRect(x-8,y-2,16,4);continue;}c.fillStyle='#9bff98';c.fillRect(x-5,y-3,10,7);c.fillStyle='#345c54';c.fillRect(x+4*b.dir,y-2,5,4);}
     drawChemicals();
     for(const f of state.sparks){
       if(f.type==='land'){

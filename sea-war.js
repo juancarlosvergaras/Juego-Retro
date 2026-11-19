@@ -99,6 +99,7 @@
  function chooseCaptainAttack(b,p){
   b.facing=Math.sign(p.x-b.x)||b.facing;
   const gap=Math.abs(p.x-b.x);
+  if(p.y<b.y-100&&gap<355){b.targets=[p.x];beginCaptainPhase(b,'missileWarn');return;}
   if(gap<=155){beginCaptainPhase(b,'dashWarn');return;}
   if(gap<=355){b.targetX=clamp(p.x,60,900);beginCaptainPhase(b,'grenadeWarn');return;}
   // Distant opponents draw gunfire first. Repeated sustained volleys call in a salvo.

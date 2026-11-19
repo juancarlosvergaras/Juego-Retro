@@ -24,19 +24,29 @@
  function landingView(floor,x){
   const camera=cameraX(floor,x);
   const incoming=floor>0&&camera<300;
-  if(!incoming&&floor===3)return null;
+  if(floor===3&&x>=270)return null;
   const from=incoming?floor-1:floor,st=escalator(from),origin=st.exit-landingX;
   if(!incoming&&camera+960<st.entry-15)return null;
   const local=incoming?x:x-origin,upperCamera=incoming?camera:camera-origin;
   const travel=clamp((local+115)/345,0,1);
   const progress=travel*travel*(3-2*travel),lift=Math.round(st.rise*progress);
   return {from,st,origin,upperCamera,lowerCamera:upperCamera+origin,lift,progress,
-   actorOffset:incoming?lift-st.rise:lift,incoming};
+   actorOffset:incoming?lift-st.rise:lift,incoming,
+   roofBlend:floor===3?clamp((x-landingX)/(270-landingX),0,1):0};
  }
- function updateCamera(s,x){
+ function updateCamera(s,x,y=s.y){
   const view=landingView(s.floor,x);
-  s.camera.x=cameraX(s.floor,x);s.camera.y=view?-view.actorOffset:0;
-  s.camera.landing=view;
+  let camera=cameraX(s.floor,x);
+  if(s.floor===3){
+   const clear=clamp((FLOOR-escalator(2).rise-y)/100,0,1);
+   if(s.ending>=0||clear===1){Object.assign(s.camera,{x:0,y:0,landing:null});return;}
+   if(view&&clear>0){
+    camera*=1-clear;view.upperCamera=camera;view.lowerCamera=camera+view.origin;
+    view.actorOffset=Math.round(view.actorOffset*(1-clear));view.lift=view.st.rise+view.actorOffset;
+    view.roofBlend+=clear*(1-view.roofBlend);
+   }
+  }
+  s.camera.x=camera;s.camera.y=view?-view.actorOffset:0;s.camera.landing=view;
  }
  function geometry(floor){
   const w=widths[floor],st=floor<3?escalator(floor):null;
@@ -69,7 +79,7 @@
    p.x+=s.airCarry*dt;s.airCarry=Math.max(0,s.airCarry-(input.left?260:80)*dt);
   }else s.airCarry=0;
   const mode=P.step(p,input,dt,s.geometry.platforms,s.geometry);
-  updateCamera(s,p.x);return mode;
+  updateCamera(s,p.x,p.y);return mode;
  }
  function soldiers(floor,defeated,difficulty){if(floor===3)return[];return Array.from({length:11},(_,i)=>{const id='mall-'+floor+'-'+i,x=(floor===0?1480:520)+i*(floor===0?310:330),n=N.createSoldier({x,y:FLOOR,facing:-1,kind:i%4===2?'warden':i%4===3?'knife':i%4===1?'turret':'rifle'},id);n.shot=1.4+i*.2;if(n.kind==='warden'){n.hp=n.maxHp=6;}n.maxHp*=difficulty;n.hp=defeated.has(id)?0:n.maxHp;return n;});}
  function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,airCarry:0,rooms:new Map(),intro:saved.started?4:0,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};
@@ -94,6 +104,9 @@
   const dy=direction*st.rise;
   const motion={vx:p.vx,vy:p.vy,jumps:p.jumps,fallPeak:(p.fallPeak??p.y)+dy,jetpack:p.jetpack};
   const invincible=e.invincible;
+  const from=Math.min(s.floor,s.floor+direction);
+  const mix=s.skyTransition?.from===from?s.skyTransition.mix:(direction>0?0:1);
+  s.skyTransition={from,mix,to:direction>0?1:0};
   s.rooms.set(s.floor,{geometry:s.geometry,enemies:s.enemies,shoppers:s.shoppers,shoppingBags:s.shoppingBags,debris:s.debris});
   s.floor+=direction;s.checkpoint=s.floor;
   s.x=p.x+direction*(landingX-st.exit);s.y=p.y+dy;
@@ -104,13 +117,28 @@
   emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});
  }
  function bossUpdate(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
-  if(b.hp<=0){s.ending=0;e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:8500,text:'Coloso derrotado'});}emit(s,'ending');return;}
+  if(b.hp<=0){s.ending=0;updateCamera(s,p.x);e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:8500,text:'Coloso derrotado'});}emit(s,'ending');return;}
   b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.65:1);const next=phase=>{b.phase=phase;b.age=0;};
-  if(b.phase==='arrival'&&b.age>2.5)next('fistWarn');
-  else if(b.phase==='fistWarn'){if(!b.targets.length)b.targets=[clamp(p.x,90,850)];if(b.age>1.2){s.hazards.push({type:'fist',x:b.targets[0],age:0,life:.6,radius:65});b.targets=[];next('fist');}}
-  else if(b.phase==='fist'&&b.age>.8)next('sweepWarn');
-  else if(b.phase==='sweepWarn'&&b.age>1.35){s.hazards.push({type:'wave',x:b.x-118,age:0,life:3.2,radius:30});next('sweep');}
-  else if(b.phase==='sweep'&&b.age>2.4){b.targets=[clamp(p.x,85,875),clamp(p.x+(p.x<480?190:-190),85,875)];next('rocksWarn');}
+  // Commit to a point on the roof or in the air before the throwing arm moves.
+  const throwAtPlayer=()=>{
+   const high=p.y<FLOOR-100,far=Math.abs(p.x-b.x)>480;
+   if(!high&&!far)return false;
+   b.throwDir=p.x<b.x?-1:1;
+   b.aim={x:p.x,y:p.y-(p.h||46)*.52};b.targets=[];next('throwWarn');return true;
+  };
+  if(b.phase==='arrival'&&b.age>2.5){if(!throwAtPlayer())next('fistWarn');}
+  else if(b.phase==='throwWarn'&&b.age>=.96){
+   const x=b.x+146*b.throwDir,y=323,dx=b.aim.x-x,dy=b.aim.y-y;
+   const flight=clamp(Math.hypot(dx,dy)/465,.48,1.65),gravity=135;
+   s.hazards.push({type:'aimedRock',x,y,vx:dx/flight,vy:dy/flight-gravity*flight/2,
+    gravity,age:0,life:flight+1.4});
+   b.aim=null;next('throw');
+  }
+  else if(b.phase==='throw'&&b.age>1.05)next('recover');
+  else if(b.phase==='fistWarn'){if(!b.targets.length)b.targets=[p.x];if(b.age>1.2){s.hazards.push({type:'fist',x:b.targets[0],age:0,life:.6,radius:65});b.targets=[];next('fist');}}
+  else if(b.phase==='fist'&&b.age>.8){if(!throwAtPlayer())next('sweepWarn');}
+  else if(b.phase==='sweepWarn'&&b.age>1.35){s.hazards.push({type:'wave',x:b.x,dir:p.x>=b.x?1:-1,age:0,life:3.2,radius:30});next('sweep');}
+  else if(b.phase==='sweep'&&b.age>2.4){if(!throwAtPlayer()){b.targets=[p.x,clamp(p.x+(p.x<480?190:-190),18,942)];next('rocksWarn');}}
   else if(b.phase==='rocksWarn'&&b.age>1.5){
    const flight=1.44,y=171;
    for(const [i,targetX] of b.targets.entries()){
@@ -120,11 +148,17 @@
    b.targets=[];next('rocks');
   }
   else if(b.phase==='rocks'&&b.age>2.4)next('recover');
-  else if(b.phase==='recover'&&b.age>1.7){b.cycle++;next('fistWarn');}
-  for(const h of s.hazards){h.age+=dt;h.life-=dt;if(h.type==='wave'){h.x-=290*dt;if(Math.abs(p.x-h.x)<h.radius&&p.y>FLOOR-43)E.hurtPlayer(e,p,h.x,false,2);}else if(h.type==='fist'){if(h.age>.25&&h.age<.49&&Math.abs(p.x-h.x)<h.radius&&p.y>FLOOR-100)E.hurtPlayer(e,p,h.x,false,2);}else{h.x+=(h.vx||0)*dt;h.vy+=620*dt;h.y+=h.vy*dt;if(Math.abs(p.x-h.x)<35&&Math.abs(p.y-28-h.y)<40)E.hurtPlayer(e,p,h.x,false,2);if(h.y>=FLOOR){h.life=0;s.debris.push({x:h.x,y:FLOOR,age:0});}}}s.hazards=s.hazards.filter(h=>h.life>0);
+  else if(b.phase==='recover'&&b.age>1.7){b.cycle++;if(!throwAtPlayer())next('fistWarn');}
+  for(const h of s.hazards){h.age+=dt;h.life-=dt;if(h.type==='aimedRock'){
+    h.x+=h.vx*dt;h.y+=h.vy*dt+.5*h.gravity*dt*dt;h.vy+=h.gravity*dt;
+    if(Math.abs(h.x-p.x)<(p.w||28)/2+13&&h.y>=p.y-(p.h||46)-13&&h.y<=p.y+13){E.hurtPlayer(e,p,h.x,false,2);h.life=0;}
+    if(h.y>=FLOOR){h.life=0;s.debris.push({x:h.x,y:FLOOR,age:0});}
+   }else if(h.type==='wave'){h.x+=(h.dir||-1)*290*dt;if(Math.abs(p.x-h.x)<h.radius&&p.y>FLOOR-43)E.hurtPlayer(e,p,h.x,false,2);}else if(h.type==='fist'){if(h.age>.25&&h.age<.49&&Math.abs(p.x-h.x)<h.radius&&p.y>FLOOR-100)E.hurtPlayer(e,p,h.x,false,2);}else{h.x+=(h.vx||0)*dt;h.vy+=620*dt;h.y+=h.vy*dt;if(Math.abs(p.x-h.x)<35&&Math.abs(p.y-28-h.y)<40)E.hurtPlayer(e,p,h.x,false,2);if(h.y>=FLOOR){h.life=0;s.debris.push({x:h.x,y:FLOOR,age:0});}}}s.hazards=s.hazards.filter(h=>h.life>0);
  }
  function collect(s,p,e){if(s.floor===3)return;const items=[{id:'kit',x:400,type:'health'},{id:'ammo',x:1410,type:'ammo'},{id:'star',x:1980,type:'star'},{id:'fuel',x:widths[s.floor]-650,type:'fuel'}];for(const item of items){const id=s.floor+'-'+item.id;if(s.taken.has(id)||Math.abs(p.x-item.x)>38||Math.abs(p.y-FLOOR)>60)continue;s.taken.add(id);if(item.type==='star'){s.stars.add(id);emit(s,'points',{amount:400,text:'Estrella del centro comercial'});}else if(item.type==='health'){e.hp=Math.min(e.maxHp,e.hp+3);emit(s,'pickup',{text:'Botiquín · +3 salud'});}else if(item.type==='fuel'){p.fuel=p.fuelMax;emit(s,'pickup',{text:'Gasolina al máximo'});}else{for(const slot of [3,5,6]){if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+(slot===6?5:45);}emit(s,'pickup',{text:'Munición recogida'});}}}
- function update(s,p,e,input,dt){s.events=[];dt=clamp(dt,0,.05);s.time+=dt;for(const f of s.debris)f.age+=dt;s.debris=s.debris.filter(f=>f.age<1.2);
+ function update(s,p,e,input,dt){s.events=[];dt=clamp(dt,0,.05);s.time+=dt;
+  if(s.skyTransition){const t=s.skyTransition;t.mix+=clamp(t.to-t.mix,-dt/.28,dt/.28);if(t.mix===t.to)s.skyTransition=null;}
+  for(const f of s.debris)f.age+=dt;s.debris=s.debris.filter(f=>f.age<1.2);
   if(s.ending>=0){s.ending+=dt;if(s.ending>=11&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
   if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
   Shoppers.update(s,dt);

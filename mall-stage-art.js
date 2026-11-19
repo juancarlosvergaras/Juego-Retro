@@ -59,12 +59,10 @@
    return;
   }
   const art=interiorArt(images,s.floor),x=s.camera.x;
-  if(dy>0){
-   // The next span of glazing continues above the painting as the camera rises.
-   c.save();c.translate(0,dy);c.scale(1,-1);c.beginPath();c.rect(0,0,W,dy);c.clip();
-   repeat(c,art.back,x*.72,0,true);c.restore();
-  }
-  repeat(c,art.back,x*.72,dy,true);
+  c.save();
+  const scale=1+Math.max(0,dy)/art.layout.top;
+  c.translate(W/2,0);c.scale(scale,scale);c.translate(-W/2,0);
+  repeat(c,art.back,x*.72,Math.min(0,dy),true);c.restore();
   repeat(c,art.front,x*root.ArcadeMallInterior.parallax,art.layout.top+dy);
   return art;
  }
@@ -131,17 +129,19 @@
   }
   const upstairs=next===3?null:interiorArt(images,next);
   const left=lip[0][0],back=left+36,ceiling=upstairs?upstairs.layout.top:ground-134;
-  if(right<left)return;
-  // The expansion joint separates two opaque bays of glass. Each has its own
-  // view and vanishing lines, even when the camera is halfway between floors.
-  c.save();c.beginPath();c.rect(back-cam,0,W,upstairs?ceiling+upperY:edge+upperY+1);c.clip();
-  if(upstairs){
-   repeat(c,upstairs.back,upperCamera*.72,upperY,true);
-  }else{
-   background(c,{floor:3,camera:{x:cam}},images,upperY);
-   if(v.incoming){c.translate(-cam,upperY);giant(c,s,images.giant);}
+  // Keep one panorama across the atrium. Only the distant scenery dissolves
+  // at the room boundary; the floor, escalator and actors remain opaque.
+  const skyMix=s.skyTransition?.from===from?s.skyTransition.mix:Number(v.incoming);
+  if(skyMix>0){
+   c.save();c.globalAlpha=skyMix;
+   if(upstairs)repeat(c,upstairs.back,upperCamera*.72,upperY,true);
+   else{
+    c.beginPath();c.rect(0,0,W,edge+upperY+1);c.clip();
+    background(c,{floor:3,camera:{x:0}},images,upperY);
+   }
+   c.restore();
   }
-  c.restore();
+  if(right<left)return;
   c.save();c.translate(-cam,upperY);
   // Stone piers and soffit beneath the occupied wing are sampled at shop scale.
   const stone=images.gallery,k=stone.width/root.ArcadeMallInterior.referenceWidth;
@@ -182,10 +182,6 @@
   c.restore();
   // A rear corner pilaster and cornice frame the shops; the route in front is open.
   if(right>=back){
-   const beamTop=-upperY,beamBase=upstairs?ceiling:edge;
-   c.fillStyle='#332f33';c.fillRect(back-7,beamTop,15,beamBase-beamTop);
-   for(let y=beamBase;y>beamTop;y-=57)stoneRect(157,72,14,57,back-6,y-57,13,57);
-   for(let y=beamBase-27;y>beamTop;y-=57)stoneRect(154,63,18,7,back-8,y,17,5);
    if(upstairs){
     stoneRect(389,182,23,147,back-5,ceiling+4,13,upstairs.layout.threshold-ceiling-4);
     stoneRect(386,159,30,29,back-8,ceiling-1,19,11);
@@ -218,11 +214,15 @@
   c.restore();
   if(v.incoming&&upstairs){
    c.save();c.translate(0,upperY);root.ArcadeMallShoppers.draw(c,s,images.shoppers,upstairs);c.restore();
+  }else if(v.incoming&&v.roofBlend>0){
+   c.save();c.globalAlpha=v.roofBlend;
+   background(c,{floor:3,camera:{x:0}},images,upperY);
+   c.translate(0,upperY);giant(c,s,images.giant);rooftop(c,images.roofDeck,s.time);c.restore();
   }
  }
  function landingStairs(c,s,v,front){
   c.save();
-  if(v.incoming)c.translate(-v.origin,v.st.rise);
+  if(v.incoming){c.translate(-v.origin,v.st.rise);c.globalAlpha*=1-v.roofBlend;}
   stairs(c,s,front,v.st);c.restore();
  }
  function gait(c,sheet,actor,k,time,cycle){
@@ -259,6 +259,8 @@
    case 'fist':return {row:1,frame:4+phaseFrame(t,.78,4)};
    case 'sweepWarn':return {row:2,frame:phaseFrame(t,1.3,4)};
    case 'sweep':return t<.95?{row:2,frame:4+phaseFrame(t,.95,4)}:{row:0,frame:Math.floor((t-.95)*6)%8};
+   case 'throwWarn':return {row:3,frame:phaseFrame(t,.96,5)};
+   case 'throw':return {row:3,frame:5+phaseFrame(t,.65,3)};
    case 'rocksWarn':return {row:3,frame:phaseFrame(t,1.48,5)};
    case 'rocks':return t<.8?{row:3,frame:5+phaseFrame(t,.8,3)}:{row:0,frame:Math.floor((t-.8)*6)%8};
    default:return {row:0,frame:Math.floor(s.time*6)%8,sink:b.phase==='arrival'?(1-clamp(t/2.4,0,1))**2*315:0};
@@ -269,6 +271,7 @@
   const pose=giantPose(s),cw=img.width/8,ch=img.height/5;
   const width=420,height=width*ch/cw,baseline=edge+48+(pose.sink||0);
   c.save();c.beginPath();c.rect(0,0,W,edge+2);c.clip();
+  if(s.boss.throwDir===1&&['throwWarn','throw'].includes(s.boss.phase)){c.translate(2*s.boss.x,0);c.scale(-1,1);}
   if(s.boss.hit>0)c.filter='brightness(1.22)';
   c.drawImage(img,cw*pose.frame,ch*pose.row,cw,ch,Math.round(s.boss.x-width/2),Math.round(baseline-height),width,height);
   c.restore();
@@ -285,6 +288,13 @@
  }
  function hazards(c,s,images,rock){
   const b=s.boss;
+  if(b.phase==='throwWarn'&&b.aim){
+   const {x,y}=b.aim,r=13+8*(1-clamp(b.age/.96,0,1));
+   c.save();c.strokeStyle='#ffca75';c.lineWidth=2;
+   for(const [dx,dy] of [[-1,-1],[1,-1],[-1,1],[1,1]])
+    line(c,'#ffca75',2,[[x+dx*r,y+dy*(r-6)],[x+dx*r,y+dy*r],[x+dx*(r-6),y+dy*r]]);
+   c.restore();
+  }
   const marks=b.targets.concat(s.hazards.filter(h=>h.type==='rock'||h.type==='fist').map(h=>h.targetX??h.x));
   for(const x of marks){
    const w=b.phase==='fistWarn'?63:35;
@@ -292,8 +302,8 @@
    for(const sign of [-1,1])polygon(c,'#ffbf62',[[x+sign*w,ground-5],[x+sign*(w+7),ground-12],[x+sign*(w+7),ground-5]]);
   }
   for(const h of s.hazards){
-   if(h.type==='rock'){
-    const f=rock[4+Math.floor(h.age*9)%4],k=54/f[2];
+   if(h.type==='rock'||h.type==='aimedRock'){
+    const f=rock[4+Math.floor(h.age*9)%4],k=(h.type==='aimedRock'?34+25*Math.max(0,1-h.age/.22):54)/f[2];
     c.drawImage(images.giantEffects,...f,h.x-f[2]*k/2,h.y-f[3]*k/2,f[2]*k,f[3]*k);
    }else if(h.type==='wave'){
     root.ArcadeBossAttackSprites?.draw(c,'shock',h.age,h.x,ground,65,45,{ground:true});

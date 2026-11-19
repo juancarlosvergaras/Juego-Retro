@@ -308,14 +308,15 @@
       n.volley-=dt;n.shotTimer-=dt;
       if(n.shotTimer<=0){
         const y=n.aimY+(n.round-3)*11;
-        s.shots.push({kind:'shoot',x:n.x+36*n.face,y:n.y,dir:n.face,vy:(y-n.y)*500/n.aimDistance,age:0,speed:500,damage:11});
+        const x=n.x+36*n.face,angle=Math.atan2(y-n.y,n.aimX-x);
+        s.shots.push({kind:'shoot',x,y:n.y,dir:n.face,vx:500*Math.cos(angle),vy:500*Math.sin(angle),age:0,damage:11});
         n.shotTimer+=.13;n.round++;s.events.push('shot');
       }
       if(n.volley<=0){n.overheat=1.7;n.cool=.35;s.events.push('overheat');}return;
     }
     if(n.wind>0){n.wind-=dt;if(n.wind<=0){n.volley=.90;n.shotTimer=0;n.round=0;activity(n,'throw');}return;}
     n.face=p.x<n.x?-1:1;n.cool-=dt;activity(n,'idle');
-    if(n.cool<=0){n.wind=foes.gunner.wind;n.aimY=p.y;n.aimDistance=Math.max(90,Math.abs(p.x-n.x));activity(n,'guard');s.events.push('wind');}
+    if(n.cool<=0){n.wind=foes.gunner.wind;n.aimX=p.x;n.aimY=p.y;activity(n,'guard');s.events.push('wind');}
   }
   const techniques={
     flask:{label:'Frasco de suero',row:3,wind:.62,active:.28,recover:.56,range:430,damage:12},
@@ -500,7 +501,7 @@
       if(n.act==='idle'||n.act==='walk')groundStep(n,x,y,dt);
       else{n.stepping=false;n.gaitWeight=0;}
     }
-    for(const b of s.shots){b.age+=dt;if(b.age<0)continue;b.x+=b.dir*(b.speed||(b.kind==='shoot'?460:270))*dt;b.y+=(b.vy||0)*dt;if(Math.abs(b.x-s.player.x)<19&&Math.abs(b.y-s.player.y)<22&&s.player.z<44){hurt(s,b,b.damage||9);b.age=9;}}
+    for(const b of s.shots){b.age+=dt;if(b.age<0)continue;b.x+=(b.vx??b.dir*(b.speed||(b.kind==='shoot'?460:270)))*dt;b.y+=(b.vy||0)*dt;if(Math.abs(b.x-s.player.x)<19&&Math.abs(b.y-s.player.y)<22&&s.player.z<44){hurt(s,b,b.damage||9);b.age=9;}}
     s.shots=s.shots.filter(b=>b.age<2.8);
     updateChemicals(s,dt);
     for(const n of s.enemies){

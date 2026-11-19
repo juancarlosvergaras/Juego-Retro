@@ -204,7 +204,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
           b.x=Math.max(left,Math.min(right,b.x+b.facing*85*bossDt));
         }
         if(p.y>b.y+85||(platforms.length&&!whiteSupport(b,platforms))){b.descending=true;fallWhiteWolf(b,bossDt,platforms);}
-        if(b.grounded&&b.shot<=0&&!near&&p.y>=b.y-65){b.shot=2.1;const g=Final.whiteGun(b,p);b.flash=.16;b.gunAim=g;e.bullets.push({x:g.x,y:g.y,vx:g.facing*Math.cos(g.angle)*205,vy:Math.sin(g.angle)*205,life:3,enemy:true});}
+        if(b.grounded&&b.shot<=0&&!near){b.shot=2.1;const g=Final.whiteGun(b,p);b.flash=.16;b.gunAim=g;e.bullets.push({x:g.x,y:g.y,vx:g.facing*Math.cos(g.angle)*205,vy:Math.sin(g.angle)*205,life:Math.max(3,Math.hypot(p.x-g.x,p.y-25-g.y)/205+.15),enemy:true});}
       }
     }
     for(const bullet of e.bullets){

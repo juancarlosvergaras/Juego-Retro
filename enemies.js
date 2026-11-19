@@ -20,7 +20,7 @@
   }
   function createSoldier(spawn,id){return Object.assign(P.createPlayer(),{facing:-1,kind:'rifle'},spawn,{id,memory:0,lastKnown:null,hp:3,maxHp:3,shot:1.4+id*.2,jumpWait:0,flash:0,hit:0,death:0,alert:false,attackAge:null,strikePending:false,burst:0,runCycle:0});}
   function contact(n,p,platforms,segmentHit){if(p.cloak>0)return false;
-    if(n.hp<=0||n.ramHit)return false;
+    if(n.hp<=0||n.ramHit||n.dropRoute||n.dropRecovery>0)return false;
     if(n.kind==='mallGiant'||n.kind==='alienBoss'||n.kind==='cityBoss')return false;
     if(n.kind==='mecha')return n.active&&(Math.abs(n.x-p.x)<64&&Math.abs(n.y-p.y)<145||n.waves.some(w=>Math.abs(w.x-p.x)<23&&p.y>n.y-24&&p.y<=n.y+8));
     if(n.kind==='bat')return Bat.contact(n,p);
@@ -97,6 +97,41 @@
     }
     return null;
   }
+  // Choose a supported landing outside the space the player may cross during the fall.
+  function landingX(n,p,route,preferred){
+    const {left,right,y}=route,x=Math.max(left,Math.min(right,preferred));
+    if(p.y<n.y-(n.h||46)||p.y-(p.h||46)>y)return x;
+    const speed=Math.max(60,n.vy||0),height=Math.max(0,y-n.y);
+    const seconds=2*height/(speed+Math.sqrt(speed*speed+2100*height));
+    const ahead=p.x+(p.vx||0)*seconds;
+    const gap=((p.w||24)+(n.w||24))/2+44;
+    const leftLimit=Math.min(p.x,ahead)-gap,rightLimit=Math.max(p.x,ahead)+gap;
+    if(x<=leftLimit||x>=rightLimit)return x;
+    const canLeft=left<=leftLimit,canRight=right>=rightLimit;
+    if(canLeft&&(!canRight||Math.abs(n.x-leftLimit)<=Math.abs(n.x-rightLimit)))return leftLimit;
+    return canRight?rightLimit:null;
+  }
+  function planDrop(n,p,goal,platforms){
+    const upper=n.ground||platforms.find(s=>Math.abs(P.surfaceY(s,n.x)-n.y)<1&&n.x>=s.x&&n.x<=s.x+s.w);
+    if(!upper||upper.solid||upper.kind==='ground')return null;
+    const inset=(n.w||24)/2+3;
+    let best=null,bestCost=Infinity;
+    for(const lower of platforms){
+      if(lower===upper||lower.y<=n.y+10||lower.y>n.y+360||lower.x>n.x+180||lower.x+lower.w<n.x-180)continue;
+      const lowerLeft=Math.max(lower.x+inset,inset+8),lowerRight=Math.min(lower.x+lower.w-inset,P.WORLD.width-inset-8);
+      const launchLeft=Math.max(upper.x+inset,lowerLeft),launchRight=Math.min(upper.x+upper.w-inset,lowerRight);
+      if(launchLeft>launchRight)continue;
+      const y=P.surfaceY(lower,Math.max(launchLeft,Math.min(launchRight,n.x)));
+      // On a narrow upper ledge the last part of the sidestep can happen in the air.
+      const drift=Math.min(40,Math.max(0,Math.min(y,p.y-(p.h||46))-n.y)*.3);
+      const route={left:Math.max(lowerLeft,launchLeft-drift),right:Math.min(lowerRight,launchRight+drift),y};
+      const x=landingX(n,p,route,n.x);
+      if(x===null)continue;
+      const cost=y-n.y+Math.abs(n.x-x)+.15*Math.abs(goal.x-x);
+      if(cost<bestCost){best={...route,x,takeoff:Math.max(launchLeft,Math.min(launchRight,x))};bestCost=cost;}
+    }
+    return best;
+  }
   function update(list,p,elapsed,platforms,bullets,segmentHit,noises=[],view){
     for(const n of list){
       if(p.cloak>0&&n.hp>0&&!n.ramHit){if(n.kind==='mecha'||n.kind==='stormZombie')n.hit=Math.max(0,n.hit-elapsed);n.alert=false;n.memory=0;n.strikePending=false;n.flash=0;n.vx=0;n.shot=Math.max(n.shot||0,.3);continue;}
@@ -107,7 +142,7 @@
       n.strikePending=false;
       n.hit=Math.max(0,n.hit-dt);n.flash=Math.max(0,n.flash-dt);
       if(n.ramHit){
-        const hit=n.ramHit;hit.age+=dt;n.hurt=hit.age<.3?.2:0;n.hitDirection=hit.dir;
+        const hit=n.ramHit;n.dropRoute=null;n.dropRecovery=0;hit.age+=dt;n.hurt=hit.age<.3?.2:0;n.hitDirection=hit.dir;
         P.step(n,{},dt,platforms);n.hurt=0;
         if(n.hp<=0){n.death=n.grounded?Math.max(0,n.death-dt):Math.max(.65,n.death-dt);if(n.death<=0)n.ramHit=null;}
         else if(hit.age>.55&&n.grounded){n.ramHit=null;n.shot=Math.max(n.shot,1);}
@@ -139,6 +174,20 @@
       // A fresh alert always grants one full second to react, including after
       // a long idle period. Sustained sound must not restart this countdown.
       n.shot=n.alert&&!wasAlert?1:Math.max(0,n.shot-dt);n.jumpWait=Math.max(0,n.jumpWait-dt);
+      if(n.dropRoute||n.dropRecovery>0){
+        const route=n.dropRoute;
+        if(route){
+          // Keep the selected lane unless the player moves into it after takeoff.
+          route.x=landingX(n,p,route,route.x)??route.x;
+          P.step(n,{left:n.x>route.x+3,right:n.x<route.x-3},dt,platforms);
+          if(n.grounded){n.dropRoute=null;n.dropRecovery=.4;}
+        }else{
+          n.dropRecovery=Math.max(0,n.dropRecovery-dt);
+          P.step(n,{},dt,platforms);
+        }
+        n.shot=Math.max(n.shot,.25);
+        continue;
+      }
       if(n.kind==='turret'){
         P.step(n,{},dt,platforms);n.vx=0;
         if(n.alert&&Math.abs(dx)>2)n.facing=Math.sign(dx);
@@ -159,22 +208,21 @@
       if(n.kind==='knife'&&seen&&Math.abs(dx)<54&&Math.abs(dy)<36&&n.grounded&&n.shot<=0){n.attackAge=0;n.shot=1.3;n.facing=Math.sign(dx)||n.facing;n.vx=0;continue;}
       const goal=n.lastKnown||{x:n.x,y:n.y},goalDy=goal.y-n.y;
       if(n.grounded){n.jumpRoute=null;n.standing=(n.standing||0)+dt;}else n.standing=0;
-      let target=n.jumpRoute?n.jumpRoute.x:goal.x,drop=false;
-      if(!n.guardPost&&n.alert&&goalDy>45&&n.grounded){
-        const below=platforms.filter(s=>s.y>n.y+10&&s.y<=n.y+360&&s.x<n.x+180&&s.x+s.w>n.x-180).sort((a,b)=>(a.y-n.y+Math.abs(Math.max(a.x+15,Math.min(a.x+a.w-15,goal.x))-n.x))-(b.y-n.y+Math.abs(Math.max(b.x+15,Math.min(b.x+b.w-15,goal.x))-n.x)))[0];
-        if(below){target=Math.max(below.x+15,Math.min(below.x+below.w-15,goal.x));drop=n.jumpWait===0&&n.x>below.x+12&&n.x<below.x+below.w-12;}
-      }
-      let move=!n.guardPost&&n.alert&&Math.abs(target-n.x)>(n.jumpRoute?4:Math.abs(goalDy)>45?12:seen?(n.kind==='knife'?30:130):12),dir=Math.sign(target-n.x);
+      const route=!n.guardPost&&n.alert&&goalDy>45&&n.grounded?planDrop(n,p,goal,platforms):null;
+      let target=route?.takeoff??n.jumpRoute?.x??goal.x;
+      const drop=!!route&&n.jumpWait===0&&Math.abs(n.x-target)<=5&&Math.abs(n.vx)<35;
+      const stop=route?Math.max(2,n.vx*n.vx/3400):n.jumpRoute?4:Math.abs(goalDy)>45?12:seen?(n.kind==='knife'?30:130):12;
+      let move=!n.guardPost&&n.alert&&Math.abs(target-n.x)>stop,dir=Math.sign(target-n.x);
       const edge=move&&!platforms.some(s=>Math.abs(P.surfaceY(s,n.x)-n.y)<3&&n.x+dir*24>s.x&&n.x+dir*24<s.x+s.w);
       let jump=false;
-      if(!n.guardPost&&!drop&&n.alert&&n.grounded&&n.jumpWait===0&&n.standing>.4&&(goalDy< -40||edge)){
+      if(!n.guardPost&&!route&&n.alert&&n.grounded&&n.jumpWait===0&&n.standing>.4&&(goalDy< -40||edge)){
         n.jumpRoute=jumpRoute(n,goal,platforms,dir,edge);jump=!!n.jumpRoute;
         n.jumpWait=jump?1.8:.7;
         if(jump){target=n.jumpRoute.x;dir=Math.sign(target-n.x);move=Math.abs(target-n.x)>4;}
       }
-      if(n.grounded&&edge&&!jump&&!drop)move=false;
-      if(drop)n.jumpWait=1.2;
-      P.step(n,{left:move&&dir<0,right:move&&dir>0,run:n.kind==='knife'&&!drop,down:drop,jumpPressed:drop||jump},dt,platforms);
+      if(n.grounded&&edge&&!jump&&!route)move=false;
+      P.step(n,{left:move&&dir<0,right:move&&dir>0,run:n.kind==='knife'&&!route,down:drop,jumpPressed:drop||jump},dt,platforms);
+      if(drop&&n.dropping){n.dropRoute=route;n.jumpWait=1.2;n.flash=0;continue;}
       n.runCycle+=Math.abs(n.vx)*dt/72;
       if(n.alert&&Math.abs(goal.x-n.x)>2)n.facing=Math.sign(goal.x-n.x);
       const sx=n.x+n.facing*20,sy=n.y-28,tx=p.x-sx,ty=p.y-25-sy,d=Math.hypot(tx,ty)||1;

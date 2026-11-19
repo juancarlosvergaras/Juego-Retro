@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T192807Z
+
+Los enemigos que bajan de un piso buscan un aterrizaje al costado del jugador y le dan tiempo para esquivar. [Cambios en el descenso entre pisos](releases/20261119T192807Z.md)
+
 ## Publicado en Mac mini · 20261119T192024Z
 
 Manhattan y Midtown muestran un ítem por vez, con los premios repartidos al azar en cada partida. [Cambios en los ítems de Nueva York](releases/20261119T192024Z.md)

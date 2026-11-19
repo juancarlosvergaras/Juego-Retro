@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T134609Z
+
+Las escaleras de la misión seis permiten subir al pisarlas, saltar y regresar entre plantas por los rellanos abiertos. [Registro de la publicación](releases/20261119T134224Z.md)
+
 ## Publicado en Mac mini · 20261119T125636Z
 
 Las puertas, vitrinas, máquinas y escaleras de las tres plantas están ajustadas a la estatura del soldado. [Registro e ilustraciones](releases/20261119T125636Z.md)

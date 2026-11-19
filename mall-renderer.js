@@ -51,8 +51,9 @@
   function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;s.camera.x=Math.max(0,Math.min(ArcadeMallWorld.widths[s.floor]-960,p.x-320));s.camera.y=0;
    const panorama=art.background(c,s,images);
    root.ArcadeMallShoppers.draw(c,s,images.shoppers,panorama);
-   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);prop(c,11,51,472,56);}
+   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);}
    c.save();c.translate(-Math.round(s.camera.x),0);
+   if(s.floor>0&&s.camera.x<ArcadeMallWorld.landingX)art.returnLanding(c,s,false);
    if(s.floor<3){
     for(const pl of s.geometry.platforms)if(pl.kind==='balcony')art.balcony(c,pl);
     const stair=ArcadeMallWorld.escalator(s.floor);
@@ -60,7 +61,6 @@
      const landingY=ArcadeMallWorld.FLOOR-stair.rise;
      c.fillStyle='#303d43';c.fillRect(stair.upper,landingY+3,ArcadeMallWorld.widths[s.floor]-stair.upper,12);
      c.fillStyle='#998d72';c.fillRect(stair.upper,landingY,ArcadeMallWorld.widths[s.floor]-stair.upper,3);
-     prop(c,s.travel>3.2?11:10,stair.exit+16,landingY,56);
      art.stairs(c,s,false);
      const sx=stair.lower+135,sy=ArcadeMallWorld.FLOOR-stair.rise-55;
      c.fillStyle='#182c34';c.fillRect(sx,sy,137,22);
@@ -83,7 +83,7 @@
    if(s.floor<3)for(const [id,x,type]of [['kit',400,'health'],['ammo',1410,'ammo'],['star',1980,'star'],['fuel',ArcadeMallWorld.widths[s.floor]-650,'fuel']])if(!s.taken.has(s.floor+'-'+id)){if(type==='ammo'){for(const [i,slot]of [3,5,6].entries())root.ArcadePickupRenderer.draw(c,{type,slot,x:x+(i-1)*50,y:472},s.time,p);}else root.ArcadePickupRenderer.draw(c,{id,type,x,y:472,amount:3},s.time,p);}
    for(const n of s.enemies){if(n.x<s.camera.x-100||n.x>s.camera.x+1060||n.hp<=0&&n.death<=0)continue;let row=n.hp<=0?3:n.hit>0?3:n.flash>0?3:Math.abs(n.vx)>10?1:0,frame=n.hp<=0?3:n.hit>0?2:n.flash>0?0:Math.floor((n.anim||0)*8)%4;if(ArcadeEnemySpecialists.drawRam(c,n,images.ramHit))continue;if(!art.guard(c,n,images,s.time)&&!ArcadeEnemySpecialists.draw(c,n,images)){const f=ENEMY_FRAMES[row][frame],k=.21;c.save();c.translate(n.x,n.y);c.scale(n.facing||-1,1);if(n.hp<=0)c.globalAlpha=Math.min(1,n.death*2);c.drawImage(images.enemy,...f.slice(0,4),-f[2]*k/2,-f[3]*k,f[2]*k,f[3]*k);c.restore();}if(n.hp>0){const barY=n.y-Math.max(n.h||46,n.kind==='warden'?57:46)-7;c.fillStyle='#111e27';c.fillRect(n.x-17,barY,34,4);c.fillStyle='#e09a72';c.fillRect(n.x-16,barY+1,32*n.hp/n.maxHp,2);}}
    if(s.ending>=7&&p.form==='fighter')ArcadeAdvancedForms.draw(c,{...p,victoryAge:s.ending-7});
-   else if(s.ridingTread&&p.form==='tank'){
+   else if(p.form==='tank'&&p.grounded&&p.ground?.terrain&&s.floor<3){
     // The tread spans several steps; its front and rear follow the incline through both landings.
     const stair=ArcadeMallWorld.escalator(s.floor),span=80;
     const rise=ArcadeMallWorld.treadY(stair,p.x+span/2)-ArcadeMallWorld.treadY(stair,p.x-span/2);
@@ -92,15 +92,12 @@
    if(s.ending<0&&!p.rope&&!p.ladder&&!p.transform&&!['wolf','zombie'].includes(p.form))ArcadeWeaponRenderer.draw(c,p,e);
    if(p.jetpack)drawJetpack('front');
    if(s.floor<3&&ArcadeMallWorld.escalator(s.floor).entry<s.camera.x+1010)art.stairs(c,s,true);
+   if(s.floor>0&&s.camera.x<ArcadeMallWorld.landingX)art.returnLanding(c,s,true);
    ArcadeMissionCombat.draw(c,e,powers,p,{left:s.camera.x,right:s.camera.x+960,top:0,bottom:540});
    for(const f of s.debris)for(let i=0;i<14;i++){const t=f.age,x=f.x+Math.sin(i*7)*100*t,y=f.y-Math.abs(Math.cos(i*4))*130*t+110*t*t;c.fillStyle=i%2?'#b8b49b':'#5f7076';c.fillRect(Math.round(x),Math.round(y),7-i%3,5+i%4);}
    c.restore();
    if(s.floor===3&&s.boss.active&&s.ending<0)art.hazards(c,s,images,giantEffects);
    if(s.intro<4)title(c,'MISIÓN 6','EL ÚLTIMO CENTRO','Cruza las galerías hasta la azotea.');
-   if(s.travel>4.65||s.floorArrival>=0&&s.time>=s.floorArrival&&s.time-s.floorArrival<.3){
-    const alpha=s.travel>4.65?(s.travel-4.65)/.35:1-(s.time-s.floorArrival)/.3;
-    c.fillStyle='rgba(13,24,33,'+Math.min(1,Math.max(0,alpha))+')';c.fillRect(0,0,960,540);
-   }
    if(s.ending>=6)title(c,'MISIÓN 6 COMPLETADA','EL CENTRO VUELVE A RESPIRAR','Azotea despejada · Progreso y récords guardados');
    c.restore();
   }

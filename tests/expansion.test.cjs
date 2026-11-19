@@ -4,7 +4,18 @@ const encounter=()=>E.create(A.createInventory());
 test('ramps launch the bike; potholes cause one hit and recover instead of repeated damage',()=>{const s=R.create({distance:100}),p=player(),e=encounter();s.hitWait=0;s.obstacles=[{distance:100,lane:414,type:'ramp'}];R.update(s,p,e,{},.01);assert.ok(s.jumpV>400);assert.ok(s.jump>0);s.jump=s.jumpV=0;s.obstacles=[{distance:s.distance,lane:414,type:'pothole'}];const hp=e.hp;R.update(s,p,e,{},.01);assert.equal(e.hp,hp-1);assert.ok(s.crash>2);for(let i=0;i<300;i++)R.update(s,p,e,{},.01);assert.equal(s.crash,0);assert.equal(e.hp,hp-1);assert.equal(p.y,p.lane);});
 test('the extended sea contains four unique sharks and the old endpoint cannot enter captain',()=>{const s=S.create({started:true}),p=player(),e=encounter();assert.ok(S.WIDTH>11000);assert.equal(s.enemies.filter(n=>n.type==='shark').length,4);p.x=6200;p.y=2100;S.update(s,p,e,{},.01);assert.equal(s.airlock,-1);p.x=11300;p.y=2900;S.update(s,p,e,{},.01);assert.equal(s.airlock,0);});
 test('sharks telegraph and rush, inflict contact damage, freeze and remain dead after restore',()=>{const s=S.create({started:true}),n=s.enemies.find(n=>n.type==='shark'),p=player(),e=encounter();s.enemies=[n];s.hitWait=0;p.x=n.x;p.y=n.y;let phases=new Set();for(let i=0;i<500;i++){S.update(s,p,e,{},.01);phases.add(n.phase);}assert.ok(phases.has('warn'));assert.ok(phases.has('rush')||phases.has('breach'));n.hp=0;S.update(s,p,e,{},.01);assert.ok(s.awarded.has(n.id));assert.ok(!S.create(S.snapshot(s,p)).enemies.some(a=>a.id===n.id));});
-test('mall galleries are longer and their optional elevated decks leave the walking floor clear',()=>{for(let floor=0;floor<3;floor++){assert.ok(M.widths[floor]>=4600);const g=M.geometry(floor);assert.ok(g.platforms.slice(1).every(n=>!n.solid&&n.y<=M.FLOOR-100));assert.ok(M.create({floor}).enemies.some(n=>n.kind==='warden'));}});
+test('mall galleries are longer and their optional elevated decks leave the walking floor clear',()=>{
+ for(let floor=0;floor<3;floor++){
+  assert.ok(M.widths[floor]>=4600);
+  const {platforms}=M.geometry(floor),decks=platforms.filter(n=>n.kind!=='ground');
+  assert.equal(decks.length,3);assert.ok(decks.every(n=>!n.solid&&n.y<=M.FLOOR-100));
+  const ground=platforms.filter(n=>n.kind==='ground').sort((a,b)=>a.x-b.x);
+  assert.equal(ground[0].x,0);
+  for(let i=1;i<ground.length;i++)assert.equal(ground[i-1].x+ground[i-1].w,ground[i].x);
+  assert.equal(ground.at(-1).x+ground.at(-1).w,M.widths[floor]);
+  assert.ok(M.create({floor}).enemies.some(n=>n.kind==='warden'));
+ }
+});
 test('jetpack soldiers approach, aim down, fire and fall when defeated',()=>{const n=N.createSoldier({kind:'jetSoldier',x:400,y:250},'jet'),p=player(),bullets=[];n.shot=0;N.update([n],p,.02,[],bullets,()=>null);assert.ok(bullets.length);assert.ok(bullets[0].vy>0);const y=n.y;N.damage(n,99);N.update([n],p,.1,[],bullets,()=>null);assert.ok(n.y>y);});
 test('robot double bows and double AK consume two real rounds and muzzle matches both arms',()=>{for(const slot of [3,4,5,6,7,8,9]){const inv={owned:[slot],selected:slot,ammo:{[slot]:20}},p={...player(),form:'robot',aim:{x:Math.SQRT1_2,y:-Math.SQRT1_2}},e=E.create(inv);const shot=A.fireRobot(e,p);assert.equal(inv.ammo[slot],18);assert.equal(new Set(shot.bullets.map(b=>b.robotArm)).size,2);for(const b of shot.bullets){assert.equal(b.slot,slot);assert.deepEqual({x:b.x,y:b.y},A.robotMuzzle(p,b.robotArm));}}});
 test('space checkpoints, airlock travel, enemy persistence and retry span both long sectors',()=>{const s=W.create({started:true}),p=player(),e=encounter();W.configure(s,p,e);assert.ok(W.widths[0]>=10000);p.x=2600;W.update(s,p,e,{},.01);assert.equal(s.checkpointX,2500);assert.equal(W.retry(s).x,2500);p.x=W.widths[0]-100;assert.equal(W.interact(s,p),'airlock');for(let i=0;i<65;i++)W.update(s,p,e,{},.05);assert.equal(s.floor,1);assert.equal(p.x,140);assert.equal(s.checkpoint,1);assert.ok(s.enemies.every(n=>n.kind.startsWith('alien')));});

@@ -74,8 +74,8 @@
   c.fillStyle='#626c66';c.fillRect(x+10,y-18,w-20,2);
   for(let dx=12;dx<w-12;dx+=45)c.fillRect(x+dx,y-18,2,18);
  }
- function stairs(c,s,front){
-  const world=root.ArcadeMallWorld,st=world.escalator(s.floor);
+ function stairs(c,s,front,st=root.ArcadeMallWorld.escalator(s.floor)){
+  const world=root.ArcadeMallWorld;
   const {entry,lower,upper,exit,rise}=st,top=ground-rise;
   const rail=[[entry,ground],[lower,ground],[upper,top],[exit,top]];
   const offset=(dx,dy)=>rail.map(([x,y])=>[x+dx,y+dy]);
@@ -86,9 +86,12 @@
    for(let x=lower+20;x<upper;x+=45){const y=world.treadY(st,x);c.fillStyle='#7e8983';c.fillRect(x,y+9,2,2);}
    return;
   }
-  c.fillStyle='#3b4546';c.fillRect(upper-6,top+9,exit-upper+13,ground-top-9);
-  c.fillStyle='#243038';c.fillRect(upper+8,top+24,exit-upper-12,ground-top-24);
-  for(let y=top+28;y<ground-7;y+=9){c.fillStyle='#4a5654';c.fillRect(upper+14,y,exit-upper-26,2);c.fillStyle='#18252b';c.fillRect(upper+14,y+2,exit-upper-26,1);}
+  // An open steel landing continues the upper walkway beyond the comb plate.
+  polygon(c,'#36454a',[[upper-4,top+5],[exit+8,top+5],[exit+8,top+12],[upper-4,top+12]]);
+  for(const x of [upper+6,exit-4]){
+   c.fillStyle='#3c4b50';c.fillRect(x,top+12,5,rise-12);
+   line(c,'#637273',3,[[x+2,top+37],[x+(x<exit-4?23:-19),top+12]]);
+  }
   polygon(c,'#34454a',[...offset(-5,-15),...offset(0,4).reverse()]);
   polygon(c,'#658b91bb',[...offset(-5,-25),...offset(-5,-12).reverse()]);
   line(c,'#b2c7bb',1,offset(-5,-25));line(c,'#879a8a',2,offset(-5,-12));
@@ -108,6 +111,16 @@
   }
   c.fillStyle='#233336';c.fillRect(entry-12,ground-3,35,5);c.fillRect(exit-6,top-3,30,5);
   c.fillStyle='#daaf53';c.fillRect(entry-12,ground-3,35,2);c.fillRect(exit-6,top-3,30,2);
+ }
+ function returnLanding(c,s,front){
+  const world=root.ArcadeMallWorld,st=world.escalator(s.floor-1),end=world.landingX;
+  c.save();c.beginPath();c.rect(0,ground-34,end+22,49);c.clip();
+  c.translate(end-st.exit,st.rise);stairs(c,s,front,st);c.restore();
+  if(!front){
+   c.fillStyle='#20323a';c.fillRect(5,ground-58,88,17);
+   c.fillStyle='#edd6a0';c.font='bold 10px monospace';c.textAlign='left';
+   c.fillText('↙ PLANTA '+s.floor,10,ground-46);
+  }
  }
  function gait(c,sheet,actor,k,time,cycle){
   const weight=Math.min(1,Math.abs(actor.vx||0)/68);
@@ -188,5 +201,5 @@
    }
   }
  }
- root.ArcadeMallStageArt={background,balcony,stairs,giant,giantPose,rooftop,hazards,gait,guard};
+ root.ArcadeMallStageArt={background,balcony,stairs,returnLanding,giant,giantPose,rooftop,hazards,gait,guard};
 })(window);

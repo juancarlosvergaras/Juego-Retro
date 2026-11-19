@@ -11,31 +11,72 @@
  function treadY(stair,x) {
   return FLOOR-stair.rise*clamp((x-stair.lower)/(stair.upper-stair.lower),0,1);
  }
- function canBoard(s,p) {
-  return s.floor<3&&p.grounded&&!p.burrow&&p.x>=escalator(s.floor).entry-92;
+ // On the upper floor the end of the same escalator is visible at the left edge.
+ const landingX=84,returnX=landingX-18;
+ function geometry(floor){
+  const w=widths[floor],st=floor<3?escalator(floor):null;
+  const start=floor>0?landingX:0;
+  const platforms=[{id:0,x:start,y:FLOOR,w:(st?st.entry:w)-start,kind:'ground',thickness:68}];
+  if(floor>0){
+   const below=escalator(floor-1),offset=below.exit-landingX,crest=below.upper-offset;
+   platforms.push({id:5,x:0,w:landingX,y:FLOOR,kind:'ground',thickness:14,noBurrow:true,
+    terrain:[[-1,treadY(below,offset-1)+below.rise],[crest,FLOOR],[landingX+1,FLOOR]]});
+  }
+  if(st){
+   const top=FLOOR-st.rise;
+   platforms.push({id:4,x:st.entry,y:FLOOR,w:w-st.entry,kind:'ground',thickness:14,noBurrow:true,
+    terrain:[[st.entry,FLOOR],[st.lower,FLOOR],[st.upper,top],[w+1,top]]});
+   for(const [i,x] of [1850,2900,3850].entries())platforms.push({id:i+1,x,y:FLOOR-110-i%2*45,w:210,kind:'balcony',solid:false,thickness:14});
+  }
+  return {platforms,anchors:[],ladders:[]};
  }
- function ride(s,p,dt) {
-  const stair=escalator(s.floor),t=s.travel,board=s.boardX,alight=board+3.7*stair.speed;
-  const moving=t<.8||t>4.5;
-  const pos=t<.8?s.travelX+(board-s.travelX)*t/.8:
-   t<4.5?board+stair.speed*(t-.8):
-   alight+(stair.exit-alight)*clamp((t-4.5)/.5,0,1);
-  const delta=pos-p.x;
-  p.vx=moving&&dt>0?delta/dt:0;p.vy=0;p.x=pos;p.y=treadY(stair,pos);
-  if(moving&&Math.abs(delta)>.01)p.facing=Math.sign(delta);else p.facing=1;
-  p.anim=(p.anim||0)+dt;p.grounded=true;p.ground=null;p.sprinting=false;
-  if(moving){p.walkCycle=(p.walkCycle||0)+Math.abs(delta)/(p.form==='wolf'?110:52);}
-  s.mode={};s.ridingTread=!moving;
+ function stepPlayer(s,p,input,dt){
+  const st=s.floor<3?escalator(s.floor):null;
+  const onBelt=st&&p.x>=st.entry&&p.x<st.exit;
+  const onReturn=s.floor>0&&p.x<landingX;
+  const riding=(onBelt||onReturn)&&p.grounded&&!p.burrow&&!p.jetpack&&!p.heroFlight;
+  if(riding){
+   const speed=onBelt?st.speed:escalator(s.floor-1).speed;
+   p.x=Math.min(onBelt?st.exit:landingX,p.x+speed*dt);
+   p.y=onBelt?treadY(st,p.x):P.surfaceY(groundAt(s,p.x),p.x);
+   s.airCarry=input.jumpPressed?speed:0;
+  }else if(!p.grounded&&s.airCarry>0&&!p.jetpack&&!p.heroFlight&&!p.rope){
+   p.x+=s.airCarry*dt;s.airCarry=Math.max(0,s.airCarry-(input.left?260:80)*dt);
+  }else s.airCarry=0;
+  return P.step(p,input,dt,s.geometry.platforms,s.geometry);
  }
- function geometry(floor){const w=widths[floor],platforms=[{id:0,x:0,y:FLOOR,w,kind:'ground',thickness:68}];if(floor<3)for(const [i,x]of [1850,2900,3850].entries())platforms.push({id:i+1,x,y:FLOOR-110-i%2*45,w:210,kind:'balcony',solid:false,thickness:14});return{platforms,anchors:[],ladders:[]};}
  function soldiers(floor,defeated,difficulty){if(floor===3)return[];return Array.from({length:11},(_,i)=>{const id='mall-'+floor+'-'+i,x=(floor===0?1480:520)+i*(floor===0?310:330),n=N.createSoldier({x,y:FLOOR,facing:-1,kind:i%4===2?'warden':i%4===3?'knife':i%4===1?'turret':'rifle'},id);n.shot=1.4+i*.2;if(n.kind==='warden'){n.hp=n.maxHp=6;}n.maxHp*=difficulty;n.hp=defeated.has(id)?0:n.maxHp;return n;});}
- function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,ridingTread:false,floorArrival:-1,intro:saved.started?4:0,travel:-1,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};
+ function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,airCarry:0,rooms:new Map(),intro:saved.started?4:0,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};
   s.departedShoppers=new Set(saved.departedShoppers||[]);s.shoppers=Shoppers.create(floor,s.departedShoppers);s.shoppingBags=[];return s;}
- function configure(s,p,e){Object.assign(P.WORLD,{top:0,width:widths[s.floor],height:540,ground:FLOOR});s.geometry=geometry(s.floor);Object.assign(p,{x:s.x,y:s.y,vx:0,vy:0,grounded:s.y===FLOOR,ground:s.y===FLOOR?s.geometry.platforms[0]:null,fallPeak:s.y,jumps:0,rope:null,ladder:null,jetpack:false,burrow:null,submersible:false,swimming:false,onMotorcycle:false,inSeaMission:false});e.enemies=s.enemies;e.bullets=[];e.explosions=[];e.debris=[];e.playerPools=[];e.invincible=2;}
+ function groundAt(s,x){
+  const platforms=s.geometry.platforms;
+  return platforms.find(pl=>pl.kind==='ground'&&x>=pl.x&&x<=pl.x+pl.w)||platforms[0];
+ }
+ function configure(s,p,e){
+  Object.assign(P.WORLD,{top:0,width:widths[s.floor],height:540,ground:FLOOR});
+  s.camera.x=clamp(s.x-320,0,widths[s.floor]-960);
+  const ground=groundAt(s,s.x),surface=P.surfaceY(ground,s.x),y=Math.min(s.y,surface);
+  Object.assign(p,{x:s.x,y,vx:0,vy:0,grounded:y===surface,ground:y===surface?ground:null,
+   fallPeak:y,jumps:0,rope:null,ladder:null,jetpack:false,burrow:null,submersible:false,swimming:false,onMotorcycle:false,inSeaMission:false});
+  e.enemies=s.enemies;e.bullets=[];e.explosions=[];e.debris=[];e.playerPools=[];e.playerPlasma=[];e.plasmaDrips=[];e.zombieEffects=[];e.invincible=2;
+ }
  const emit=(s,type,data={})=>s.events.push({type,...data});
- function interact(s,p){if(s.floor===0&&Math.abs(p.x-s.arcadeX)<200&&p.grounded&&!p.burrow)return'arcade';if(canBoard(s,p)&&s.travel<0){const stair=escalator(s.floor);s.travel=0;s.travelX=p.x;s.boardX=stair.lower+(s.time+.8)*stair.speed%stair.pitch-stair.pitch;
-    Object.assign(p,{ladder:null,rope:null,jetpack:false,heroFlight:false,crouching:false,sliding:false,landing:0,kick:0,claw:0,eyeFlash:0,fighterPose:0,cannonPose:0,zombiePose:0,hurt:0,grounded:true,idleTime:0});return'escalator';}return null;}
- function floorUp(s,p,e){s.floor++;s.floorArrival=s.time;s.checkpoint=s.floor;s.x=140;s.y=FLOOR;s.travel=-1;s.ridingTread=false;s.mode={};p.facing=1;s.enemies=soldiers(s.floor,s.awarded,s.difficulty);s.shoppers=Shoppers.create(s.floor,s.departedShoppers);s.shoppingBags=[];configure(s,p,e);emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});}
+ function interact(s,p){return s.floor===0&&Math.abs(p.x-s.arcadeX)<200&&p.grounded&&!p.burrow?'arcade':null;}
+ function changeFloor(s,p,e,direction,st){
+  // Both rooms overlap on the horizontal landing. Change coordinates without
+  // cutting a jump short, turning the character or clearing held controls.
+  const dy=direction*st.rise;
+  const motion={vx:p.vx,vy:p.vy,jumps:p.jumps,fallPeak:(p.fallPeak??p.y)+dy,jetpack:p.jetpack};
+  const invincible=e.invincible;
+  s.rooms.set(s.floor,{geometry:s.geometry,enemies:s.enemies,shoppers:s.shoppers,shoppingBags:s.shoppingBags,debris:s.debris});
+  s.floor+=direction;s.checkpoint=s.floor;
+  s.x=p.x+direction*(landingX-st.exit);s.y=p.y+dy;
+  Object.assign(s,s.rooms.get(s.floor)||{geometry:geometry(s.floor),enemies:soldiers(s.floor,s.awarded,s.difficulty),
+   shoppers:Shoppers.create(s.floor,s.departedShoppers),shoppingBags:[],debris:[]});
+  configure(s,p,e);Object.assign(p,motion);e.invincible=invincible;
+  if(p.vy<0){p.grounded=false;p.ground=null;}
+  emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});
+ }
  function bossUpdate(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
   if(b.hp<=0){s.ending=0;e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:8500,text:'Coloso derrotado'});}emit(s,'ending');return;}
   b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.65:1);const next=phase=>{b.phase=phase;b.age=0;};
@@ -61,15 +102,24 @@
   if(s.ending>=0){s.ending+=dt;if(s.ending>=11&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
   if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
   Shoppers.update(s,dt);
-  if(s.travel>=0){s.travel+=dt;ride(s,p,dt);if(s.travel>=5)floorUp(s,p,e);return s.events;}
-  if(s.floor<3&&p.grounded){const limit=escalator(s.floor).entry+38;if(p.x>limit){p.x=limit;p.vx=Math.min(0,p.vx);}}
   for(const n of s.enemies)if(n.hp<=0&&!s.awarded.has(n.id)){s.awarded.add(n.id);emit(s,'points',{amount:150,text:'Guardia neutralizado'});}
+  if(!e.dead&&!p.burrow){
+   if(s.floor<3){
+    const st=escalator(s.floor);
+    const landingY=FLOOR-st.rise;
+    if(p.x>=st.exit&&p.y<=landingY+.5&&p.y>=landingY-st.rise){changeFloor(s,p,e,1,st);return s.events;}
+   }
+   if(s.floor>0&&p.x<=returnX&&input.left&&!input.right&&p.vx<0){
+    const st=escalator(s.floor-1);
+    if(p.y>=FLOOR-st.rise){changeFloor(s,p,e,-1,st);return s.events;}
+   }
+  }
   collect(s,p,e);bossUpdate(s,p,e,dt);e.enemies=s.floor===3&&s.boss.active&&s.boss.phase!=='arrival'?[s.boss]:s.enemies;
   if(s.floor===3&&s.boss.active){s.supplyAge+=dt;if(s.supplyAge>12){s.supplyAge=0;for(const slot of [3,5]){if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+30;}emit(s,'pickup',{text:'Reserva de emergencia · Munición'});}}
   return s.events;
  }
  function hearShot(s,p,source){const camera=clamp(p.x-320,0,widths[s.floor]-960);Shoppers.hear(s,source,camera);}
- function snapshot(s,p){return{floor:s.floor,departedShoppers:[...s.departedShoppers],x:s.travel>=0?widths[s.floor]-540:p.x,y:s.travel>=0?FLOOR:p.y,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
+ function snapshot(s,p){return{floor:s.floor,departedShoppers:[...s.departedShoppers],x:p.x,y:p.y,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
  function retry(s){return create({...snapshot(s,{x:140,y:FLOOR}),floor:s.checkpoint,x:140,y:FLOOR,ending:false,complete:false,started:true},s.difficulty);}
- const api={create,configure,update,interact,snapshot,retry,geometry,escalator,treadY,canBoard,hearShot,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
+ const api={create,configure,update,interact,snapshot,retry,geometry,escalator,treadY,stepPlayer,landingX,hearShot,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
 })(typeof window!=='undefined'?window:globalThis);

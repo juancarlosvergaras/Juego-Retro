@@ -1,6 +1,7 @@
 (function(root){
  'use strict';
  const A=typeof module!=='undefined'&&module.exports?require('./arsenal'):root.ArcadeArsenal;
+ const turn=(typeof module!=='undefined'&&module.exports?require('./physics'):root.ArcadePhysics).jumpTurn;
  const LENGTH=9600,LANES=[366,414,462],clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
  // Dos puestos de control por misión, como en el resto de la campaña.
  const CHECKPOINTS=[3200,7800],WAVES=35,INTRO=5,ENDING=14,CRUISE=360;
@@ -16,15 +17,15 @@
  function soldierMuzzle(s,p){
   // Pistola y ruedas en la celda de disparo de motos-carretera-v3.
   const scale=RIDER_WIDTH/360,pose=riderPose(s,p.x,p.y,.5*scale,.6);
-  return mountPoint(pose,(311.4-192.5)*scale,(95.6-335)*scale);
+  return turn.point(p,mountPoint(pose,(311.4-192.5)*scale,(95.6-335)*scale));
  }
  function zombiePalm(s,p){
   // Celda de ataque: la descarga nace en (348,96), con la base de las ruedas en y=362.
   const scale=RIDER_WIDTH/383;
-  return mountPoint(riderPose(s,p.x,p.y,0,1.2),(348-209)*scale,(96-362)*scale);
+  return turn.point(p,mountPoint(riderPose(s,p.x,p.y,0,1.2),(348-209)*scale,(96-362)*scale));
  }
  function mountedEyes(s,p){
-  return mountPoint(riderPose(s,p.x,p.y,0,.6),-2.6,-73.6);
+  return turn.point(p,mountPoint(riderPose(s,p.x,p.y,0,.6),-2.6,-73.6));
  }
  function mountPoint(pose,dx,dy){
   const c=Math.cos(pose.angle),sn=Math.sin(pose.angle);
@@ -85,7 +86,7 @@
   const q={...p,y:p.form==='robot'?p.y:p.y-10,facing:1};const shot=p.form==='robot'?A.fireRobot(e,q):A.fire(e.inventory,q);if(!shot)return;
   s.shootWait=shot.weapon.rate/(p.rateBonus||1);s.shotFlash=p.form==='tank'?.65:.12;event(s,'attack',{sound:p.form==='tank'?'rocket':SOUNDS[shot.weapon.slot||e.inventory.selected]||'pistol'});
   if(shot.weapon.range){for(const n of [...s.enemies,...(s.boss.active?[s.boss]:[])])if(n.hp>0&&Math.abs(n.y-p.y)<65&&n.x-n.w/2<p.x+115&&n.x+n.w/2>p.x)damage(n,shot.weapon.damage*(p.damageBonus||1));burst(s,p.x+65,p.y-40,35,'claw');}
-  const origin=p.form==='soldier'?soldierMuzzle(s,p):p.form==='hero'?mountedEyes(s,p):p.form==='tank'?{x:p.x+40,y:p.y-44}:null;
+  const origin=p.form==='soldier'?soldierMuzzle(s,p):p.form==='hero'?mountedEyes(s,p):p.form==='tank'?turn.point(p,{x:p.x+40,y:p.y-44}):null;
   for(const b of shot.bullets){if(origin)Object.assign(b,origin);s.bullets.push(b);}
  }
  function updateBoss(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(!b.active||b.hp<=0)return;b.age+=dt;if(b.poison>0){b.poison-=dt;damage(b,dt*.6);}b.slow=Math.max(0,b.slow-dt);b.flash=Math.max(0,b.flash-dt);b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);const stage=b.hp<=b.maxHp/3?2:b.hp<=b.maxHp*2/3?1:0;if(stage>b.stage){parts(s,b,8);burst(s,b.x-100+stage*60,b.y-125,95);b.stage=stage;event(s,'armor',{stage});}
@@ -120,8 +121,9 @@
   if(s.crash>0){advanceCrash(s,dt);input={};s.hitWait=Math.max(s.hitWait,.25);}
   s.boost=!!input.run;
   const speed=210*(p.speedBonus||1);p.x=clamp(p.x+((input.right?1:0)-(input.left?1:0))*speed*dt,85,s.boss.active?650:790);p.lane=clamp((p.lane||414)+((input.down?1:0)-(input.up?1:0))*125*dt,LANES[0],LANES[2]);
-  s.landing=Math.max(0,(s.landing||0)-dt);s.jumpAge=s.jump>0?(s.jumpAge||0)+dt:0;if(input.jumpPressed&&p.jumps<(p.maxJumps||2)){s.jumpV=310;p.jumps++;event(s,'jump');}if(s.jump>0||s.jumpV>0){s.jumpV-=760*dt;s.jump=Math.max(0,s.jump+s.jumpV*dt);if(!s.jump){s.landing=.24;s.jumpV=0;p.jumps=0;burst(s,p.x,p.lane,24,'dust');event(s,'land');}}
-  p.y=p.lane-s.jump;p.grounded=s.jump===0;p.facing=1;p.vx=(input.right?speed:0)-(input.left?speed:0);
+  if(!s.jump||s.crash>0)turn.reset(p);
+  s.landing=Math.max(0,(s.landing||0)-dt);s.jumpAge=s.jump>0?(s.jumpAge||0)+dt:0;if(input.jumpPressed&&p.jumps<(p.maxJumps||2)){turn.press(p);s.jumpV=310;p.jumps++;event(s,'jump');}if(s.jump>0||s.jumpV>0){s.jumpV-=760*dt;s.jump=Math.max(0,s.jump+s.jumpV*dt);if(!s.jump){s.landing=.24;s.jumpV=0;p.jumps=0;burst(s,p.x,p.lane,24,'dust');event(s,'land');}}
+  p.y=p.lane-s.jump;p.grounded=s.jump===0;turn.advance(p,dt);p.facing=1;p.vx=(input.right?speed:0)-(input.left?speed:0);
   const old=s.distance,travel=dt*(s.crash>0?15:input.run?100:72);s.distance=Math.min(LENGTH,s.distance+travel);
   // Asphalt and world obstacles share the same displacement, including turbo and recovery.
   const roadTravel=(s.distance-old)*5;s.scroll+=old<LENGTH?roadTravel:travel*5;
@@ -136,7 +138,7 @@
    // A pothole always throws the bike, even when a shield or a recent hit spares the damage.
    else{
     hurt(s,p,e,1);s.fatalCrash=e.dead;s.crash=e.dead?.94:CRASH_TIME;s.crashAge=0;s.crashLift=s.jump;
-    s.jump=s.jumpV=s.shotFlash=s.ram=0;s.boost=false;p.y=p.lane;p.grounded=true;p.jumps=0;
+    s.jump=s.jumpV=s.shotFlash=s.ram=0;turn.reset(p);s.boost=false;p.y=p.lane;p.grounded=true;p.jumps=0;
     event(s,'warning',{text:p.form==='tank'?'¡BACHE! Enderezando las orugas…':'¡BACHE! La moto derrapa…'});
     if(e.dead){updateEffects(s,p,dt);return s.events;}
    }
@@ -157,7 +159,7 @@
   s.bullets=s.bullets.filter(b=>b.life>0&&b.x>-100&&b.x<1100&&b.y>-150&&b.y<600);
   for(const pool of s.pools){pool.life-=dt;pool.x-=travel*5;for(const n of s.enemies)if(n.hp>0&&Math.abs(n.x-pool.x)<n.w/2+45&&Math.abs(n.y-pool.y)<32){n.slow=Math.max(n.slow,.4);damage(n,dt*.75);}}s.pools=s.pools.filter(f=>f.life>0&&f.x>-100).slice(-12);
   for(const item of s.pickups)item.x-=travel*5;collect(s,p,e);s.pickups=s.pickups.filter(i=>!i.taken&&i.x>-60);
-  if(s.boss.active&&s.boss.hp<=0){e.dead=false;e.hp=Math.max(1,e.hp);e.invincible=15;s.ending=0;s.bullets=[];s.mines=[];s.enemies=[];parts(s,s.boss,18);burst(s,s.boss.x,s.boss.y-90,180);if(!s.awarded.has('road-rig')){s.awarded.add('road-rig');event(s,'points',{id:'road-rig',amount:6000,text:'El convoy ha caído'});}p.tankUnlocked=true;event(s,'unlock',{form:'tank'});event(s,'ending');}
+  if(s.boss.active&&s.boss.hp<=0){turn.reset(p);e.dead=false;e.hp=Math.max(1,e.hp);e.invincible=15;s.ending=0;s.bullets=[];s.mines=[];s.enemies=[];parts(s,s.boss,18);burst(s,s.boss.x,s.boss.y-90,180);if(!s.awarded.has('road-rig')){s.awarded.add('road-rig');event(s,'points',{id:'road-rig',amount:6000,text:'El convoy ha caído'});}p.tankUnlocked=true;event(s,'unlock',{form:'tank'});event(s,'ending');}
   updateEffects(s,p,dt);return s.events;
  }
  function updateEffects(s,p,dt){

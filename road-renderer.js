@@ -96,7 +96,11 @@
    const things=s.enemies.map(n=>({y:n.y,draw:()=>enemy(c,n,s)}));if(s.boss.active)things.push({y:s.boss.y,draw:()=>boss(c,s.boss,s,p)});
    if(cut){for(const n of cut.convoy)things.push({y:n.y,draw:()=>enemy(c,{...n,w:n.type==='sidecar'?124:104,h:76,hp:1,maxHp:1,age:0,hit:0,flash:0,death:0,escort:true},s)});if(cut.rider.visible)things.push({y:p.lane,draw:()=>player(c,p,{...s,jump:0,ram:0,shotFlash:0,wheelie:cut.rider.wheelie,boost:cut.rider.boost?1:0},cut.rider.x,cut.rider.y)});}
    else if(end)things.push({y:p.lane,draw:()=>hero(c,p,s,end)});
-   else if(s.ending<4)things.push({y:p.lane,draw:()=>player(c,p,s)});
+   else if(s.ending<4)things.push({y:p.lane,draw:()=>{
+    if(!p.jumpTurn||s.crash>0){player(c,p,s);return;}
+    shadow(c,p.x,p.lane,104,Math.max(.35,1-s.jump/160));
+    c.save();root.ArcadePhysics.jumpTurn.apply(c,p);player(c,p,{...s,shadowed:true});c.restore();
+   }});
    things.sort((a,b)=>a.y-b.y).forEach(t=>t.draw());if(cut?.heli.visible)helicopter(c,cut.heli,s.time);
    for(const b of s.bullets){if(root.ArcadeBossAttackSprites?.projectile(c,b,s.time))continue;c.fillStyle=b.eyeRay?'#71cfff':b.plasma?'#83ff88':b.enemy?'#ff6259':'#fff1b1';if(b.plasma){c.fillRect(b.x-7,b.y-5,14,10);c.fillStyle='#d8ffc5';c.fillRect(b.x-3,b.y-3,6,5);}else{c.save();c.translate(b.x,b.y);c.rotate(Math.atan2(b.vy,b.vx));c.fillRect(-9,-2,b.slot===6?19:12,b.slot===6?6:3);c.restore();}}
    if(powers&&s.ending<0&&!cut){root.ArcadePowers?.draw(c,powers,p,e,{top:0,bottom:540});root.ArcadePowerFx?.draw(c,powers,p,e);}effects(c,s);foreground(c,s.scroll,s.boost&&!cut&&!end);

@@ -329,6 +329,7 @@
     if(state.inside)ArcadeMausoleumKing.draw(ctx,king,kingAtlases);
     drawEnemies();
     ctx.save();
+    if(!arrival?.active)ArcadePhysics.jumpTurn.apply(ctx,player);
     if(player.jetpack&&!arrival?.active)ArcadeJetpackRenderer.pose(ctx,player);
     if(player.hurt>0)ctx.globalAlpha=.65;
     if(!(outro&&ArcadeMissionTwoOutro.script(outro.age,L.ENTRANCE).player.hidden))drawPlayer();

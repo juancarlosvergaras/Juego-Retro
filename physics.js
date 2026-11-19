@@ -25,6 +25,36 @@
   function createLadders(){return [...[[236,1775,1905],[433,1348,1519],[551,1168,1348],[550,1000,1105],[145,831,940],[125,670,831],[533,503,619],[162,360,454],[533,223,320]].map(([x,top,bottom])=>({x:Math.round(x*S),top:mapY(Math.round(top*S)),bottom:mapY(Math.round(bottom*S))})),...[0,3,6,9].map(i=>({x:i%2?570:150,top:EXTENSION.cut+i*EXTENSION.tileHeight,bottom:EXTENSION.cut+(i+1)*EXTENSION.tileHeight,custom:true})),{x:160,top:-140,bottom:235,custom:true,finalAccess:true}].map((l,id)=>({...l,id}));}
   function availableLadders(ladders,encounter){return ladders.filter(l=>!l.finalAccess||encounter.won);}
   function createAnchors(){return createPlatforms().filter(p=>p.kind==='deck').flatMap(p=>[.22,.68].map((t,i)=>({x:Math.round(p.x+p.w*t),y:p.y+p.thickness,ceiling:p.id,id:p.id*2+i})));}
+  // Count actual jump impulses, separately from mobility slots spent by a fall or ramp.
+  const turnDuration=.36;
+  function resetJumpTurn(p){p.jumpPresses=0;p.jumpTurn=null;}
+  function registerJump(p){
+    if(p.kind)return;
+    p.jumpPresses=(p.jumpPresses||0)+1;
+    p.jumpTurn=p.jumpPresses===2?{age:0,dir:p.facing||1}:null;
+  }
+  function advanceJumpTurn(p,dt){
+    if(p.kind)return;
+    if(p.grounded||p.rope||p.ladder||p.jetpack||p.heroFlight||p.swimming||p.burrow){resetJumpTurn(p);return;}
+    if(p.jumpTurn&&(p.jumpTurn.age+=dt)>=turnDuration)p.jumpTurn=null;
+  }
+  function turnMatrix(p){
+    if(!p.jumpTurn||p.grounded||p.jetpack||p.heroFlight||p.rope||p.ladder||p.swimming||p.transform>0)return null;
+    const t=Math.min(1,p.jumpTurn.age/turnDuration),phase=t*2*Math.PI;
+    const angle=p.jumpTurn.dir*(phase-.50*Math.sin(phase));
+    const tuck=p.onMotorcycle||p.form==='tank'?1:1-.14*Math.sin(t*Math.PI)**2;
+    const cx=p.x,cy=p.y-(p.onMotorcycle?41:(p.h||46)*.5);
+    const a=Math.cos(angle),b=Math.sin(angle),c=-b*tuck,d=a*tuck;
+    return [a,b,c,d,cx-a*cx-c*cy,cy-b*cx-d*cy];
+  }
+  function applyJumpTurn(ctx,p){
+    const matrix=turnMatrix(p);if(matrix)ctx.transform(...matrix);
+  }
+  function jumpTurnPoint(p,point){
+    const matrix=turnMatrix(p);if(!matrix)return point;
+    const [a,b,c,d,x,y]=matrix;return {x:a*point.x+c*point.y+x,y:b*point.x+d*point.y+y};
+  }
+  const jumpTurn={reset:resetJumpTurn,press:registerJump,advance:advanceJumpTurn,apply:applyJumpTurn,point:jumpTurnPoint};
   function createPlayer(){return{fuel:EXTENSION.tileHeight*4,x:145,y:WORLD.ground,w:23,h:46,vx:0,vy:0,facing:1,grounded:true,jumps:0,coyote:.1,buffer:0,slide:0,slideLatch:false,anim:0,ground:null,ladder:null,ladderCooldown:0,rope:null};}
   function findAnchor(p,anchors,platforms=[]){
     if((p.form||'soldier')!=='soldier')return null;
@@ -78,10 +108,11 @@
     if(hit){if(p.vy>210){p.landing=.24;p.impact=Math.min(1,p.vy/720);}p.y=hitY;p.vy=0;p.grounded=true;p.jumps=0;p.ground=hit;p.dropping=false;if(!p.hookHeld)p.rope=null;}
   }
   function step(p,input,dt,platforms,environment={}){
+    if(!p.kind&&(p.grounded||p.jumps===0||p.rope||p.ladder||p.jetpack||p.heroFlight))resetJumpTurn(p);
     if(!p.kind)p.w=p.form==='tank'?64:24;
     // Also discard grips restored from saves made before hooks became soldier-only.
     if((p.form||'soldier')!=='soldier'){p.rope=null;p.hookHeld=false;input={...input,hookPressed:false,hookHeld:false};}
-    const Z=typeof module!=='undefined'&&module.exports?require('./zombie-form'):root.ArcadeZombieForm;const underground=Z?.step(p,input,dt,platforms,WORLD,surfaceY);if(underground)return underground;
+    const Z=typeof module!=='undefined'&&module.exports?require('./zombie-form'):root.ArcadeZombieForm;const underground=Z?.step(p,input,dt,platforms,WORLD,surfaceY);if(underground){resetJumpTurn(p);return underground;}
     if(p.ram&&p.form==='wolf')input={...input,left:p.ram.dir<0,right:p.ram.dir>0,run:true,up:false,down:false,jumpPressed:false,hookPressed:false};
     const oldX=p.x,solids=platforms.filter(s=>s.solid);
     // A barricade is solid to its base, unlike the open floors of a building.
@@ -96,6 +127,7 @@
       if(p.ram)p.ram.blocked=true;
     }
     if(p.form==='zombie'&&p.grounded)p.zombieStride=(p.zombieStride||0)+Math.abs(p.x-oldX)/88;
+    advanceJumpTurn(p,dt);
     return result;
   }
   function stepFree(p,input,dt,platforms,environment={}){
@@ -151,7 +183,7 @@
         return{climbing:!!p.ladder,crouching:false,sliding:false};
       }
     }
-    if(p.rope&&input.jumpPressed){p.rope=null;p.vy=Math.min(p.vy,-340);p.jumps=1;input={...input,jumpPressed:false};}
+    if(p.rope&&input.jumpPressed){registerJump(p);p.rope=null;p.vy=Math.min(p.vy,-340);p.jumps=1;input={...input,jumpPressed:false};}
     if(p.rope?.surface){
       const r=p.rope;let s=r.surface;
       if(!platforms.includes(s)){p.rope=null;p.vy=40;}
@@ -213,7 +245,7 @@
     else if(p.slide<=0){const accel=p.grounded?1700:950;p.vx+=Math.max(-accel*dt,Math.min(accel*dt,target-p.vx));}
     if(p.buffer>0&&(p.grounded||p.coyote>0||p.jumps<(p.maxJumps||2))){
       if(!p.grounded&&p.coyote<=0&&p.jumps===0)p.jumps=1;
-      const second=p.jumps>=1;
+      const second=p.jumps>=1;registerJump(p);
       p.wolfSprintJump=p.form==='wolf'&&!!input.run&&!!dir&&Math.abs(p.vx)>170;
       p.vy=p.form==='wolf'?(second?-420:-510):(second?-350:-430);p.jumps++;p.grounded=false;p.coyote=0;p.buffer=0;p.slide=0;p.jumpRising=true;
     }
@@ -255,7 +287,7 @@
     c.y=Math.max(WORLD.top,Math.min(WORLD.height-view.height,c.y+(y-c.y)*blend));
     return c;
   }
-  const api={WORLD,EXTENSION,mapY,decks,createPlatforms,createLadders,availableLadders,createAnchors,createPlayer,findAnchor,attachHook,updateCamera,updateIdle,step,surfaceY,terrainHit};
+  const api={WORLD,jumpTurn,EXTENSION,mapY,decks,createPlatforms,createLadders,availableLadders,createAnchors,createPlayer,findAnchor,attachHook,updateCamera,updateIdle,step,surfaceY,terrainHit};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   else root.ArcadePhysics=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T183841Z
+
+La segunda pulsación de salto activa una voltereta en las siete formas del jugador. [Detalles del movimiento](releases/20261119T183841Z.md)
+
 ## Publicado en Mac mini · 20261119T182700Z
 
 Motos y guardias llegan desde atrás. La misión espacial incorpora la marcha de ocho cuadros, nuevas esclusas y ataques del Soberano orientados hacia el jugador. [Cambios y arte de la misión siete](releases/20261119T182700Z.md)

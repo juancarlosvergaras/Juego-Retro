@@ -226,6 +226,7 @@
     ArcadeCheckpoints.draw(ctx,checkpoints,false,state.time,{left:camera.x,right:camera.x+canvas.width,top:camera.y,bottom:camera.y+canvas.height});ArcadeMissionTwoLoot.draw(ctx,loot,state.time,{left:camera.x,right:camera.x+canvas.width},player);ArcadeMedkits.draw(ctx,loot.medkits,player,camera,canvas.height);ctx.save();
     drawEnemies();
     ctx.save();
+    if(!arrival?.active)ArcadePhysics.jumpTurn.apply(ctx,player);
     if(player.jetpack&&!arrival?.active)ArcadeJetpackRenderer.pose(ctx,player);
     if(player.hurt>0)ctx.globalAlpha=.65;
     drawPlayer();

@@ -94,7 +94,7 @@
    }
    if(s.floor>0&&s.camera.x<220)airlock(c,140,472,s.travel>=0?Math.min(1,s.travel-1):Math.max(0,1-Math.abs(p.x-140)/110));
    for(const n of s.enemies)if(n.x>s.camera.x-150&&n.x<s.camera.x+1110&&(n.hp>0||n.death>0))enemy(c,n);if(s.floor===2)boss(c,s);
-   {drawPlayer();if(!['wolf','zombie'].includes(p.form)&&!p.transform&&!p.rope&&!p.ladder)ArcadeWeaponRenderer.draw(c,p,e);if(p.jetpack)drawJetpack('front');}
+   c.save();if(s.ending<0)ArcadePhysics.jumpTurn.apply(c,p);drawPlayer();if(!['wolf','zombie'].includes(p.form)&&!p.transform&&!p.rope&&!p.ladder)ArcadeWeaponRenderer.draw(c,p,e);if(p.jetpack)drawJetpack('front');c.restore();
    ArcadeMissionCombat.draw(c,e,powers,p,{left:s.camera.x,right:s.camera.x+960,top:0,bottom:540});
    for(const h of s.hazards){if(h.type==='tentacle'){alienFx(c,0,h.age<.18?0:h.age<.4?1:h.age<.56?2:3,h.x,472,130,120,true);}else if(h.type==='laser'){const frame=fxFrames[4+Math.floor(h.age*18)%4],sx=frame[0]+frame[2]*.34,sw=frame[2]*.66;const mouth=ArcadeSpaceWorld.laserSegment(s.boss,h.y,h.aimX);c.save();c.translate(mouth.x,mouth.y);const dx=mouth.tx-mouth.x,dy=mouth.ty-mouth.y;c.rotate(Math.atan2(dy,dx));c.drawImage(images.sovereignFx,sx,frame[1],sw,frame[3],0,-16,Math.hypot(dx,dy),32);c.restore();}else if(h.type==='wave'){alienFx(c,2,Math.floor(h.age*12)%4,h.x,h.y,66,50,true);}else alienFx(c,3,Math.floor(h.age*10)%2,h.x,h.y,56,65);}
    for(const f of s.debris)alienFx(c,3,2+Math.min(1,Math.floor(f.age*3)),f.x,f.y,95,80,true);

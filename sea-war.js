@@ -1,6 +1,7 @@
 (function(root){
  'use strict';
  const common=typeof module!=='undefined'&&module.exports,A=common?require('./arsenal'):root.ArcadeArsenal,R=common?require('./road-war'):root.ArcadeRoadWar;
+ const turn=(common?require('./physics'):root.ArcadePhysics).jumpTurn;
  const WIDTH=11600,HEIGHT=3200,FLOOR=436,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),finite=(v,f)=>Number.isFinite(v)?v:f;
  const reef=common?require('./sea-reef'):root.ArcadeSeaReef,seabed=reef.seabed;
  const swim=common?require('./sea-sprites'):root.ArcadeSeaSprites;
@@ -40,7 +41,7 @@
  function blast(s,b){fx(s,b.x,b.y,b.plasma?'plasma':'blast',b.superCannon?100:65);for(const n of targets(s))if(n.hp>0&&Math.hypot(n.x-b.x,n.y-n.h*.5-b.y)<(b.superCannon?120:85)+n.w*.5){damage(n,b.damage||3);if(b.plasma)n.sticky=4;}if(b.plasma)s.pools.push({x:b.x,y:s.inside?FLOOR:Math.min(seabed(b.x),b.y+55),life:4.5});}
  function weaponOrigin(s,p){
   if(!s.inside)return swim.muzzle(p);
-  return {x:p.x+p.aim.x*(p.form==='tank'?49:35),y:p.y-32+p.aim.y*20};
+  return turn.point(p,{x:p.x+p.aim.x*(p.form==='tank'?49:35),y:p.y-32+p.aim.y*20});
  }
  function attack(s,p,e,input){if(p.transform>0||p.hurt>.15)return;const fire=input.fire||input.fireHeld||p.form==='tank'&&input.kick;const rawAim=aim(p,input);
   const followPitch=!s.inside&&!input.aimVector&&!input.aimLeft&&!input.aimRight&&rawAim.y===0;
@@ -51,7 +52,7 @@
   }
   if(p.form==='zombie'){
    if(input.kick&&s.meleeWait<=0){s.meleeWait=.85;s.bullets.push({...origin,vx:p.aim.x*380,vy:p.aim.y*380,damage:1.5*(p.damageBonus||1),plasma:true,life:2.5,enemy:false});s.flash=.35;emit(s,'attack');}
-   if(fire&&s.shotWait<=0){s.shotWait=.72;let end={x:origin.x+p.aim.x*460,y:origin.y+p.aim.y*460},best=null,bestDistance=Infinity;for(const n of targets(s))if(n.hp>0&&R.swept(end,n,origin.x,origin.y)){const d=Math.hypot(n.x-origin.x,n.y-n.h/2-origin.y);if(d<bestDistance){best=n;bestDistance=d;}}if(best){damage(best,2*(p.damageBonus||1));end={x:best.x,y:best.y-best.h/2};}s.effects.push({...origin,tx:end.x,ty:end.y,swimFacing:s.inside?0:p.facing,fixedTarget:!!best,color:'ray',life:.2,max:.2});s.flash=.2;emit(s,'attack');}return;
+   if(fire&&s.shotWait<=0){s.shotWait=.72;let end={x:origin.x+p.aim.x*460,y:origin.y+p.aim.y*460},best=null,bestDistance=Infinity;for(const n of targets(s))if(n.hp>0&&R.swept(end,n,origin.x,origin.y)){const d=Math.hypot(n.x-origin.x,n.y-n.h/2-origin.y);if(d<bestDistance){best=n;bestDistance=d;}}if(best){damage(best,2*(p.damageBonus||1));end={x:best.x,y:best.y-best.h/2};}s.effects.push({...origin,tx:end.x,ty:end.y,swimFacing:s.inside?0:p.facing,turning:s.inside&&!!p.jumpTurn,fixedTarget:!!best,color:'ray',life:.2,max:.2});s.flash=.2;emit(s,'attack');}return;
   }
   if(!fire||s.shotWait>0)return;const shot=p.form==='robot'?A.fireRobot(e,p):A.fire(e.inventory,p);if(!shot)return;s.shotWait=shot.weapon.rate/(p.rateBonus||1);s.flash=.2;emit(s,'attack');
   if(shot.weapon.range){for(const n of targets(s))if(n.hp>0&&Math.abs(n.x-p.x)<shot.weapon.range+n.w/2&&Math.abs(n.y-p.y)<75&&(n.x-p.x)*p.facing>-n.w/2)damage(n,shot.weapon.damage*(p.damageBonus||1));fx(s,p.x+p.facing*40,p.y-25,'claw',40);}
@@ -199,7 +200,7 @@
   if(s.airlock>=0){s.airlock+=dt;if(s.airlock>=4)enter(s,p);return s.events;}
   for(const k of ['shotWait','meleeWait','flash','hitWait'])s[k]=Math.max(0,s[k]-dt);e.invincible=Math.max(0,e.invincible-dt);p.hurt=Math.max(0,(p.hurt||0)-dt);A.tickRobot(e,dt);
   const dx=(input.right?1:0)-(input.left?1:0),dy=(input.down?1:0)-(input.up?1:0),speed=(input.run?250:165)*(p.speedBonus||1)*(p.form==='tank'?1.1:1);if(dx)p.facing=dx;p.vx=dx*speed;p.submersible=!s.inside&&p.form==='tank';p.swimming=!s.inside;p.crouching=s.inside&&input.down&&p.grounded;
-  if(s.inside){p.x=clamp(p.x+dx*speed*dt,60,900);if(input.jumpPressed&&p.jumps<(p.maxJumps||2)){p.vy=-390;p.jumps++;p.grounded=false;}p.vy=(p.vy||0)+850*dt;p.y=Math.min(FLOOR,p.y+p.vy*dt);if(p.y===FLOOR){p.grounded=true;p.vy=0;p.jumps=0;}}
+  if(s.inside){if(!p.jumps||p.grounded)turn.reset(p);p.x=clamp(p.x+dx*speed*dt,60,900);if(input.jumpPressed&&p.jumps<(p.maxJumps||2)){turn.press(p);p.vy=-390;p.jumps++;p.grounded=false;}p.vy=(p.vy||0)+850*dt;p.y=Math.min(FLOOR,p.y+p.vy*dt);if(p.y===FLOOR){p.grounded=true;p.vy=0;p.jumps=0;}turn.advance(p,dt);}
   else{const norm=Math.hypot(dx,dy)||1,step=speed*dt/norm;
    const radius=p.form==='tank'?44:28,height=p.form==='tank'?46:38;
    const nx=clamp(p.x+dx*step,60,WIDTH-80),edge=reef.freeY(nx,p.y,radius,height);
@@ -222,7 +223,7 @@
   if(!s.inside)for(const m of s.mines){if(!m.active)continue;if(Math.hypot(p.x-m.x,p.y-20-m.y)<48){m.active=false;hurt(s,p,e,2);fx(s,m.x,m.y,'blast',90);}for(const b of s.bullets)if(!b.enemy&&Math.hypot(b.x-m.x,b.y-m.y)<27){m.active=false;b.life=0;fx(s,m.x,m.y,'blast',70);}}
   for(const pool of s.pools){pool.life-=dt;for(const n of targets(s))if(n.hp>0&&Math.hypot(n.x-pool.x,n.y-pool.y)<85){n.sticky=Math.max(n.sticky,.5);damage(n,dt*.5);}}s.pools=s.pools.filter(f=>f.life>0).slice(-12);
   collect(s,p,e);s.supplyAge+=dt;if(s.inside&&s.supplyAge>12){s.supplyAge=0;for(const slot of [3,5]){if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+(slot===3?18:30);}emit(s,'pickup',{text:'Reserva de la armería · Munición repuesta'});}
-  if(s.inside&&s.boss.hp<=0){e.dead=false;e.hp=Math.max(1,e.hp);s.ending=0;s.bullets=[];s.hazards=[];s.pools=[];p.fighterUnlocked=true;emit(s,'unlock',{form:'fighter'});if(!s.awarded.has('captain')){s.awarded.add('captain');emit(s,'points',{amount:7000,text:'Capitán derrotado · Luchador desbloqueado'});}emit(s,'ending');}
+  if(s.inside&&s.boss.hp<=0){turn.reset(p);e.dead=false;e.hp=Math.max(1,e.hp);s.ending=0;s.bullets=[];s.hazards=[];s.pools=[];p.fighterUnlocked=true;emit(s,'unlock',{form:'fighter'});if(!s.awarded.has('captain')){s.awarded.add('captain');emit(s,'points',{amount:7000,text:'Capitán derrotado · Luchador desbloqueado'});}emit(s,'ending');}
   return s.events;
  }
 
@@ -252,5 +253,5 @@
  }
  function snapshot(s,p){return{started:s.intro>=5,inside:s.inside,x:p?.x??s.x,y:p?.y??s.y,checkpoint:s.checkpoint,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars],complete:s.complete,ending:s.ending>=0};}
  function retry(s){const cp=stations[s.checkpoint]||{x:180,y:300};return create({...snapshot(s),x:cp.x,y:cp.y,inside:!!cp.inside,complete:false,ending:false,started:true},s.difficulty);}
- const api={create,update,snapshot,retry,damage,hurt,enter,captainPose,captainSocket,stations,seabed,reef,WIDTH,HEIGHT,FLOOR};if(common)module.exports=api;else root.ArcadeSeaWar=api;
+ const api={create,update,snapshot,retry,damage,hurt,enter,weaponOrigin,captainPose,captainSocket,stations,seabed,reef,WIDTH,HEIGHT,FLOOR};if(common)module.exports=api;else root.ArcadeSeaWar=api;
 })(typeof window!=='undefined'?window:globalThis);

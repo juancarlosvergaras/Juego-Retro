@@ -22,13 +22,13 @@
     const forward=heroAirRow(p)===16;
     return {x:p.x+(p.facing||1)*(forward?12:6),y:p.y-(forward?20:42)};
   }
-  function shot(p){if(!special(p))return null;const a=p.aim||{x:p.facing||1,y:0},bonus=p.damageBonus||1;
+  function shot(p){if(!special(p))return null;const turn=(typeof module!=='undefined'&&module.exports?require('./physics'):root.ArcadePhysics).jumpTurn,a=p.aim||{x:p.facing||1,y:0},bonus=p.damageBonus||1;
   if(p.form==='hero'){
-    p.eyeFlash=.2;const {x,y}=heroEyes(p);
+    p.eyeFlash=.2;const {x,y}=turn.point(p,heroEyes(p));
     return {weapon:{rate:.24,damage:4,ammo:null},bullets:[{x,y,vx:a.x*880,vy:a.y*880,life:1.15,damage:4*bonus,eyeRay:true,enemy:false,slot:3}]};
   }
   if(p.form==='fighter'){p.fighterCombo=(p.fighterPose>0?(p.fighterCombo||0)+1:0)%3;p.fighterPose=.8;p.fighterAge=0;p.fighterKick=!!p.fighterKickInput;return{weapon:{rate:.32,range:92,damage:3+p.fighterCombo,ammo:null},bullets:[]};}
-  p.cannonPose=.65;return{weapon:{rate:.95,damage:8,ammo:null,speed:620},bullets:[{x:p.x+a.x*48,y:p.y-33+a.y*32,vx:a.x*620,vy:a.y*620,life:2.4,damage:8*bonus,slot:6,superCannon:true,enemy:false}]};
+  p.cannonPose=.65;return{weapon:{rate:.95,damage:8,ammo:null,speed:620},bullets:[{...turn.point(p,{x:p.x+a.x*48,y:p.y-33+a.y*32}),vx:a.x*620,vy:a.y*620,life:2.4,damage:8*bonus,slot:6,superCannon:true,enemy:false}]};
  }
  function tankJumpFrame(p){if(p.grounded!==false)return 8+Math.min(3,Math.floor((.24-Math.max(0,p.landing||0))/.24*4));const age=p.tankAirAge||0;if(age<.1)return Math.min(3,Math.floor(age/.025));return p.vy<-90?4:p.vy<60?5:p.vy<300?6:7;}
  function tick(p,dt){p.eyeFlash=Math.max(0,(p.eyeFlash||0)-dt);p.tankAirAge=p.grounded===false?(p.tankAirAge||0)+dt:0;p.cannonPose=Math.max(0,(p.cannonPose||0)-dt);p.fighterPose=Math.max(0,(p.fighterPose||0)-dt);p.fighterAge=(p.fighterAge||0)+dt;}

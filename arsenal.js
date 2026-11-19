@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+  const turn=(typeof module!=='undefined'&&module.exports?require('./physics'):root.ArcadePhysics).jumpTurn;
   const weapons=[null,
     {name:'Cuchillo',ammo:null,damage:2,range:48,rate:.32,row:0},
     {name:'Hacha',ammo:null,damage:3,range:68,rate:.55,row:1},
@@ -79,7 +80,8 @@
     return{x:x/length,y:y/length};
   }
   // Shots leave from the barrel of the gun each fist is holding.
-  function robotMuzzle(p,arm=0,slot=3){
+  function robotMuzzle(p,arm=0,slot=3){return turn.point(p,robotSocket(p,arm,slot));}
+  function robotSocket(p,arm,slot){
     if(p.swimming&&!p.onMotorcycle){
       const swim=typeof module!=='undefined'&&module.exports?require('./sea-sprites'):root.ArcadeSeaSprites;
       const {x,y}=swim.robotGun(p,arm,slot);return {x,y};
@@ -90,7 +92,7 @@
   function muzzle(p,slot=3){
     const A=typeof module!=='undefined'&&module.exports?require('./soldier-animation.js'):root.ArcadeSoldierAnimation;
     const a=p.aim||{x:p.facing,y:0},hand=A.grip(p,{}, {inventory:{selected:slot},weaponAction:{slot,age:0}}),grip=A.weaponGrip(slot),angle=Math.atan2(a.y,a.x*p.facing),dx=(slot===7?32:26)-grip.x,dy=-grip.y;
-    return{x:p.x+p.facing*(hand.x+Math.cos(angle)*dx-Math.sin(angle)*dy),y:p.y+hand.y+Math.sin(angle)*dx+Math.cos(angle)*dy};
+    return turn.point(p,{x:p.x+p.facing*(hand.x+Math.cos(angle)*dx-Math.sin(angle)*dy),y:p.y+hand.y+Math.sin(angle)*dx+Math.cos(angle)*dy});
   }
   function reflect(p,b){
     if(p.form!=='hero'||!b.enemy||b.slot===6||b.slot===9||b.gravity||b.type==='missile'||b.type==='torpedo'||b.plasma||b.zombiePlasma||b.stormRay||b.tankShell||b.tankMissile||b.tankGrenade||b.alienLaser)return false;

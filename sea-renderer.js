@@ -60,8 +60,9 @@
    if(warning){c.fillStyle='#0c182ee6';c.fillRect(190,105,580,29);c.fillStyle='#ffd089';c.font='bold 13px monospace';c.textAlign='center';c.fillText(warning,480,124);}
   }
   function effects(c,s,p){for(const f of s.effects){const age=f.max-f.life,fx=root.ArcadeBossAttackSprites;if(f.color==='ray'){if(f.swimFacing&&(p.form!=='zombie'||p.facing!==f.swimFacing))continue;
-    const palm=f.swimFacing?root.ArcadeSeaSprites.muzzle(p):f;
-    const dx=f.swimFacing&&!f.fixedTarget?palm.x-f.x:0,dy=f.swimFacing&&!f.fixedTarget?palm.y-f.y:0;
+    const follows=f.swimFacing||f.turning&&p.form==='zombie';
+    const palm=f.swimFacing?root.ArcadeSeaSprites.muzzle(p):follows?root.ArcadeSeaWar.weaponOrigin(s,p):f;
+    const dx=follows&&!f.fixedTarget?palm.x-f.x:0,dy=follows&&!f.fixedTarget?palm.y-f.y:0;
     fx?.beam(c,'lightning',s.time,palm.x,palm.y,f.tx+dx,f.ty+dy,20);continue;}fx?.draw(c,f.color==='plasma'?'plasma':f.color==='dust'?'shock':f.color==='claw'?'slash':'blast',age,f.x,f.y,Math.max(20,f.size*2),Math.max(20,f.size*1.5),{loop:false,duration:f.max,alpha:Math.min(1,f.life*5)});}}
   function draw(c,s,p,e,powers,profile){s.inventory=e.inventory;c.save();c.imageSmoothingEnabled=false;
    background(c,s);c.save();c.translate(-Math.round(s.camera.x),-Math.round(s.camera.y));const visible=(x,y,margin=160)=>x>s.camera.x-margin&&x<s.camera.x+960+margin&&y>s.camera.y-margin&&y<s.camera.y+540+margin;
@@ -76,7 +77,7 @@
    }else boss(c,s);
    for(const pool of s.pools){c.globalAlpha=Math.min(.7,pool.life);c.fillStyle='#67dd8b';for(let i=0;i<10;i++)c.fillRect(pool.x-50+i*10,pool.y-6+Math.sin(i+s.time*4)*2,12,6);c.globalAlpha=1;}
    for(const h of s.hazards)grenade(c,h);
-   if(s.ending<6)player(c,s,p);
+   if(s.ending<6){c.save();if(s.inside&&s.ending<0)root.ArcadePhysics.jumpTurn.apply(c,p);player(c,s,p);c.restore();}
    for(const b of s.bullets){if(root.ArcadeBossAttackSprites?.projectile(c,b,s.time))continue;c.save();c.translate(Math.round(b.x),Math.round(b.y));c.rotate(Math.atan2(b.vy,b.vx));c.fillStyle=b.plasma?'#8bf396':b.enemy?'#ff705d':'#c4fcff';c.fillRect(-8,-2,b.slot===6||b.type==='missile'||b.type==='torpedo'?22:11,b.superCannon?7:4);c.fillStyle='#fff5d0';c.fillRect(5,-1,4,2);if(!s.inside){c.strokeStyle='#a4f4ff66';for(let j=1;j<5&&10+j*9<=(b.waterDistance??Infinity);j++)c.strokeRect(-10-j*9,-2+j%2,3,3);}c.restore();}
    effects(c,s,p);if(powers&&s.ending<0)root.ArcadePowers.draw(c,powers,p,e,{top:s.camera.y,bottom:s.camera.y+540});c.restore();
    if(s.intro<5){if(p.tankUnlocked)root.ArcadeAdvancedForms.morph(c,480,350,Math.min(1,(s.intro-1)/2),170);title(c,'MISIÓN 5','BAJO EL ABISMO',s.intro<2?'El mini tanque sella su blindaje.':'Mini submarino listo · Flechas: nadar · J: atacar · Shift: impulso');}

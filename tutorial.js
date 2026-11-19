@@ -6,7 +6,7 @@
   const lessons=[
     {id:'move',title:'Muévete por la obra',text:'Usa A / D o las flechas ← / → para caminar. Avanza hacia la derecha.',when:()=>true,done:c=>(c.input.left||c.input.right)&&Math.abs(c.p.vx)>5},
     {id:'fire',title:'Tu primer disparo',text:'Pulsa J para disparar hacia donde miras. También puedes hacer clic sobre el juego.',when:(c,s)=>s.moved,done:c=>c.input.fire},
-    {id:'jump',title:'Supera los obstáculos',text:'Pulsa Espacio para saltar. Púlsalo otra vez en el aire para dar un segundo salto.',when:(c,s)=>s.seen.has('fire'),done:c=>c.input.jumpPressed},
+    {id:'jump',title:'Supera los obstáculos',text:'Pulsa Espacio para saltar. Púlsalo otra vez en el aire para dar una voltereta.',when:(c,s)=>s.seen.has('fire'),done:c=>c.input.jumpPressed},
     {id:'ladder',title:'Sube al siguiente piso',text:'Acércate a la escalera y mantén W o ↑ para subir. S o ↓ te permite bajar.',when:c=>c.ladders.some(l=>Math.abs(l.x-c.p.x)<55&&c.p.y>=l.top-10&&c.p.y<=l.bottom+12),done:c=>!!c.p.ladder},
     {id:'weapons',title:'Prueba el arma que recogiste',text:'Elige un arma disponible con las teclas 1–9 o con los botones de la barra inferior. Vigila su munición.',when:c=>c.e.inventory.owned.length>2,done:c=>![1,3].includes(c.e.inventory.selected)},
     {id:'jet',title:'Controla el jetpack',text:'Usa WASD o las flechas para volar. Mantén Shift para acelerar: consume el doble de gasolina. Suelta las direcciones para flotar y pulsa F para apagarlo. Los soldados cercanos lo oyen.',when:c=>!!c.p.jetpack,done:c=>!c.p.jetpack},

@@ -49,14 +49,19 @@
    boss:{id:'road-rig',kind:'road',type:'rig',x:saved.ending?740:1180,y:425,w:410,h:190,hp:saved.complete||saved.ending?0:180*difficulty,maxHp:180*difficulty,active:!!saved.ending||!!saved.complete,stage:0,phase:'entry',age:0,shot:.6,cycle:0,hit:0,frozen:0,slow:0,flash:0,death:0},
    obstacles:Array.from({length:16},(_,i)=>({id:i,distance:440+i*510,lane:LANES[i%3],type:i%3===1?'pothole':'ramp',used:false})),crash:0,crashAge:0,crashLift:0,fatalCrash:false,jump:0,jumpV:0,boost:0,ramWait:0,ram:0,hitWait:2,shotFlash:0};
  }
- function spawn(s,i){const type=i%6===3?'jetSoldier':i%5===4?'jeep':i%3===1?'sidecar':'bike',hp=(type==='jeep'?10:type==='sidecar'?6:3)*s.difficulty;return{id:'road-'+i,kind:'road',type,x:1020+(i%2)*100,y:type==='jetSoldier'?235:LANES[i%3],w:type==='jetSoldier'?48:type==='jeep'?175:type==='sidecar'?124:104,h:type==='jetSoldier'?60:type==='jeep'?94:76,hp,maxHp:hp,age:0,shot:1.8+(i%3)*.3,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:520+((i*2+Math.floor(i/3))%3)*150};}
+ function spawn(s,i){const type=i%6===3?'jetSoldier':i%5===4?'jeep':i%3===1?'sidecar':'bike',hp=(type==='jeep'?10:type==='sidecar'?6:3)*s.difficulty;const rear=i%5===2&&(type==='bike'||type==='sidecar');return{id:'road-'+i,kind:'road',type,rear,x:rear?-96:1020+(i%2)*100,y:type==='jetSoldier'?235:LANES[i%3],w:type==='jetSoldier'?48:type==='jeep'?175:type==='sidecar'?124:104,h:type==='jetSoldier'?60:type==='jeep'?94:76,hp,maxHp:hp,age:0,shot:1.8+(i%3)*.3,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:520+((i*2+Math.floor(i/3))%3)*150};}
  function event(s,type,data={}){s.events.push({type,...data});}
  function damage(n,amount){if(n.hp<=0)return;n.hp=Math.max(0,n.hp-amount);n.hit=.14;}
  function hurt(s,p,e,amount=1){if(s.hitWait>0||e.developerInvulnerable||e.invincible>0||e.dead||s.ram>0||p.transform>0)return false;if(p.shield>0)p.shield--;else e.hp=Math.max(0,e.hp-amount*(e.combatDamage||1)/(p.form==='zombie'||p.form==='tank'?2:1));e.hp=Math.round(e.hp*2)/2;s.hitWait=e.hitProtection??1.2;p.hurt=.3;event(s,'hurt');if(e.hp<=0)e.dead=true;return true;}
  function burst(s,x,y,size=50,color='fire'){s.effects.push({x,y,life:.65,max:.65,size,color});}
  function parts(s,n,count=6){for(let i=0;i<count;i++)s.parts.push({x:n.x+(i/count-.5)*n.w,y:n.y-n.h*.45,vx:-70-i*22,vy:-110-(i%3)*45,life:2.8,age:0,rotation:i*.7,part:i%4,rig:n.type==='rig'});}
  function swept(b,n,oldX,oldY){const pad=b.slot===6?6:3,x=n.x-n.w/2-pad,y=n.y-n.h-pad,w=n.w+pad*2,h=n.h+pad*2;let lo=0,hi=1;for(const [start,end,min,max]of [[oldX,b.x,x,x+w],[oldY,b.y,y,y+h]]){const d=end-start;if(Math.abs(d)<.000001){if(start<min||start>max)return false;continue;}let a=(min-start)/d,z=(max-start)/d;if(a>z)[a,z]=[z,a];lo=Math.max(lo,a);hi=Math.min(hi,z);if(lo>hi)return false;}return true;}
- function fireEnemy(s,n,p){const origin={x:n.x-n.w*.25,y:n.y-n.h*.7},dx=p.x-origin.x,dy=p.y-45-origin.y,len=Math.hypot(dx,dy)||1;const speed=n.type==='jeep'?290:240;s.bullets.push({...origin,vx:dx/len*speed,vy:dy/len*speed,enemy:true,life:4,damage:1});n.flash=.12;}
+ function enemyMuzzle(n){
+  if(n.type==='jetSoldier')return {x:n.x-n.w*.25,y:n.y-n.h*.7};
+  const [dx,dy]=n.type==='jeep'?[-.41,-.62]:n.type==='sidecar'?[-.49,-.45]:[-.41,-.57];
+  return {x:n.x+n.w*dx,y:n.y+n.w*dy};
+ }
+ function fireEnemy(s,n,p){const origin=enemyMuzzle(n),dx=p.x-origin.x,dy=p.y-45-origin.y,len=Math.hypot(dx,dy)||1;const speed=n.type==='jeep'?290:240;s.bullets.push({...origin,vx:dx/len*speed,vy:dy/len*speed,enemy:true,life:4,damage:1});n.flash=.12;}
  function blast(s,b){burst(s,b.x,b.y,b.slot===6?76:60,b.plasma?'plasma':'fire');if(b.plasma)s.pools.push({x:b.x,y:clamp(b.y+35,366,480),life:3.6});for(const n of [...s.enemies,...(s.boss.active?[s.boss]:[])])if(n.hp>0&&Math.abs(n.x-b.x)<n.w/2+60&&Math.abs(n.y-35-b.y)<n.h/2+65){damage(n,b.damage||3);if(b.plasma){n.slow=4;n.poison=4;}}}
  function attack(s,p,e,input){
   if(p.transform>0||s.crash>0)return;const down=input.fire||input.fireHeld||p.form==='tank'&&input.kick;
@@ -120,7 +125,10 @@
   const old=s.distance,travel=dt*(s.crash>0?15:input.run?100:72);s.distance=Math.min(LENGTH,s.distance+travel);
   // Asphalt and world obstacles share the same displacement, including turbo and recovery.
   const roadTravel=(s.distance-old)*5;s.scroll+=old<LENGTH?roadTravel:travel*5;
-  for(let next=s.wave+1;next<=Math.floor(s.distance/260)&&next<=WAVES;next++){s.wave=next;const n=spawn(s,next);if(!s.awarded.has(n.id))s.enemies.push(n);supply(s,supplyKind(next),[3,5,4,6,9][next%5],'road-supply-'+next,1160,LANES[(next+1)%3]);}
+  for(let next=s.wave+1;next<=Math.floor(s.distance/260)&&next<=WAVES;next++){s.wave=next;const n=spawn(s,next);if(!s.awarded.has(n.id)){
+    if(n.rear){n.targetX=Math.min(900,Math.max(n.targetX,p.x+160));event(s,'rear',{lane:n.y});}
+    s.enemies.push(n);
+   }supply(s,supplyKind(next),[3,5,4,6,9][next%5],'road-supply-'+next,1160,LANES[(next+1)%3]);}
   for(const cp of CHECKPOINTS)if(old<cp&&s.distance>=cp&&s.checkpoint<cp){s.checkpoint=cp;event(s,'checkpoint');}
   for(const o of s.obstacles){const x=220+(o.distance-s.distance)*5;o.x=x;
    if(o.used||Math.abs(x-p.x)>(o.type==='ramp'?96:60)||Math.abs(o.lane-p.lane)>(o.type==='ramp'?26:20)||s.jump>35)continue;o.used=true;
@@ -139,7 +147,8 @@
   for(const n of s.enemies){n.age+=dt;n.hit=Math.max(0,n.hit-dt);n.flash=Math.max(0,n.flash-dt);n.shock=Math.max(0,(n.shock||0)-dt);n.frozen=Math.max(0,n.frozen-dt);n.slow=Math.max(0,n.slow-dt);if(n.poison>0){n.poison-=dt;damage(n,dt*.6);}if(n.hp<=0){if(!s.awarded.has(n.id)){s.awarded.add(n.id);event(s,'points',{id:n.id,amount:n.type==='jeep'?250:100,text:n.type==='jetSoldier'?'Soldado aéreo neutralizado':'Vehículo destruido',wreck:n.type,x:n.x});if(n.type!=='jetSoldier')parts(s,n);burst(s,n.x,n.y-35,65);}n.x-=230*dt;n.death+=dt;if(n.type==='jetSoldier')n.y=Math.min(500,n.y+(100+n.death*320)*dt);continue;}
    // When the rig arrives the escort clears the road for it instead of piling up on top.
    if(s.boss.active&&!n.guard){if(n.type==='jetSoldier')n.y-=150*dt;else n.x+=(120+n.age*8)*dt;if(n.x>1140||n.y<-70)n.age=99;continue;}
-   if(n.kind==='road'&&n.type==='jetSoldier')n.y=240+Math.sin(n.age*2.2)*35;if(n.frozen>0||p.cloak>0)continue;const factor=n.slow>0?.35:1;n.x+=(n.targetX-n.x)*dt*.65*factor;n.x+=Math.sin(n.age*1.7)*dt*15;n.shot-=dt*factor;if(n.x<940&&n.x>80&&n.shot<=0){fireEnemy(s,n,p);n.shot=n.type==='jeep'?.7:n.type==='sidecar'?1:1.8;}if(Math.abs(p.x-n.x)<n.w/2+35&&Math.abs(p.y-n.y)<28&&s.jump<55)hurt(s,p,e);if(n.age>16&&!n.guard)n.x-=190*dt;
+   if(n.kind==='road'&&n.type==='jetSoldier')n.y=240+Math.sin(n.age*2.2)*35;if(n.frozen>0||p.cloak>0)continue;const factor=n.slow>0?.35:1;if(n.rear&&n.x<p.x+100)n.targetX=Math.max(n.targetX,Math.min(900,p.x+160));
+   n.x+=clamp((n.targetX-n.x)*.65,-780,n.rear?255:780)*dt*factor;n.x+=Math.sin(n.age*1.7)*dt*15;n.shot-=dt*factor;if(n.x<940&&n.x>80&&n.shot<=0&&(!n.rear||enemyMuzzle(n).x>p.x+32)){fireEnemy(s,n,p);n.shot=n.type==='jeep'?.7:n.type==='sidecar'?1:1.8;}if((!n.rear||n.age>1.25)&&Math.abs(p.x-n.x)<n.w/2+35&&Math.abs(p.y-n.y)<28&&s.jump<55)hurt(s,p,e);if(n.age>16&&!n.guard)n.x-=190*dt;
   }
   s.enemies=s.enemies.filter(n=>n.x>-180&&n.death<2.8&&(n.age<22||n.guard));
   for(const m of s.mines){m.age+=dt;m.life-=dt;m.x-=travel*5;if(m.age>.65&&Math.abs(m.x-p.x)<32&&Math.abs(m.y-p.lane)<25&&s.jump<38){hurt(s,p,e,2);m.life=0;burst(s,m.x,m.y-5,55);}}s.mines=s.mines.filter(m=>m.life>0&&m.x>-80);
@@ -168,5 +177,5 @@
  function skipIntro(s){if(s.intro<INTRO)s.intro=INTRO;return s;}
  // Cifras del parte final. Los vehículos cuentan por identidad, no por los que hay en pantalla.
  function tally(s){const fallen=[...s.awarded].filter(id=>/^road-\d+$/.test(id)).length;return{fallen,total:WAVES,stars:s.collected.size,starTotal:STARS,seconds:s.elapsed};}
- const api={create,update,snapshot,retry,skipIntro,tally,endingSpeed,spawn,hurt,damage,swept,riderPose,soldierMuzzle,zombiePalm,mountedEyes,RIDER_WIDTH,CRASH_TIME,LENGTH,LANES,CHECKPOINTS,STARS,WAVES,INTRO,ENDING,CRUISE,JET_SCALE,GUARDS,guard};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadWar=api;
+ const api={create,update,snapshot,retry,skipIntro,tally,endingSpeed,spawn,enemyMuzzle,hurt,damage,swept,riderPose,soldierMuzzle,zombiePalm,mountedEyes,RIDER_WIDTH,CRASH_TIME,LENGTH,LANES,CHECKPOINTS,STARS,WAVES,INTRO,ENDING,CRUISE,JET_SCALE,GUARDS,guard};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadWar=api;
 })(typeof window!=='undefined'?window:globalThis);

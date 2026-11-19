@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T182700Z
+
+Motos y guardias llegan desde atrás. La misión espacial incorpora la marcha de ocho cuadros, nuevas esclusas y ataques del Soberano orientados hacia el jugador. [Cambios y arte de la misión siete](releases/20261119T182700Z.md)
+
 ## Publicado en Mac mini · 20261119T180830Z
 
 El centro comercial estrena la transición de ambiente por el rellano y el lanzamiento dirigido del Coloso. Se revisó el alcance de los jefes de las ocho misiones y los dos especiales. [Registro de publicación y encuentros](releases/20261119T180830Z.md)

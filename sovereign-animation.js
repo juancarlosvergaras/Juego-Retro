@@ -4,9 +4,9 @@
  function pose(b,ending=-1){
   if(ending>=0)return{sheet:'base',index:12+Math.min(3,Math.floor(ending/2))};
   if(b.phase==='arrival')return{sheet:'base',index:Math.min(3,Math.floor(b.age/3*4))};
-  if(b.hit>0)return{sheet:'base',index:10+(Math.floor((b.anim||0)*14)%2)};
   const warning=b.phase.endsWith('Warn'),attack=warning?b.phase.slice(0,-4):b.phase;
-  if(Object.hasOwn(attacks,attack)){const frame=warning?Math.min(2,Math.floor(b.age/warnings[attack]*3)):b.age<durations[attack]*.65?3:b.age<durations[attack]*.85?4:5;return{sheet:'attack',index:attacks[attack]*6+frame};}
+  if(Object.hasOwn(attacks,attack)){const frame=warning?Math.min(2,Math.floor(b.age/warnings[attack]*3)):b.age<(attack==='laser'?1.2:durations[attack]*.65)?3:b.age<durations[attack]*.85?4:5;return{sheet:'attack',index:attacks[attack]*6+frame};}
+  if(b.hit>0)return{sheet:'base',index:10+(Math.floor((b.anim||0)*14)%2)};
   if(b.phase==='recover'&&b.age<.5)return{sheet:'base',index:8+Math.floor(b.age*4)%2};
   return{sheet:'base',index:4+Math.floor((b.anim||b.age)*5)%4};
  }

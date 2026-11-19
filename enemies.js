@@ -102,7 +102,6 @@
       if(p.cloak>0&&n.hp>0&&!n.ramHit){n.alert=false;n.memory=0;n.strikePending=false;n.flash=0;n.vx=0;n.shot=Math.max(n.shot||0,.3);continue;}
       const dt=elapsed*(n.sticky>0?.45:1);
       if(n.kind==='mallGiant'||n.kind==='alienBoss'||n.kind==='cityBoss')continue;
-      if(['alien','alienElite','alienPilot'].includes(n.kind)&&(typeof module!=='undefined'&&module.exports?require('./space-world'):root.ArcadeSpaceWorld).enemyUpdate(n,p,dt,bullets))continue;
       if((typeof module!=='undefined'&&module.exports?require('./expansion-enemies'):root.ArcadeExpansionEnemies)?.update(n,p,dt,platforms,bullets))continue;
         if(n.kind==='mecha'){if(n.frozen>0&&n.hp>0){n.frozen=Math.max(0,n.frozen-dt);continue;}(typeof module!=='undefined'&&module.exports?require('./air-mecha'):root.ArcadeAirMecha).update(n,p,dt,bullets,view);continue;}
       n.strikePending=false;
@@ -114,6 +113,7 @@
         else if(hit.age>.55&&n.grounded){n.ramHit=null;n.shot=Math.max(n.shot,1);}
         continue;
       }
+      if(['alien','alienElite','alienPilot'].includes(n.kind)&&(typeof module!=='undefined'&&module.exports?require('./space-world'):root.ArcadeSpaceWorld).enemyUpdate(n,p,dt,bullets,view))continue;
       if(['cityAssault','cityGrenadier'].includes(n.kind)&&(typeof module!=='undefined'&&module.exports?require('./new-york-world'):root.ArcadeNewYorkWorld).enemyUpdate(n,p,dt,bullets,platforms))continue;
       if(n.kind==='stormZombie'&&!(n.frozen>0)){(typeof module!=='undefined'&&module.exports?require('./storm-zombie'):root.ArcadeStormZombie).update(n,p,dt,bullets,view);continue;}
       if(n.kind==='bat'&&n.hp<=0){Bat.update(n,p,dt);continue;}

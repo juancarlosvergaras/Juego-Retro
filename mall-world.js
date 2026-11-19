@@ -82,8 +82,33 @@
   updateCamera(s,p.x,p.y);return mode;
  }
  function soldiers(floor,defeated,difficulty){if(floor===3)return[];return Array.from({length:11},(_,i)=>{const id='mall-'+floor+'-'+i,x=(floor===0?1480:520)+i*(floor===0?310:330),n=N.createSoldier({x,y:FLOOR,facing:-1,kind:i%4===2?'warden':i%4===3?'knife':i%4===1?'turret':'rifle'},id);n.shot=1.4+i*.2;if(n.kind==='warden'){n.hp=n.maxHp=6;}n.maxHp*=difficulty;n.hp=defeated.has(id)?0:n.maxHp;return n;});}
+ const patrolGates=[1620,3240];
+ function guardFromRear(s,i,x){
+  const kind=i===0?'knife':'rifle',id='mall-rear-'+s.floor+'-'+i;
+  const n=N.createSoldier({x,y:P.surfaceY(groundAt(s,x),x),facing:1,kind},id);
+  n.maxHp*=s.difficulty;n.hp=n.maxHp;n.shot=1.4;n.rear=true;return n;
+ }
+ function rearPatrol(s,p,dt){
+  if(s.floor>=3||p.cloak>0||p.burrow)return;
+  s.patrolWait=Math.max(0,s.patrolWait-dt);
+  if(s.patrolWait>0)return;
+  for(const [i,gate] of patrolGates.entries()){
+   const id='mall-rear-'+s.floor+'-'+i;
+   if(p.x<gate||s.awarded.has(id)||s.enemies.some(n=>n.id===id))continue;
+   const x=cameraX(s.floor,p.x)-48,guard=guardFromRear(s,i,x);
+   guard.memory=5;guard.lastKnown={x:p.x,y:p.y};guard.shot=1.4;
+   s.enemies.push(guard);s.patrolWait=4;emit(s,'rear');break;
+  }
+ }
  function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,airCarry:0,rooms:new Map(),intro:saved.started?4:0,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};
-  s.departedShoppers=new Set(saved.departedShoppers||[]);s.shoppers=Shoppers.create(floor,s.departedShoppers);s.shoppingBags=[];return s;}
+  s.departedShoppers=new Set(saved.departedShoppers||[]);s.shoppers=Shoppers.create(floor,s.departedShoppers);s.shoppingBags=[];s.patrolWait=0;
+  for(const record of Array.isArray(saved.rearGuards)?saved.rearGuards:[]){
+   if(floor===3||!Number.isInteger(record?.i)||!patrolGates[record.i]||!Number.isFinite(record.x)||!Number.isFinite(record.hp)||record.hp<=0)continue;
+   const guard=guardFromRear(s,record.i,clamp(record.x,20,widths[floor]-20));
+   if(awarded.has(guard.id)||s.enemies.some(n=>n.id===guard.id))continue;
+   guard.hp=Math.min(guard.maxHp,record.hp);s.enemies.push(guard);
+  }
+  return s;}
  function groundAt(s,x){
   const platforms=s.geometry.platforms;
   return platforms.find(pl=>pl.kind==='ground'&&x>=pl.x&&x<=pl.x+pl.w)||platforms[0];
@@ -161,7 +186,7 @@
   for(const f of s.debris)f.age+=dt;s.debris=s.debris.filter(f=>f.age<1.2);
   if(s.ending>=0){s.ending+=dt;if(s.ending>=11&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
   if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
-  Shoppers.update(s,dt);
+  Shoppers.update(s,dt);if(!e.dead)rearPatrol(s,p,dt);
   for(const n of s.enemies)if(n.hp<=0&&!s.awarded.has(n.id)){s.awarded.add(n.id);emit(s,'points',{amount:150,text:'Guardia neutralizado'});}
   if(!e.dead&&!p.burrow){
    if(s.floor<3){
@@ -179,7 +204,7 @@
   return s.events;
  }
  function hearShot(s,p,source){Shoppers.hear(s,source,cameraX(s.floor,p.x));}
- function snapshot(s,p){return{floor:s.floor,departedShoppers:[...s.departedShoppers],x:p.x,y:p.y,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
- function retry(s){return create({...snapshot(s,{x:140,y:FLOOR}),floor:s.checkpoint,x:140,y:FLOOR,ending:false,complete:false,started:true},s.difficulty);}
+ function snapshot(s,p){return{floor:s.floor,rearGuards:s.enemies.filter(n=>n.rear&&n.hp>0).map(n=>({i:Number(n.id.split('-').pop()),x:n.x,hp:n.hp})),departedShoppers:[...s.departedShoppers],x:p.x,y:p.y,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
+ function retry(s){return create({...snapshot(s,{x:140,y:FLOOR}),floor:s.checkpoint,x:140,y:FLOOR,rearGuards:[],ending:false,complete:false,started:true},s.difficulty);}
  const api={create,configure,update,interact,snapshot,retry,geometry,escalator,treadY,stepPlayer,landingX,landingView,cameraX,hearShot,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
 })(typeof window!=='undefined'?window:globalThis);

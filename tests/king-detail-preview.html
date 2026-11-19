@@ -3,7 +3,7 @@
 <h1>Transformación → segunda fase</h1><p id="status">Cargando sprites…</p>
 <button id="play">Pausar</button><button id="step">Siguiente fotograma</button><button id="flip">Cambiar dirección</button>
 <canvas id="preview" width="1180" height="740"></canvas><pre id="checks"></pre>
-<script src="/mausoleum-king.js"></script><script src="/white-death-atlas.js"></script><script>
+<script src="/impact-effects.js"></script><script src="/mausoleum-king.js"></script><script src="/white-death-atlas.js"></script><script>
 const names=['marcha','plasma','salto','garras','derrota'];
 Promise.all(['rey-transformacion-v1',...names.map(n=>'rey-zombi-'+n+'-v4')].map(name=>new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src='/assets/sprites/'+name+'.png';}))).then(images=>{
  const K=ArcadeMausoleumKing,start=performance.now(),atlas={kingTransform:K.prepareAtlas(prepareWhiteDeath(images[0]),2,'kingTransform'),kingZombie:K.prepareZombieStrips(images.slice(1))};

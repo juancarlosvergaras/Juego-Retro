@@ -141,9 +141,9 @@
   if(p.vy<0){p.grounded=false;p.ground=null;}
   emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});
  }
- function bossUpdate(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
+ function bossUpdate(s,p,e,dt){const b=s.boss;b.hit=Math.max(0,b.hit-dt);if(p.cloak>0&&b.hp>0)return;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
   if(b.hp<=0){s.ending=0;updateCamera(s,p.x);e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:8500,text:'Coloso derrotado'});}emit(s,'ending');return;}
-  b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.65:1);const next=phase=>{b.phase=phase;b.age=0;};
+  b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.65:1);const next=phase=>{b.phase=phase;b.age=0;};
   // Commit to a point on the roof or in the air before the throwing arm moves.
   const throwAtPlayer=()=>{
    const high=p.y<FLOOR-100,far=Math.abs(p.x-b.x)>480;
@@ -184,7 +184,7 @@
  function update(s,p,e,input,dt){s.events=[];dt=clamp(dt,0,.05);s.time+=dt;
   if(s.skyTransition){const t=s.skyTransition;t.mix+=clamp(t.to-t.mix,-dt/.28,dt/.28);if(t.mix===t.to)s.skyTransition=null;}
   for(const f of s.debris)f.age+=dt;s.debris=s.debris.filter(f=>f.age<1.2);
-  if(s.ending>=0){s.ending+=dt;if(s.ending>=11&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
+  if(s.ending>=0){s.boss.hit=Math.max(0,s.boss.hit-dt);s.ending+=dt;if(s.ending>=11&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
   if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
   Shoppers.update(s,dt);if(!e.dead)rearPatrol(s,p,dt);
   for(const n of s.enemies)if(n.hp<=0&&!s.awarded.has(n.id)){s.awarded.add(n.id);emit(s,'points',{amount:150,text:'Guardia neutralizado'});}

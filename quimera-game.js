@@ -186,9 +186,9 @@
   const stanceHeight={batter:73,foreman:76,fighter:74,knife:65,rifle:73,warden:74,jet:55,infected:73,robot:73,
     gunner:69,blackWolf:74,scientist:73,lizard:74};
   const fallenRows={infected:1,lizard:2,batter:8,foreman:9,jet:10,robot:11};
-  function actionSprite(row,progress){
+  function actionSprite(row,progress,hit=0){
     const cell=Math.round(12*Math.max(0,Math.min(1,progress)));
-    c.drawImage(art.actions,164*cell,112*row,164,112,-82,-102,164,112);
+    ArcadeImpact.hitSprite(c,hit,art.actions,164*cell,112*row,164,112,-82,-102,164,112);
   }
   function drawPickup(a){
     const action=a.pickup;
@@ -200,11 +200,11 @@
       c.drawImage(art.loot,icon*72,0,72,32,-22,-12,51,23);c.restore();
     }
   }
-  function drawTechnique(n){
+  function drawTechnique(n,hit){
     const a=n.tech,m=Q.techniques[a.kind],phase=Q.techPhase(n);
     const t=phase==='windup'?a.t/m.wind:phase==='active'?(a.t-m.wind)/m.active:(a.t-m.wind-m.active)/m.recover;
     const pose=phase==='windup'?t/3:phase==='active'?1/3+Math.min(1,t*1.75)/3:2/3+t/3;
-    actionSprite(m.row,pose);
+    actionSprite(m.row,pose,hit);
   }
   function actor(a){
     const x=Math.round(a.x-state.cam),floor=Math.round(a.y),scale=Q.scaleAt(a);
@@ -229,6 +229,7 @@
     else if(a.act==='fall')frame=Math.min(11,Math.floor(a.age/(a.down?Q.fallTime:.65)*12));
     else if(a.strike>0)frame=Math.min(11,Math.floor((.25-a.strike)/.25*12));
     else if(a.stun>0)frame=Math.min(11,Math.floor(a.age/.32*12));
+    const hit=Math.max(0,(a.hitUntil||0)-state.age);
     const carried=a.attack?.weapon||a.weapon?.kind;
     const model=a.kind==='fighter'&&carried?Q.weapons[carried].sprite:a.kind;
     const gait=art['steps_'+model];
@@ -243,17 +244,17 @@
       c.drawImage(art.loot,icon*72,0,72,32,-21,-10,49,22);c.restore();
     }
     if(a.pickup)drawPickup(a);
-    else if(a.tech)drawTechnique(a);
+    else if(a.tech)drawTechnique(a,hit);
     else if(a.act==='rise')actionSprite(1,1-a.rise/Q.riseTime);
     else if(a.down&&a.kind in fallenRows){
       const progress=Math.min(1,(Q.downTime-a.fall)/Q.fallTime);
-      actionSprite(fallenRows[a.kind],a.kind==='infected'?1-progress:progress);
+      actionSprite(fallenRows[a.kind],a.kind==='infected'?1-progress:progress,hit);
     }else if(onFoot){
       const phase=a.gaitWeight>.06?a.stride:state.age*.7;
-      cinema.drawGait(c,gait,phase,a.gaitWeight);
+      cinema.drawGait(c,gait,phase,a.gaitWeight,hit);
     }else if(model in armedRows&&(a.kind!=='fighter'||a.attack?.weapon||['hurt','fall','jump'].includes(a.act))){
       drawArmed(a,model,frame);
-    }else c.drawImage(pic,frame*120,Math.max(0,rows.indexOf(pose))*98,120,98,-53,-91,120,98);
+    }else ArcadeImpact.hitSprite(c,hit,pic,frame*120,Math.max(0,rows.indexOf(pose))*98,120,98,-53,-91,120,98);
     c.restore();c.restore();
     if(a.kind==='gunner'&&a.hp>0&&a.overheat>0){
       const muzzle=x+52*a.face;

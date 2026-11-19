@@ -2,7 +2,7 @@
 <style>body{background:#202a30;color:#fff;font:16px system-ui}canvas{display:block;image-rendering:pixelated;max-width:100%}button{padding:10px}</style>
 <h1>Mano y rayo · ambas orientaciones</h1><p>Prueba aislada del renderizador compartido. Sin guardados.</p>
 <button id="animate">Animar recuperación</button><canvas id="scene" width="1100" height="830"></canvas>
-<script src="/zombie-form.js"></script><script>
+<script src="/impact-effects.js"></script><script src="/zombie-form.js"></script><script>
 const Z=ArcadeZombieForm,c=document.querySelector('canvas').getContext('2d'),base=new Image(),cast=new Image();let ready=0,animated=false,start=0;
 document.querySelector('button').onclick=()=>{animated=!animated;start=performance.now();};
 base.onload=cast.onload=()=>{if(++ready===2){Z.setSheet(base);Z.setCastSheet(cast);requestAnimationFrame(draw);}};

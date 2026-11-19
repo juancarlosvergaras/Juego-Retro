@@ -44,8 +44,9 @@
   for(const a of k.pools){a.life-=dt;a.age+=dt;if(a.life>.35&&Math.abs(p.x-a.x)<a.r+10&&p.y>FLOOR-8&&p.y-(p.h||46)<FLOOR+6)hurt(a.x,1);}k.pools=k.pools.filter(a=>a.life>0);
   for(const d of k.chips){d.life-=dt;d.vy+=650*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.angle+=d.spin*dt;if(d.y>FLOOR-d.size/2){d.y=FLOOR-d.size/2;d.vy=0;d.vx*=.9;d.spin=0;}}k.chips=k.chips.filter(d=>d.life>0);
  }
- function update(k,p,dt,hurt=()=>{},enemies=[],platforms=[]){if(p.cloak>0&&k?.hp>0)return;
-  if(!k)return;k.anim+=dt;k.hit=Math.max(0,k.hit-dt);k.shake=Math.max(0,k.shake-dt*2);k.events.length=0;
+ function update(k,p,dt,hurt=()=>{},enemies=[],platforms=[]){
+  if(!k)return;k.hit=Math.max(0,k.hit-dt);if(p.cloak>0&&k.hp>0)return;
+  k.anim+=dt;k.shake=Math.max(0,k.shake-dt*2);k.events.length=0;
   if(k.defeated)return;
   // Recover interrupted/old zero-health states before freeze or attack logic can stall them.
   if(k.hp<=0&&!['crack','death','defeated'].includes(k.phase)){enter(k,k.stage===1?'crack':'death');k.frozen=0;clearHazards(k);}
@@ -136,12 +137,12 @@
  }
  function draw(c,k,atlases){
   if(!k)return;const q=pose(k),atlas=atlases[q.sheet];if(!atlas)return;const f=atlas.frames[q.row][q.frame],scale=renderScale(atlas,q.sheet,atlases,f);
-  c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(k.x),Math.round(k.y));c.scale(k.facing,1);if(k.hit>0)c.filter='brightness(1.5)';
+  c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(k.x),Math.round(k.y));c.scale(k.facing,1);const impact=common?require('./impact-effects'):root.ArcadeImpact;
   const tremble=k.phase==='crack'?Math.sin(k.age*32)*2:0;
   const settled=k.phase==='roar'&&k.age>=2.15&&atlases.kingZombie?.detailStrips;
   const blend=settled?Math.min(1,(k.age-2.15)/.3):0;
-  c.globalAlpha=1-blend;c.drawImage(f.image||atlas.image,f.x,f.y,f.w,f.h,Math.round((f.x-f.pivot)*scale+tremble),Math.round((f.y-f.base)*scale),Math.round(f.w*scale),Math.round(f.h*scale));
-  if(blend){const a=atlases.kingZombie,g=a.frames[0][5],s=renderScale(a,'kingZombie',atlases,g);c.globalAlpha=blend;c.drawImage(g.image,g.x,g.y,g.w,g.h,Math.round((g.x-g.pivot)*s),Math.round((g.y-g.base)*s),Math.round(g.w*s),Math.round(g.h*s));}c.restore();
+  c.globalAlpha=1-blend;impact.hitSprite(c,k.hit,f.image||atlas.image,f.x,f.y,f.w,f.h,Math.round((f.x-f.pivot)*scale+tremble),Math.round((f.y-f.base)*scale),Math.round(f.w*scale),Math.round(f.h*scale));
+  if(blend){const a=atlases.kingZombie,g=a.frames[0][5],s=renderScale(a,'kingZombie',atlases,g);c.globalAlpha=blend;impact.hitSprite(c,k.hit,g.image,g.x,g.y,g.w,g.h,Math.round((g.x-g.pivot)*s),Math.round((g.y-g.base)*s),Math.round(g.w*s),Math.round(g.h*s));}c.restore();
  }
  let rockAtlas=null;
  function setRockSheet(image){const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const pixels=ctx.getImageData(0,0,c.width,c.height).data,frames=[];

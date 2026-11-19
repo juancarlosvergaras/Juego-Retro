@@ -46,8 +46,7 @@
    if(s.ending>=6)return;
    const pose=war.captainPose(b,s.ending);
    c.save();c.translate(Math.round(b.x),Math.round(b.y));c.scale(b.facing>0?-1:1,1);
-   if(b.hit>0&&s.ending<0)c.filter='brightness(1.4)';
-   c.drawImage(images.captainMotion,pose.frame*200,pose.row*144,200,144,-100,-139,200,144);c.restore();
+   root.ArcadeImpact.hitSprite(c,b.hit,images.captainMotion,pose.frame*200,pose.row*144,200,144,-100,-139,200,144);c.restore();
    if(s.ending>=0)return;
    if(phase==='gun'&&b.shot>.16){
     const muzzle=war.captainSocket(b,'muzzle');

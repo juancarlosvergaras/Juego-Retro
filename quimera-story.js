@@ -21,9 +21,9 @@
     c.save();c.translate(Math.round(x),Math.round(floor));c.scale(face*scale,scale);
     c.drawImage(image,Math.floor(frame)%12*120,row*98,120,98,-53,-91,120,98);c.restore();
   }
-  function drawGait(c,pic,phase,weight){
+  function drawGait(c,pic,phase,weight,hit=0){
     const frame=Math.round(phase*32)%32,row=Math.round(clamp(weight)*8);
-    c.drawImage(pic,frame*96,row*90,96,90,-47,-86,96,90);
+    root.ArcadeImpact.hitSprite(c,hit,pic,frame*96,row*90,96,90,-47,-86,96,90);
   }
   function walkCap(c,art,x,y,scale,travel,weight){
     c.save();c.translate(x,y);c.scale(scale,scale);

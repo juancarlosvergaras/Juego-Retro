@@ -272,8 +272,7 @@
   const width=420,height=width*ch/cw,baseline=edge+48+(pose.sink||0);
   c.save();c.beginPath();c.rect(0,0,W,edge+2);c.clip();
   if(s.boss.throwDir===1&&['throwWarn','throw'].includes(s.boss.phase)){c.translate(2*s.boss.x,0);c.scale(-1,1);}
-  if(s.boss.hit>0)c.filter='brightness(1.22)';
-  c.drawImage(img,cw*pose.frame,ch*pose.row,cw,ch,Math.round(s.boss.x-width/2),Math.round(baseline-height),width,height);
+  root.ArcadeImpact.hitSprite(c,s.boss.hit,img,cw*pose.frame,ch*pose.row,cw,ch,Math.round(s.boss.x-width/2),Math.round(baseline-height),width,height);
   c.restore();
  }
  function rooftop(c,texture,time){

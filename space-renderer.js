@@ -62,7 +62,7 @@
     if(n.shot<=.42&&!n.flash&&n.frozen<=0){const m=ArcadeSpaceWorld.crewMuzzle(n),size=2+Math.round((.42-n.shot)*6);c.fillStyle='#a5ffff';c.fillRect(Math.round(m.x)-size/2,Math.round(m.y)-size/2,size,size);}
    }
   }
-  function boss(c,s){const b=s.boss;if(!b.active)return;const pose=root.ArcadeSovereignAnimation.pose(b,s.ending),attack=pose.sheet==='attack',fs=attack?attackFrames:bossFrames,img=attack?images.sovereignAttack:images.sovereign,f=fs[pose.index],cols=attack?6:4,k=270/(attack?attackFrames[0][3]:bossFrames[4][3]);c.save();if(b.hit>0)c.filter='brightness(1.6)';c.translate(Math.round(b.x),Math.round(b.y));if(b.facing===1)c.scale(-1,1);c.drawImage(f.image,0,0,f[2],f[3],Math.round((f[0]-(pose.index%cols+.5)*img.width/cols)*k),-Math.round(f[3]*k),Math.round(f[2]*k),Math.round(f[3]*k));c.restore();}
+  function boss(c,s){const b=s.boss;if(!b.active)return;const pose=root.ArcadeSovereignAnimation.pose(b,s.ending),attack=pose.sheet==='attack',fs=attack?attackFrames:bossFrames,img=attack?images.sovereignAttack:images.sovereign,f=fs[pose.index],cols=attack?6:4,k=270/(attack?attackFrames[0][3]:bossFrames[4][3]);c.save();c.translate(Math.round(b.x),Math.round(b.y));if(b.facing===1)c.scale(-1,1);root.ArcadeImpact.hitSprite(c,b.hit,f.image,0,0,f[2],f[3],Math.round((f[0]-(pose.index%cols+.5)*img.width/cols)*k),-Math.round(f[3]*k),Math.round(f[2]*k),Math.round(f[3]*k));c.restore();}
   function alienFx(c,row,index,x,y,w,h,ground=false){const f=fxFrames[row*4+index];c.save();c.imageSmoothingEnabled=false;c.drawImage(images.sovereignFx,...f,Math.round(x-w/2),Math.round(y-h*(ground?1:.5)),Math.round(w),Math.round(h));c.restore();}
   function airlock(c,x,y,openness){
    c.save();c.translate(x,y);c.fillStyle='#0e101f';c.fillRect(-34,-99,68,99);

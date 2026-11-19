@@ -54,7 +54,7 @@
   const exposed=!(p.cloak>0);for(const h of s.hazards){h.age+=dt;h.life-=dt;if(h.type==='wave'){h.x+=(h.vx??-310)*dt;if(exposed&&Math.abs(p.x-h.x)<30&&p.y>FLOOR-45)E.hurtPlayer(e,p,h.x,false,2);}else if(h.type==='tentacle'){if(exposed&&h.age>.18&&h.age<.56&&Math.abs(p.x-h.x)<h.radius&&p.y>FLOOR-110)E.hurtPlayer(e,p,h.x,false,2);}else if(h.type==='laser'){if(exposed&&h.age>.14&&inBeam(b,h,p))E.hurtPlayer(e,p,740,false,2);}else{h.vy+=550*dt;h.y+=h.vy*dt;if(exposed&&Math.abs(p.x-h.x)<40&&Math.abs(p.y-25-h.y)<42)E.hurtPlayer(e,p,h.x,false,2);if(h.y>FLOOR){h.life=0;s.debris.push({x:h.x,y:FLOOR,age:0});}}}s.hazards=s.hazards.filter(h=>h.life>0);
  }
  function update(s,p,e,input,dt){s.events=[];dt=clamp(dt,0,.05);s.time+=dt;for(const f of s.debris)f.age+=dt;s.debris=s.debris.filter(f=>f.age<1);
-  if(s.ending>=0){if(!p.grounded){P.step(p,{},dt,s.geometry.platforms,s.geometry);p.fallDamage=0;}s.ending+=dt;if(s.ending>=14&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
+  if(s.ending>=0){s.boss.hit=Math.max(0,s.boss.hit-dt);if(!p.grounded){P.step(p,{},dt,s.geometry.platforms,s.geometry);p.fallDamage=0;}s.ending+=dt;if(s.ending>=14&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
   if(s.travel>=0){
    s.travel+=dt;p.vx=0;p.vy=0;
    if(s.floor===s.travelFrom&&s.travel>=1){s.floor++;s.checkpoint=s.floor;s.checkpointX=140;s.x=140;s.y=FLOOR;s.enemies=soldiers(s.floor,s.awarded,s.difficulty);configure(s,p,e);emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});}

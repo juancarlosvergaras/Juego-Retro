@@ -173,7 +173,7 @@
       }
     }
     ArcadeAmbience.update(ambience,dt,[player,encounter.boss,...encounter.enemies],ArcadeAmbience.gunshotNoises(encounter,player));
-    if(encounter.extraction){tickNarration(dt);ArcadeEncounter.updateDebris(encounter,dt,platforms);encounter.finalBoss.age+=dt;encounter.finalBoss.death=Math.max(0,encounter.finalBoss.death-dt);encounter.explosions=encounter.explosions.filter(b=>(b.life-=dt)>0);const s=encounter.extraction;ArcadeExtraction.update(s,player,dt);const rewards=ArcadeChallenges.update(challenges,player,encounter,dt);let earned=0;for(const reward of rewards)earned+=ArcadeScore.bonus(score,reward);if(earned){ArcadeProgression.credit(profile,earned);persist();}ArcadeExtraction.updateCamera(camera,s,player,{width:canvas.width,height:canvas.height},dt);if(s.done&&!s.shown){s.shown=true;if(victory){paused=true;clearInput();ui.overlay.hidden=true;victory.start();}else overlay('¡Misión cumplida!','El helicóptero te ha sacado de la obra.\n\n'+(story?story.epilogue+'\n\n':'')+ArcadeScore.summary(score),'Reiniciar aventura');}return;}
+    if(encounter.extraction){tickNarration(dt);ArcadeEncounter.updateDebris(encounter,dt,platforms);encounter.finalBoss.age+=dt;encounter.finalBoss.hit=Math.max(0,encounter.finalBoss.hit-dt);encounter.finalBoss.death=Math.max(0,encounter.finalBoss.death-dt);encounter.explosions=encounter.explosions.filter(b=>(b.life-=dt)>0);const s=encounter.extraction;ArcadeExtraction.update(s,player,dt);const rewards=ArcadeChallenges.update(challenges,player,encounter,dt);let earned=0;for(const reward of rewards)earned+=ArcadeScore.bonus(score,reward);if(earned){ArcadeProgression.credit(profile,earned);persist();}ArcadeExtraction.updateCamera(camera,s,player,{width:canvas.width,height:canvas.height},dt);if(s.done&&!s.shown){s.shown=true;if(victory){paused=true;clearInput();ui.overlay.hidden=true;victory.start();}else overlay('¡Misión cumplida!','El helicóptero te ha sacado de la obra.\n\n'+(story?story.epilogue+'\n\n':'')+ArcadeScore.summary(score),'Reiniciar aventura');}return;}
     const controls=window.ArcadeControls?.decorate(input())||input();if(controls.left!==controls.right)player.facing=controls.left?-1:1;player.aim=ArcadeArsenal.firingAim(controls,player.facing,queuedAim);if(player.aim.x&&!player.rope)player.facing=Math.sign(player.aim.x);
     if(controls.hookPressed&&!player.rope){if(player.form==='wolf'||player.form==='zombie')notify('El gancho solo está disponible para el soldado');else if(!findAnchor(player,anchors,platforms))notify('No hay techo al alcance hacia donde miras.');}
     mode=step(player,ArcadeArsenal.movementInput(player,controls),dt,platforms,{ladders:ArcadePhysics.availableLadders(ladders,encounter),anchors});jumpQueued=false;hookQueued=false;climbQueued=false;if(jetpackQueued)notify(player.form==='wolf'||player.form==='zombie'?'El jetpack solo está disponible para el soldado':player.fuel<=0?'Sin gasolina · Busca un depósito':player.jetpack?'Jetpack activo':'Jetpack apagado');jetpackQueued=false;if(player.aim.x&&player.form!=='wolf'&&!player.rope)player.facing=Math.sign(player.aim.x);player.crouching=!!mode.crouching;player.aimHeight=mode.crouching||mode.sliding?20:28;ArcadeSoldierAnimation.advanceWalk(player,dt);
@@ -224,7 +224,7 @@
     for(const l of ArcadePhysics.availableLadders(ladders,encounter)){if(l.bottom<camera.y||l.top>camera.y+canvas.height)continue;ArcadeBuildingRenderer.ladder(ctx,building,l);}
     if(player.rope&&(!player.rope.surface||player.rope.length>4)){ctx.strokeStyle='#142331';ctx.lineWidth=4;ctx.beginPath();const pose=ArcadeSoldierAnimation.pose(player),cell=CLIMB_FRAMES[1][pose.frame],handX=player.form==='wolf'?player.x:player.x-player.facing*cell[2]*CLIMB_SCALE*.12,handY=player.form==='wolf'?player.y-30:player.y-cell[3]*CLIMB_SCALE+3;ctx.moveTo(handX,handY);ctx.lineTo(player.rope.x,player.rope.y);ctx.stroke();ctx.strokeStyle='#a6eef7';ctx.lineWidth=1.5;ctx.stroke();}
   }
-  function sprite(image,frames,row,frame,x,y,scale,facing){const [sx,sy,sw,sh,outline,anchor]=frames[row][frame];ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(facing,1);if(outline){ctx.beginPath();outline.forEach(([px,py],i)=>ctx[i?'lineTo':'moveTo']((px-sx-(anchor??sw/2))*scale,(py-sy-sh)*scale));ctx.closePath();ctx.clip();}ctx.drawImage(image,sx,sy,sw,sh,-(anchor??sw/2)*scale,-sh*scale,sw*scale,sh*scale);ctx.restore();return sh*scale;}
+  function sprite(image,frames,row,frame,x,y,scale,facing,hit=0){const [sx,sy,sw,sh,outline,anchor]=frames[row][frame];ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(facing,1);if(outline){ctx.beginPath();outline.forEach(([px,py],i)=>ctx[i?'lineTo':'moveTo']((px-sx-(anchor??sw/2))*scale,(py-sy-sh)*scale));ctx.closePath();ctx.clip();}ArcadeImpact.hitSprite(ctx,hit,image,sx,sy,sw,sh,-(anchor??sw/2)*scale,-sh*scale,sw*scale,sh*scale);ctx.restore();return sh*scale;}
   function drawFuelTanks(){for(const item of fuelTanks)if(!item.taken)ArcadePickupRenderer.fuel(ctx,item);}
   function drawPickups(){for(const item of encounter.pickups){if(item.taken||item.y<camera.y-40||item.y>camera.y+canvas.height+35)continue;ArcadePickupRenderer.weapon(ctx,item,player.anim,player);}}
   function drawPlayer(){if(player.cloak>0&&Math.floor(player.cloak*9)%4!==0)return;
@@ -292,16 +292,16 @@
     if(b.hp<=0&&b.death>0){
       const frame=Math.min(5,Math.floor(b.deathAge/.22)),f=WHITE_DEATH_FRAMES[frame];
       ctx.save();ctx.globalAlpha=Math.min(1,b.death/.65);
-      sprite(whiteDeath.texture,[WHITE_DEATH_FRAMES],0,frame,b.x,b.y,WHITE_DEATH_SCALE,b.facing||-1);ctx.restore();
+      sprite(whiteDeath.texture,[WHITE_DEATH_FRAMES],0,frame,b.x,b.y,WHITE_DEATH_SCALE,b.facing||-1,b.hit);ctx.restore();
     }
     if(b.hp>0){const g=ArcadeFinalBoss.whiteGun(b,player);
-      if(b.phase==='climb'){sprite(wolfClimb,WOLF_CLIMB_FRAMES,0,((Math.floor(b.y/6.5)%4)+4)%4,b.x,b.y,WOLF_CLIMB_SCALE*1.3,1);}
-      else if(b.phase==='jump'||b.phase==='fall'||b.descending){const falling=b.descending||b.phase==='fall'||(b.traverse&&b.traverse.age>b.traverse.duration*.7);sprite(wolf,ACTION_FRAMES.wolf,falling?3:2,falling?1:4,b.x,b.y,.57,b.facing);}
-      else if(b.phase==='kick'){sprite(kicks,KICK_FRAMES,0,Math.min(7,Math.floor(b.kickAge/.9*8)),b.x,b.y,.34,b.facing);if(b.kickAge<.35){ctx.fillStyle='#ffd17b';ctx.font='10px monospace';ctx.fillText('¡PATADA!',b.x-24,b.y-90);}}
+      if(b.phase==='climb'){sprite(wolfClimb,WOLF_CLIMB_FRAMES,0,((Math.floor(b.y/6.5)%4)+4)%4,b.x,b.y,WOLF_CLIMB_SCALE*1.3,1,b.hit);}
+      else if(b.phase==='jump'||b.phase==='fall'||b.descending){const falling=b.descending||b.phase==='fall'||(b.traverse&&b.traverse.age>b.traverse.duration*.7);sprite(wolf,ACTION_FRAMES.wolf,falling?3:2,falling?1:4,b.x,b.y,.57,b.facing,b.hit);}
+      else if(b.phase==='kick'){sprite(kicks,KICK_FRAMES,0,Math.min(7,Math.floor(b.kickAge/.9*8)),b.x,b.y,.34,b.facing,b.hit);if(b.kickAge<.35){ctx.fillStyle='#ffd17b';ctx.font='10px monospace';ctx.fillText('¡PATADA!',b.x-24,b.y-90);}}
       else{
         // Steps follow the distance actually covered, on the same walk sheet as the player's wolf.
         const moved=Math.abs(b.x-(b.drawX??b.x));b.drawX=b.x;b.stride=moved>.05?(b.stride||0)+moved:b.stride||0;b.stepHold=moved>.05?.12:Math.max(0,(b.stepHold||0)-1/60);
-        if(b.stepHold>0)sprite(wolfWalk.texture,WOLF_WALK_FRAMES,0,Math.floor(b.stride/9)%8,b.x,b.y,WOLF_WALK_SCALE*.57/.48,g.facing);else sprite(wolf,ACTION_FRAMES.wolf,0,7,b.x,b.y,.57,g.facing);
+        if(b.stepHold>0)sprite(wolfWalk.texture,WOLF_WALK_FRAMES,0,Math.floor(b.stride/9)%8,b.x,b.y,WOLF_WALK_SCALE*.57/.48,g.facing,b.hit);else sprite(wolf,ACTION_FRAMES.wolf,0,7,b.x,b.y,.57,g.facing,b.hit);
         ArcadeBossRenderer.whiteGun(ctx,b,player);}}
 
     const final=encounter.finalBoss;
@@ -316,8 +316,8 @@
         else if(final.phase==='crouch'){row=3;frame=0;}
         else if(ArcadeFinalBoss.airborne(final)){row=3;frame=1;}
         else if(final.phase==='impact'){row=3;frame=2;}
-        sprite(zombieWolf,ZOMBIE_WOLF_FRAMES,row,frame,final.x,final.y+groundInset*scale,scale,final.facing);
-      }else{if(final.hp>0)ArcadeBossRenderer.blackCannon(ctx,final);sprite(blackWolf,BLACK_WOLF_FRAMES,pose.row,pose.frame,final.x,final.y-hop,BLACK_WOLF_SCALE,final.facing);}ctx.restore();
+        sprite(zombieWolf,ZOMBIE_WOLF_FRAMES,row,frame,final.x,final.y+groundInset*scale,scale,final.facing,final.hit);
+      }else{if(final.hp>0)ArcadeBossRenderer.blackCannon(ctx,final);sprite(blackWolf,BLACK_WOLF_FRAMES,pose.row,pose.frame,final.x,final.y-hop,BLACK_WOLF_SCALE,final.facing,final.hit);}ctx.restore();
       if(final.phase==='windup'||final.phase==='charge'){ctx.fillStyle='#ffd17b';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(final.phase==='charge'?'¡MISILES!':final.kind==='kick'?'¡PATADA!':'¡ZARPAZO!',final.x,final.y-100);ctx.textAlign='start';}
     }
     for(const shot of encounter.bullets){if(window.ArcadeBossAttackSprites?.projectile(ctx,shot,player.anim)||ArcadeImpact.projectile(ctx,shot))continue;ctx.save();ctx.translate(shot.x,shot.y);ctx.rotate(Math.atan2(shot.vy,shot.vx));ctx.fillStyle=shot.enemy?'#f37c5d':shot.slot===9?'#acc46b':shot.slot===6?'#ffc15b':'#fff1ad';const arrow=shot.slot===7||shot.slot===8;ctx.fillRect(-(arrow?7:4),shot.slot===9?-4:-2,arrow?14:shot.slot===6?12:shot.slot===4?3:8,shot.slot===9?8:arrow?1:3);if(shot.slot===9){ctx.fillStyle=Math.floor(shot.life*(shot.life<.7?18:6))%2?'#ff6845':'#ffe49a';ctx.fillRect(-1,-6,3,3);}ctx.restore();}

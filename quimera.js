@@ -217,7 +217,9 @@
       spark(s,n.x,n.y-45,'block');s.events.push('block');return;
     }
     const multiplier=final&&n.tech?(techPhase(n)==='recovery'?1.25:.83):n.kind==='gunner'&&n.overheat>0?1.5:1;
-    n.hp=Math.max(0,n.hp-Math.round(m.damage*multiplier));
+    const damage=Math.round(m.damage*multiplier);
+    n.hp=Math.max(0,n.hp-damage);
+    if(boss&&damage>0)n.hitUntil=s.age+.18;
     if(n.hp>0&&n.kind!=='gunner'&&!n.tech&&!n.evade)n.x=clamp(n.x+p.face*m.push*(boss?.24:1),s.arenaLeft+32,s.arenaLeft+740);
     if(!armored){n.wind=0;n.stun=m===moves.uppercut||m===moves.sweep?.65:.32;n.cool=Math.max(n.cool,.18);}
     spark(s,n.x,n.y-(n.z||0)-49,'hit');s.hitstop=.024;s.events.push('hit');

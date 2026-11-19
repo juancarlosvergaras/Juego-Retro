@@ -4,8 +4,8 @@
   function create(){return{x:545,y:ARENA.y,hp:32,maxHp:32,stage:1,active:false,phase:'guard',age:0,cycle:0,facing:-1,hit:0,death:0,landed:false,t:0,missileWait:3.2,missiles:[],recoil:0};}
   function airborne(b){return ['leap','track','lock','slam'].includes(b.phase);}
   function box(b){return b.stage===2?{x:b.x-46,y:b.y-146,w:92,h:146}:{x:b.x-34,y:b.y-104,w:68,h:104};}
-  function mutate(b){const port=cannon(b);b.discarded={x:port.x,y:port.y,vx:-b.facing*150,vy:-180,angle:0,life:3};b.stage=2;b.hp=Math.round(64*(b.healthScale||1));b.maxHp=b.hp;b.phase='mutate';b.age=0;b.active=true;b.engaged=true;b.missiles=[];b.frozen=0;b.leapWait=2;b.hit=0;}
-  function damage(b,amount){if(!b||!b.active||b.hp<=0||b.phase==='mutate'||airborne(b))return;b.hp=Math.max(0,b.hp-amount);b.hit=.16;if(!b.hp){if(b.stage!==2)mutate(b);else{b.phase='dead';b.age=0;b.death=2.4;b.active=false;b.marker=null;b.missiles=[];}}}
+  function mutate(b){const port=cannon(b);b.discarded={x:port.x,y:port.y,vx:-b.facing*150,vy:-180,angle:0,life:3};b.stage=2;b.hp=Math.round(64*(b.healthScale||1));b.maxHp=b.hp;b.phase='mutate';b.age=0;b.active=true;b.engaged=true;b.missiles=[];b.frozen=0;b.leapWait=2;}
+  function damage(b,amount){if(!b||!b.active||b.hp<=0||!(amount>0)||b.phase==='mutate'||airborne(b))return;b.hp=Math.max(0,b.hp-amount);b.hit=.16;if(!b.hp){if(b.stage!==2)mutate(b);else{b.phase='dead';b.age=0;b.death=2.4;b.active=false;b.marker=null;b.missiles=[];}}}
   function groundTarget(p,platforms){const x=Math.max(25,Math.min(704,p.x)),support=platforms.filter(s=>s.y>=p.y-2&&x>=s.x&&x<=s.x+s.w).sort((a,b)=>a.y-b.y)[0];return{x,y:support?.y??Math.max(ARENA.y,p.y)};}
   function zombie(e,p,dt,hurt,platforms){const b=e.finalBoss;
     if(b.phase==='mutate'){if(b.age>=2.4){b.phase='chase';b.age=0;}return;}
@@ -28,9 +28,10 @@
   }
   function melee(b,p,range,amount){if(b&&Math.abs(b.y-p.y)<70&&Math.abs(b.x-p.x)<range+20&&(b.x-p.x)*p.facing>=-10)damage(b,amount);}
   function area(b,x,y,r,amount){if(!b)return;const q=box(b);if(Math.hypot(x-Math.max(q.x,Math.min(q.x+q.w,x)),y-Math.max(q.y,Math.min(q.y+q.h,y)))<=r)damage(b,amount);}
-  function update(e,p,dt,hurt,platforms=[]){if(p.cloak>0&&e.finalBoss?.hp>0)return;
+  function update(e,p,dt,hurt,platforms=[]){
     const b=e.finalBoss;if(!b)return;
-    b.t+=dt;b.hit=Math.max(0,b.hit-dt);b.age+=dt;
+    b.hit=Math.max(0,b.hit-dt);if(p.cloak>0&&b.hp>0)return;
+    b.t+=dt;b.age+=dt;
     if(b.discarded){const d=b.discarded;d.life-=dt;d.vy+=500*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.angle+=dt*5;if(d.life<=0)b.discarded=null;}
     if(b.hp<=0){if(b.stage!==2){mutate(b);return;}b.missiles=[];
       // A defeated boss must still land if its supporting platform moved away.
@@ -81,7 +82,7 @@
     if(b.age<1.35)return{row:3,frame:2,groundInset:9};
     return{row:3,frame:3,groundInset:8};
   }
-  function pose(b){if(b.hp<=0)return{row:3,frame:Math.min(3,Math.floor(b.age/.23))};if(b.phase==='charge')return{row:3,frame:1};if(b.phase==='launch')return{row:3,frame:0};if(b.hit>0)return{row:3,frame:0};if(['windup','attack','recover'].includes(b.phase))return{row:b.kind==='kick'?2:1,frame:b.phase==='windup'?0:b.phase==='recover'?3:b.age<.14?1:2};return{row:0,frame:b.phase==='chase'?1+Math.floor(b.t*8)%3:0};}
+  function pose(b){if(b.hp<=0)return{row:3,frame:Math.min(3,Math.floor(b.age/.23))};if(b.phase==='charge')return{row:3,frame:1};if(b.phase==='launch')return{row:3,frame:0};if(['windup','attack','recover'].includes(b.phase))return{row:b.kind==='kick'?2:1,frame:b.phase==='windup'?0:b.phase==='recover'?3:b.age<.14?1:2};if(b.hit>0)return{row:3,frame:0};return{row:0,frame:b.phase==='chase'?1+Math.floor(b.t*8)%3:0};}
   function cannon(b){const kick=['windup','attack','recover'].includes(b.phase)&&b.kind==='kick',crouch=b.phase==='charge';return{x:b.x-b.facing*(kick?27:23),y:b.y-(crouch?83:kick?112:116)+(b.recoil>0?4:0)};}
   function missilePosition(m){if(m.t<.7)return{x:m.x,y:m.y-m.t/.7*160};const t=Math.min(1,(m.t-.7)/1.4);return{x:m.x+(m.targetX-m.x)*t,y:m.y-160+((m.targetY??ARENA.y)-(m.y-160))*t*t};}
   function whiteGun(b,p){

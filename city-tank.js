@@ -20,7 +20,7 @@
   const CREW=[[28,159,288,317,168],[418,159,293,311,552],[793,159,315,311,936],[1171,159,345,311,1320],[32,603,396,301,168],[448,603,323,301,552],[791,603,296,301,936],[1194,603,287,301,1320]];
   function create(saved={},healthScale=1){const maxHp=Math.round(48*healthScale),t={x:Number.isFinite(saved.x)?Math.max(LEFT,Math.min(RIGHT,saved.x)):CENTER,y:620,w:184*SIZE,h:102*SIZE,hp:Number.isFinite(saved.hp)?Math.max(0,Math.min(maxHp,saved.hp)):maxHp,maxHp,active:false,drive:1,speed:0,facing:-1,age:0,travel:0,treadTravel:0,cannon:1.5,missile:4.5,flash:0,launchFlash:0,hit:0,deathAge:saved.hp===0?30:0,deathEvent:saved.hp===0?DESTRUCTION.length:0,deadHandled:saved.hp===0,crewCooldown:5.6,crewAge:null,crewThrown:false,crewFacing:-1,fragments:[]};t.damageStage=stage(t);return t;}
   const box=t=>({x:t.x-t.w/2,y:t.y-t.h,w:t.w,thickness:t.h});
-  function damage(t,amount){if(!t||t.hp<=0)return;t.hp=Math.max(0,t.hp-amount);t.hit=.18;if(amount>0)t.returnFire=5;}
+  function damage(t,amount){if(!t||t.hp<=0||!(amount>0))return;t.hp=Math.max(0,t.hp-amount);t.hit=.18;if(amount>0)t.returnFire=5;}
   function crewPose(t){if(t.hp<=0||t.crewAge===null)return null;const a=t.crewAge;return{frame:a<.3?0:a<.6?1:a<.9?2:a<1.25?3:a<1.43?4:a<1.65?5:a<1.9?6:7,rise:a<.3?a/.3:a>1.9?Math.max(0,1-(a-1.9)/.4):1};}
   function mount(t,x,y){const m=motion(t);return{x:t.x+t.facing*(x-m.recoil)*SIZE,y:t.y+(y+m.bob)*SIZE};}
   function crewBox(t){const pose=crewPose(t),h=mount(t,HATCH.x,HATCH.y),s=SIZE*CREW_RATIO;return pose&&pose.rise>.2?{x:h.x-13*s,y:h.y-pose.rise*36*s,w:26*s,thickness:pose.rise*36*s}:null;}
@@ -36,9 +36,9 @@
     for(const f of t.fragments)if(f.settled){f.restAge=Math.min(.3,(f.restAge||0)+dt);const target=FRAGMENTS[f.id].rest*f.facing,delta=Math.atan2(Math.sin(target-f.restFrom),Math.cos(target-f.restFrom)),k=f.restAge/.3;f.angle=f.restFrom+delta*k*k*(3-2*k);f.y=t.y-fragmentSupport(f);}
     t.fragments=t.fragments.filter(f=>f.life>0);
   }
-  function update(t,p,dt,bullets,explosions,view){if(p.cloak>0&&t?.hp>0)return;
-    if(!t)return;
-    t.age+=dt;t.flash=Math.max(0,t.flash-dt);t.launchFlash=Math.max(0,t.launchFlash-dt);t.hit=Math.max(0,t.hit-dt);
+  function update(t,p,dt,bullets,explosions,view){
+    if(!t)return;t.hit=Math.max(0,t.hit-dt);if(p.cloak>0&&t.hp>0)return;
+    t.age+=dt;t.flash=Math.max(0,t.flash-dt);t.launchFlash=Math.max(0,t.launchFlash-dt);
     breakParts(t,dt);
     if(t.hp<=0){t.active=false;t.crewAge=null;t.speed=0;t.deathAge+=dt;t.deadHandled=true;
       while(t.deathEvent<DESTRUCTION.length&&t.deathAge>=DESTRUCTION[t.deathEvent].at){const event=DESTRUCTION[t.deathEvent++],duration=event.launch?1.65:1.15;
@@ -72,7 +72,7 @@
   function draw(c,t,sheet,crewSheet,fragmentSheet){
     if(!t||!sheet)return;if(t.flash>0){const muzzle=mount(t,107,-79);root.ArcadeBossAttackSprites?.draw(c,'blast',.3-t.flash,muzzle.x,muzzle.y,44,38,{duration:.3,loop:false});}const scale=.6,m=motion(t),frame=t.flash>0?Math.min(3,Math.floor((.3-t.flash)*4/.3)):m.trackFrame,row=t.flash>0?1:0;
     c.save();c.translate(Math.round(t.x),t.y);c.scale(t.facing*SIZE,SIZE*(1-m.sink*.16));
-    if(t.hit>0)c.filter='brightness(1.35)';
+    const impact=(typeof module!=='undefined'&&module.exports?require('./impact-effects'):root.ArcadeImpact);
     if(t.hp<=0)c.filter='grayscale(.85) brightness(.48)';
     const r=(x,y,w,h,color)=>{c.fillStyle=color;c.fillRect(x,y,w,h);};
     const damage=stage(t),missing=damage===4?(t.deathAge>=.42?[0,1,2,3,4]:[0,1,2]):Array.from({length:damage},(_,i)=>i);
@@ -81,8 +81,8 @@
     // The original roof machine gun is replaced by the crew hatch.
     c.beginPath();c.rect(-150,-170,300,190);c.rect(-44-m.recoil,-107+m.bob,48,16);c.clip('evenodd');
     // Tracks keep their ground anchor; suspension and recoil move only the upper assembly.
-    c.drawImage(sheet,m.trackFrame*384,164,384,92,-192*scale,(164-250)*scale,384*scale,92*scale);
-    c.drawImage(sheet,frame*384,row*256,384,164,-192*scale-m.recoil,-250*scale+m.bob,384*scale,164*scale);c.restore();
+    impact.hitSprite(c,t.hit,sheet,m.trackFrame*384,164,384,92,-192*scale,(164-250)*scale,384*scale,92*scale);
+    impact.hitSprite(c,t.hit,sheet,frame*384,row*256,384,164,-192*scale-m.recoil,-250*scale+m.bob,384*scale,164*scale);c.restore();
     if(t.hp>0){c.save();c.globalAlpha=.42;
       for(let i=0;i<24;i++){const x=-95+((i*8+t.treadTravel/SIZE)%192+192)%192;r(x,-4,3,1,'#b3ad82');}
       for(const x of [-62,-40,-18,4,26,47]){const a=t.treadTravel/9;for(let k=0;k<2;k++){const angle=a+k*Math.PI/2,dx=Math.cos(angle)*4,dy=Math.sin(angle)*4;c.strokeStyle='#b3ad82';c.lineWidth=1;c.beginPath();c.moveTo(x-dx,-14-dy);c.lineTo(x+dx,-14+dy);c.stroke();}}
@@ -97,7 +97,7 @@
     // Back rim and hinged lid sit behind the torso; the front rim occludes its waist.
     c.fillStyle='#151e18';c.beginPath();c.ellipse(hx,hy,14,4,0,0,Math.PI*2);c.fill();
     if(crew){const opening=Math.min(1,crew.rise*3);c.save();c.translate(hx-13,hy-1);c.rotate(-opening*1.25);r(0,-3,26,4,'#27372b');r(1,-4,24,2,'#8d936b');r(3,-2,19,1,'#566044');c.restore();}
-    if(crew&&crewSheet){const f=CREW[crew.frame],s=CREW_SCALE,baseline=crew.frame<4?474:903;c.save();c.beginPath();c.rect(hx-65,hy-64,130,62);c.rect(hx-11,hy-2,22,4);c.clip();c.drawImage(crewSheet,f[0],f[1],f[2],f[3],hx+(f[0]-f[4])*s,hy-(baseline-f[1])*s+(1-crew.rise)*38*CREW_RATIO,f[2]*s,f[3]*s);c.restore();}
+    if(crew&&crewSheet){const f=CREW[crew.frame],s=CREW_SCALE,baseline=crew.frame<4?474:903;c.save();c.beginPath();c.rect(hx-65,hy-64,130,62);c.rect(hx-11,hy-2,22,4);c.clip();impact.hitSprite(c,t.hit,crewSheet,f[0],f[1],f[2],f[3],hx+(f[0]-f[4])*s,hy-(baseline-f[1])*s+(1-crew.rise)*38*CREW_RATIO,f[2]*s,f[3]*s);c.restore();}
     r(hx-13,hy-1,26,2,'#a5a281');r(hx-12,hy+1,24,3,'#334237');r(hx-9,hy+1,2,1,'#c3bc8b');r(hx+7,hy+1,2,1,'#c3bc8b');
     if(!crew){r(hx-11,hy-3,22,3,'#63704c');r(hx-3,hy-5,7,2,'#a5a281');}
     if(t.hp>0&&t.missile<1){c.globalAlpha=.45+.35*Math.sin(t.age*20);r(RACK.x+2,RACK.y-3,30,2,'#ff7653');}

@@ -52,7 +52,7 @@
  }
  function spawn(s,i){const type=i%6===3?'jetSoldier':i%5===4?'jeep':i%3===1?'sidecar':'bike',hp=(type==='jeep'?10:type==='sidecar'?6:3)*s.difficulty;const rear=i%5===2&&(type==='bike'||type==='sidecar');return{id:'road-'+i,kind:'road',type,rear,x:rear?-96:1020+(i%2)*100,y:type==='jetSoldier'?235:LANES[i%3],w:type==='jetSoldier'?48:type==='jeep'?175:type==='sidecar'?124:104,h:type==='jetSoldier'?60:type==='jeep'?94:76,hp,maxHp:hp,age:0,shot:1.8+(i%3)*.3,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:520+((i*2+Math.floor(i/3))%3)*150};}
  function event(s,type,data={}){s.events.push({type,...data});}
- function damage(n,amount){if(n.hp<=0)return;n.hp=Math.max(0,n.hp-amount);n.hit=.14;}
+ function damage(n,amount){if(n.hp<=0||!(amount>0))return;n.hp=Math.max(0,n.hp-amount);n.hit=.14;}
  function hurt(s,p,e,amount=1){if(s.hitWait>0||e.developerInvulnerable||e.invincible>0||e.dead||s.ram>0||p.transform>0)return false;if(p.shield>0)p.shield--;else e.hp=Math.max(0,e.hp-amount*(e.combatDamage||1)/(p.form==='zombie'||p.form==='tank'?2:1));e.hp=Math.round(e.hp*2)/2;s.hitWait=e.hitProtection??1.2;p.hurt=.3;event(s,'hurt');if(e.hp<=0)e.dead=true;return true;}
  function burst(s,x,y,size=50,color='fire'){s.effects.push({x,y,life:.65,max:.65,size,color});}
  function parts(s,n,count=6){for(let i=0;i<count;i++)s.parts.push({x:n.x+(i/count-.5)*n.w,y:n.y-n.h*.45,vx:-70-i*22,vy:-110-(i%3)*45,life:2.8,age:0,rotation:i*.7,part:i%4,rig:n.type==='rig'});}
@@ -89,7 +89,7 @@
   const origin=p.form==='soldier'?soldierMuzzle(s,p):p.form==='hero'?mountedEyes(s,p):p.form==='tank'?turn.point(p,{x:p.x+40,y:p.y-44}):null;
   for(const b of shot.bullets){if(origin)Object.assign(b,origin);s.bullets.push(b);}
  }
- function updateBoss(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(!b.active||b.hp<=0)return;b.age+=dt;if(b.poison>0){b.poison-=dt;damage(b,dt*.6);}b.slow=Math.max(0,b.slow-dt);b.flash=Math.max(0,b.flash-dt);b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);const stage=b.hp<=b.maxHp/3?2:b.hp<=b.maxHp*2/3?1:0;if(stage>b.stage){parts(s,b,8);burst(s,b.x-100+stage*60,b.y-125,95);b.stage=stage;event(s,'armor',{stage});}
+ function updateBoss(s,p,e,dt){const b=s.boss;b.hit=Math.max(0,b.hit-dt);if(p.cloak>0&&b.hp>0)return;if(!b.active||b.hp<=0)return;b.age+=dt;if(b.poison>0){b.poison-=dt;damage(b,dt*.6);}b.slow=Math.max(0,b.slow-dt);b.flash=Math.max(0,b.flash-dt);b.frozen=Math.max(0,b.frozen-dt);const stage=b.hp<=b.maxHp/3?2:b.hp<=b.maxHp*2/3?1:0;if(stage>b.stage){parts(s,b,8);burst(s,b.x-100+stage*60,b.y-125,95);b.stage=stage;event(s,'armor',{stage});}
   b.x+=(740-b.x)*dt*(b.slow>0?.5:1.2);
   if(b.phase==='entry'){if(b.x<800){b.phase='volley';b.age=0;}return;}
   if(b.frozen>0)return;
@@ -111,7 +111,7 @@
   dt=clamp(dt,0,.05);s.events=[];
   if(e.dead){if(s.fatalCrash&&s.crash>0){advanceCrash(s,dt);s.time+=dt;s.scroll+=75*dt;}return s.events;}
   s.time+=dt;s.intro=Math.min(INTRO,s.intro+dt);
-  if(s.ending>=0){s.scroll+=dt*endingSpeed(s.ending);s.ending+=dt;
+  if(s.ending>=0){s.boss.hit=Math.max(0,s.boss.hit-dt);s.scroll+=dt*endingSpeed(s.ending);s.ending+=dt;
    // Detonaciones en cadena mientras el camión se deshace.
    if(s.ending<3.6){const beat=Math.floor(s.ending/.4);if(beat!==s.blastBeat){s.blastBeat=beat;event(s,'blast',{big:beat===4});}}
    updateEffects(s,p,dt);if(s.ending>=ENDING&&!s.complete){s.complete=true;event(s,'complete');}return s.events;}

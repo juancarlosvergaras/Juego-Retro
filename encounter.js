@@ -82,6 +82,11 @@
     if(e.boss.hp<=0&&e.boss.deathAge===undefined){Object.assign(e.boss,{deathAge:0,death:3.2,phase:'dead',flash:0,ladder:null,traverse:null,descending:false,vy:0});}
 p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;p.h=64;p.claw=0;e.maxHp=8+(p.healthBonus||0);e.hp=e.maxHp;e.invincible=1.5;e.bullets=[];e.boss.active=false;e.won=true;}
   function transformationFrame(p){const progress=Math.max(0,Math.min(7,Math.floor((1.2-p.transform)/1.2*8)));return p.form==='soldier'?7-progress:progress;}
+  function hitForeman(b,damage){
+    if(b.hp<=0||!(damage>0))return;
+    b.hp=Math.max(0,b.hp-damage);
+    b.hit=.18;
+  }
   function resolveSoldierMelee(e,p){
     const action=e.weaponAction;
     if(!action?.melee||action.hitApplied||action.age<action.duration*.28)return false;
@@ -91,7 +96,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
     Enemies.melee(e.enemies,p,range,damage);Final.melee(e.finalBoss,p,range,damage);
     const b=e.boss;
     if(b.hp>0&&Math.abs(p.y-b.y)<55&&(b.x-p.x)*p.facing>0&&Math.abs(b.x-p.x)<range){
-      b.hp=Math.max(0,b.hp-damage);
+      hitForeman(b,damage);
       if(!b.hp){transformWolf(e,p);return true;}
     }
     return false;
@@ -153,14 +158,14 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
     for(const effect of e.explosions)effect.life-=dt;
     e.explosions=e.explosions.filter(effect=>effect.life>0);
     p.transform=Math.max(0,(p.transform||0)-dt);p.claw=Math.max(0,(p.claw||0)-dt);p.kick=Math.max(0,(p.kick||0)-dt);
-    const b=e.boss;Arsenal.tickRobot(e,dt);e.cooldown=Math.max(0,e.cooldown-dt);e.invincible=Math.max(0,e.invincible-dt);e.flash=Math.max(0,e.flash-dt);
+    const b=e.boss;b.hit=Math.max(0,(b.hit||0)-dt);Arsenal.tickRobot(e,dt);e.cooldown=Math.max(0,e.cooldown-dt);e.invincible=Math.max(0,e.invincible-dt);e.flash=Math.max(0,e.flash-dt);
     if(resolveSoldierMelee(e,p))return;
     Enemies.ram(e,p,input,dt,platforms,segmentHit);
     const bossHpBeforeCombo=b.hp;
     const Z=typeof module!=='undefined'&&module.exports?require('./zombie-form'):root.ArcadeZombieForm;Z.tick(p,dt);Z.combat(e,p,input,dt,platforms);
     Enemies.wolfCombat(e,p,input,dt,(range,damage)=>{
       Enemies.melee(e.enemies,p,range,damage);Final.melee(e.finalBoss,p,range,damage);
-      if(b.hp>0&&Math.abs(b.x-p.x)<range&&Math.abs(b.y-p.y)<65&&(b.x-p.x)*p.facing>=0)b.hp=Math.max(0,b.hp-damage);
+      if(b.hp>0&&Math.abs(b.x-p.x)<range&&Math.abs(b.y-p.y)<65&&(b.x-p.x)*p.facing>=0)hitForeman(b,damage);
     });
     if(!e.won&&bossHpBeforeCombo>0&&b.hp<=0){transformWolf(e,p);return;}
     if(p.form==='fighter'||p.form==='tank'){p.fighterKickInput=!!input.kick;if(input.kick)input={...input,fire:true};}
@@ -213,7 +218,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
         if(stepMissile(bullet,dt,platforms,b,e.enemies,e.finalBoss)){
           const radius=95;Enemies.area(e.enemies,bullet.x,bullet.y,radius,bullet.damage);Final.area(e.finalBoss,bullet.x,bullet.y,radius,bullet.damage);e.explosions.push(Impact.create(bullet.x,bullet.y,radius,bullet.slot===6?'rocket':'grenade'));
           const nx=Math.max(b.x-30,Math.min(b.x+30,bullet.x)),ny=Math.max(b.y-75,Math.min(b.y,bullet.y));
-          if(b.hp>0&&Math.hypot(bullet.x-nx,bullet.y-ny)<=radius){b.hp=Math.max(0,b.hp-bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
+          if(b.hp>0&&Math.hypot(bullet.x-nx,bullet.y-ny)<=radius){hitForeman(b,bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
         }
         continue;
       }
@@ -223,7 +228,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
           const selfDistance=Math.hypot(bullet.x-p.x,bullet.y-Math.max(p.y-(p.h||46),Math.min(p.y,bullet.y)));if(selfDistance<85)hurtPlayer(e,p,bullet.x,false,selfDistance<45?2:1);
           const radius=85;Enemies.area(e.enemies,bullet.x,bullet.y,radius,bullet.damage);Final.area(e.finalBoss,bullet.x,bullet.y,radius,bullet.damage);e.explosions.push(Impact.create(bullet.x,bullet.y,radius,bullet.slot===6?'rocket':'grenade'));
           const nearX=Math.max(b.x-30,Math.min(b.x+30,bullet.x)),nearY=Math.max(b.y-75,Math.min(b.y,bullet.y));
-          if(b.hp>0&&Math.hypot(bullet.x-nearX,bullet.y-nearY)<=radius){b.hp=Math.max(0,b.hp-bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
+          if(b.hp>0&&Math.hypot(bullet.x-nearX,bullet.y-nearY)<=radius){hitForeman(b,bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
         }
         continue;
       }
@@ -234,7 +239,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
       let surface=null,surfaceT=Infinity;
       for(const pl of platforms){if(!Enemies.blocksShot(bullet,pl))continue;const t=segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:pl.x,y:pl.y,w:pl.w,h:pl.thickness||12,terrain:pl.terrain});if(t!==null&&t<surfaceT){surface=pl;surfaceT=t;}}
       if(surface){chip(e,oldX+(bullet.x-oldX)*surfaceT,oldY+(bullet.y-oldY)*surfaceT,surface);bullet.life=0;continue;}
-      if(bullet.life>0&&b.hp>0&&!bullet.enemy&&segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:b.x-30,y:b.y-75,w:60,h:75})!==null){b.hp=Math.max(0,b.hp-(bullet.damage||1));b.active=b.hp>0;bullet.life=0;if(!b.hp){transformWolf(e,p);return;}}
+      if(bullet.life>0&&b.hp>0&&!bullet.enemy&&segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:b.x-30,y:b.y-75,w:60,h:75})!==null){hitForeman(b,bullet.damage||1);b.active=b.hp>0;bullet.life=0;if(!b.hp){transformWolf(e,p);return;}}
       if(bullet.enemy&&!(p.cloak>0)&&Math.abs(bullet.x-p.x)<15&&bullet.y>p.y-(p.h||46)&&bullet.y<p.y){if(Arsenal.reflect(p,bullet))continue;if(e.invincible)continue;hurtPlayer(e,p,bullet.x-bullet.vx*.05,true);bullet.life=0;}
     }
     for(const n of e.enemies)if(Enemies.contact(n,p,platforms,segmentHit))hurtPlayer(e,p,n.x,n.kind==='knife');

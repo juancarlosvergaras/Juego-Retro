@@ -35,7 +35,7 @@
  function emit(s,type,data={}){s.events.push({type,...data});}
  function fx(s,x,y,color='blast',size=40){s.effects.push({x,y,color,size,life:.5,max:.5});}
  function hurt(s,p,e,amount=1){if(s.hitWait>0||e.invincible>0||e.developerInvulnerable||e.dead||p.transform>0||s.ending>=0||s.airlock>=0)return false;if(p.shield>0)p.shield--;else e.hp=Math.max(0,e.hp-amount*(e.combatDamage||1)/(p.form==='zombie'||p.form==='tank'?2:1));s.hitWait=1;p.hurt=.3;emit(s,'hurt');if(e.hp<=0)e.dead=true;return true;}
- function damage(n,amount){if(n.hp<=0)return;n.hp=Math.max(0,n.hp-amount);n.hit=.18;}
+ function damage(n,amount){if(n.hp<=0||!(amount>0))return;n.hp=Math.max(0,n.hp-amount);n.hit=.18;}
  function aim(p,input){return A.aimDirection({...input,up:false,down:false,aimUp:input.aimUp&&!input.up,aimDown:input.aimDown&&!input.down},p.facing||1);}
  function targets(s){return s.inside?(s.boss.active&&s.boss.phase!=='arrival'?[s.boss]:[]):s.enemies;}
  function blast(s,b){fx(s,b.x,b.y,b.plasma?'plasma':'blast',b.superCannon?100:65);for(const n of targets(s))if(n.hp>0&&Math.hypot(n.x-b.x,n.y-n.h*.5-b.y)<(b.superCannon?120:85)+n.w*.5){damage(n,b.damage||3);if(b.plasma)n.sticky=4;}if(b.plasma)s.pools.push({x:b.x,y:s.inside?FLOOR:Math.min(seabed(b.x),b.y+55),life:4.5});}
@@ -195,7 +195,7 @@
    p.swimCycle=((p.swimCycle||0)+dt*(moving?(input.run?1.85:1.4):.9))%1;
   }
   for(const f of s.effects)f.life-=dt;s.effects=s.effects.filter(f=>f.life>0).slice(-90);
-  if(s.ending>=0){s.ending+=dt;if(s.ending>=14&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
+  if(s.ending>=0){s.boss.hit=Math.max(0,s.boss.hit-dt);s.ending+=dt;if(s.ending>=14&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
   if(s.intro<5){s.intro=Math.min(5,s.intro+dt);return s.events;}
   if(s.airlock>=0){s.airlock+=dt;if(s.airlock>=4)enter(s,p);return s.events;}
   for(const k of ['shotWait','meleeWait','flash','hitWait'])s[k]=Math.max(0,s[k]-dt);e.invincible=Math.max(0,e.invincible-dt);p.hurt=Math.max(0,(p.hurt||0)-dt);A.tickRobot(e,dt);

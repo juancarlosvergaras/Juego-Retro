@@ -33,5 +33,24 @@
     c.restore();return true;
   }
   function smoke(c,x,y,age,strength=1){if(!sheet)return;for(let i=0;i<3;i++){const t=(age*.45+i/3)%1,size=30+t*45;c.save();c.globalAlpha=(1-t)*.48*strength;c.drawImage(sheet,(1+Math.min(2,Math.floor(t*3)))*384,512,384,512,x-size/2+t*12,y-size*.8-t*28,size,size*4/3);c.restore();}}
-  const api={create,setSheet,draw,projectile,smoke};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeImpact=api;
+  // Composite the red onto the current frame only. Source-atop preserves the sprite's alpha.
+  let hitLayer;
+  function hitSprite(c,remaining,image,sx,sy,sw,sh,dx,dy,dw,dh){
+    if(!(remaining>0)){c.drawImage(image,sx,sy,sw,sh,dx,dy,dw,dh);return;}
+    if(!hitLayer)hitLayer=document.createElement('canvas').getContext('2d');
+    const canvas=hitLayer.canvas,w=Math.ceil(sw),h=Math.ceil(sh);
+    if(canvas.width<w)canvas.width=w;
+    if(canvas.height<h)canvas.height=h;
+    hitLayer.clearRect(0,0,w,h);
+    hitLayer.imageSmoothingEnabled=false;
+    hitLayer.drawImage(image,sx,sy,sw,sh,0,0,w,h);
+    hitLayer.globalCompositeOperation='source-atop';
+    hitLayer.globalAlpha=.32*Math.min(1,remaining/.10);
+    hitLayer.fillStyle='#e64a4d';
+    hitLayer.fillRect(0,0,w,h);
+    hitLayer.globalAlpha=1;
+    hitLayer.globalCompositeOperation='source-over';
+    c.drawImage(canvas,0,0,w,h,dx,dy,dw,dh);
+  }
+  const api={create,setSheet,draw,projectile,smoke,hitSprite};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeImpact=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -79,7 +79,11 @@
     return{x:x/length,y:y/length};
   }
   // Shots leave from the barrel of the gun each fist is holding.
-  function robotMuzzle(p,arm=0){
+  function robotMuzzle(p,arm=0,slot=3){
+    if(p.swimming&&!p.onMotorcycle){
+      const swim=typeof module!=='undefined'&&module.exports?require('./sea-sprites'):root.ArcadeSeaSprites;
+      const {x,y}=swim.robotGun(p,arm,slot);return {x,y};
+    }
     const R=typeof module!=='undefined'&&module.exports?require('./robot-form.js'):root.ArcadeRobotForm;
     if(R?.hands&&!p.onMotorcycle&&!p.swimming){const a=p.aim||{x:p.facing||1,y:0},fists=R.hands(p),f=fists[arm]||fists[0],facing=p.facing||1,reach=13;return{x:p.x+facing*f.x+a.x*reach,y:p.y+f.y+a.y*reach};}
     const a=p.aim||{x:p.facing||1,y:0},k=p.onMotorcycle?.8:1;return{x:p.x+(p.onMotorcycle?(p.facing||1)*12:0)+a.x*(54+arm*8)*k,y:p.y-(p.onMotorcycle?64:p.swimming?22:p.crouching?23:35)+arm*8*k+a.y*(54+arm*8)*k};}
@@ -95,7 +99,7 @@
   function fire(inv,p){
       if(p.form==='tank'||p.form==='fighter'||p.form==='hero')return (typeof module!=='undefined'&&module.exports?require('./advanced-forms'):root.ArcadeAdvancedForms).shot(p);
       if(p.form==='robot'&&!p.singleArm){const guns=inv.owned.filter(n=>n>=3),primary=guns.includes(inv.selected)?inv.selected:guns[0];if(!primary)return null;const secondary=guns.includes(inv.secondary)?inv.secondary:primary;const a=fire({...inv,selected:primary},{...p,singleArm:true,robotArm:0}),b=fire({...inv,selected:secondary},{...p,singleArm:true,robotArm:1});if(!a&&!b)return null;return{weapon:{...(a||b).weapon,rate:Math.max(a?.weapon.rate||0,b?.weapon.rate||0)},bullets:[...(a?.bullets||[]),...(b?.bullets||[])]};}
-      const w=weapons[inv.selected];if(w.ammo!==null&&!(inv.ammo[inv.selected]>0))return null;if(w.ammo!==null)inv.ammo[inv.selected]--;const bullets=[],a=p.aim||{x:p.facing,y:0},origin=p.form==='robot'?robotMuzzle(p,p.robotArm||0):muzzle(p,inv.selected);
+      const w=weapons[inv.selected];if(w.ammo!==null&&!(inv.ammo[inv.selected]>0))return null;if(w.ammo!==null)inv.ammo[inv.selected]--;const bullets=[],a=p.aim||{x:p.facing,y:0},origin=p.form==='robot'?robotMuzzle(p,p.robotArm||0,inv.selected):muzzle(p,inv.selected);
     if(!w.range)for(let i=0;i<(w.pellets||1);i++){const angle=Math.atan2(a.y,a.x)+(i-((w.pellets||1)-1)/2)*.08;bullets.push({x:origin.x,y:origin.y,vx:Math.cos(angle)*w.speed,vy:Math.sin(angle)*w.speed-(inv.selected===9&&a.y===0?150:0),gravity:w.gravity||0,life:w.life||1.8,damage:w.damage*(p.damageBonus||1),slot:inv.selected,robotArm:p.robotArm,enemy:false});}
     return{weapon:w,bullets};
   }

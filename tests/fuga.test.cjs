@@ -16,7 +16,7 @@ test('el objetivo es alcanzar al fugitivo antes del peaje',()=>{
  const lost=R.create();lost.mode='race';lost.boss.z=R.finish;R.update(lost,{},1/120);assert.equal(lost.mode,'escaped');
 });
 test('el derrape requiere velocidad, conserva inercia y se corrige al contravirar',()=>{
- const s=R.create();s.mode='race';s.boss.z=400;s.speed=30;
+ const s=R.create();s.mode='race';s.boss.z=400;s.speed=2;
  R.update(s,{right:true,drift:true},1/120);assert.equal(s.driftSide,0);
  s.speed=76;let entries=0;
  for(let i=0;i<38;i++){R.update(s,{right:true,drift:true,gas:true,boost:true},1/120);entries+=s.events.includes('drift');}
@@ -27,6 +27,26 @@ test('el derrape requiere velocidad, conserva inercia y se corrige al contravira
  assert.ok(s.vx<0&&s.slip<.15);assert.equal(s.driftSide,0);
  R.update(s,{},1/120);R.update(s,{left:true,brake:true},1/120);assert.equal(s.driftSide,-1);
  s.x=6.3;R.update(s,{left:true,drift:true},1/120);assert.equal(s.driftSide,0);
+});
+test('un toque breve sin dirección inicia el derrape al salir y no consume nitro',()=>{
+ const s=R.create();R.update(s,{driftTap:true},1/120);
+ let starts=0;
+ for(let i=0;i<450;i++){R.update(s,{},1/120);if(s.events.includes('drift'))starts++;}
+ assert.equal(starts,1);assert.equal(s.nitro,1);
+ s.mode='race';s.speed=16;s.x=0;
+ R.update(s,{driftTap:true},1/120);
+ const side=s.driftSide;assert.ok(side);
+ for(let i=0;i<30;i++)R.update(s,{},1/120);
+ assert.equal(s.driftSide,side);assert.ok(Math.abs(s.slip)>.27);
+ for(let i=0;i<110;i++)R.update(s,{},1/120);
+ assert.equal(s.driftSide,0);assert.ok(Math.abs(s.slip)<.07);
+});
+test('la dirección también se puede elegir justo después de pulsar X',()=>{
+ const s=R.create();s.mode='race';s.speed=28;s.boss.z=300;
+ R.update(s,{driftTap:true},1/120);
+ const opposite=-s.driftSide;
+ R.update(s,{left:opposite<0,right:opposite>0},1/120);
+ assert.equal(s.driftSide,opposite);
 });
 test('el policía ve el vehículo, corre hacia su arcén y deja paso antes de que llegue',()=>{
  for(const index of [0,1]){

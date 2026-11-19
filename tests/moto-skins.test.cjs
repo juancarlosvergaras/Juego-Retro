@@ -1,5 +1,16 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),zlib=require('node:zlib');
 const root=path.join(__dirname,'..'),read=name=>fs.readFileSync(path.join(root,name),'utf8'),art=name=>png(path.join(root,'assets/sprites',name));
+test('each playable form draws its own fall poses at an independent position from the bike',()=>{
+ const crash=require('../road-crash'),riders=['soldier','wolf','zombie','robot','fighter','hero','tank'];
+ const {bikeX,riderX}=crash.motion(.73);assert.ok(bikeX-riderX>70);
+ for(const [i,form] of riders.entries()){
+  const keys=new Set(),others=new Set();let attached=0;
+  const ctx={globalAlpha:1,save(){},restore(){},translate(){},rotate(){},beginPath(){},ellipse(){},fill(){},fillRect(){},
+   drawImage(_,x,y){const row=y/112;if(row===(form==='tank'?8:i))keys.add(x/192);else others.add(row);}};
+  for(let t=0;t<2.2;t+=1/60)crash.draw(ctx,{},form,200,414,t,0,()=>attached++);
+  assert.ok(keys.size>=16&&attached>0,form);assert.deepEqual([...others],form==='tank'?[]:[6]);
+ }
+});
 function png(file){const bytes=fs.readFileSync(file),width=bytes.readUInt32BE(16),height=bytes.readUInt32BE(20),chunks=[];assert.equal(bytes[24],8);assert.equal(bytes[25],6);for(let p=8;p<bytes.length;){const n=bytes.readUInt32BE(p);if(bytes.toString('ascii',p+4,p+8)==='IDAT')chunks.push(bytes.subarray(p+8,p+8+n));p+=n+12;}const raw=zlib.inflateSync(Buffer.concat(chunks)),stride=width*4,data=new Uint8ClampedArray(stride*height);let p=0;for(let y=0;y<height;y++){const filter=raw[p++];for(let x=0;x<stride;x++){const i=y*stride+x,a=x>=4?data[i-4]:0,u=y?data[i-stride]:0,b=y&&x>=4?data[i-stride-4]:0;let n=0;if(filter===1)n=a;if(filter===2)n=u;if(filter===3)n=Math.floor((a+u)/2);if(filter===4){const v=a+u-b,pa=Math.abs(v-a),pu=Math.abs(v-u),pb=Math.abs(v-b);n=pa<=pu&&pa<=pb?a:pu<=pb?u:b;}data[i]=(raw[p++]+n)&255;}}return{width,height,data};}
 // Cuenta píxeles opacos de un recuadro que cumplen una condición de color.
 function count(image,[x0,y0,x1,y1],pick){let n=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=(y*image.width+x)*4;if(image.data[i+3]>200&&pick(image.data[i],image.data[i+1],image.data[i+2]))n++;}return n;}
@@ -42,7 +53,7 @@ test('no crash frame crosses into the next cell, and the fallen zombie matches t
  // The old sheet let the thrown rider's hand spill into the second frame.
  const edge=Math.round(old.width/4);assert.ok(count(old,[edge,y0,edge+3,y1],any)>0,'the defect this sheet fixes');
 });
-test('the soldier on the bike has the head of the soldier on foot',()=>{
+test('the earlier helmet correction preserved the bike and the new rider sheet is used across missions',()=>{
  const old=art('motos-carretera-v1.png'),now=art('motos-carretera-v2.png'),CW=384,CH=341,any=()=>true;
  const skin=(r,g,b)=>r>170&&g>100&&g<190&&b<150&&r>g*1.15&&g>b*1.1;
  for(let frame=0;frame<4;frame++){const x0=frame*CW;
@@ -56,7 +67,7 @@ test('the soldier on the bike has the head of the soldier on foot',()=>{
   for(let y=230;y<CH;y+=2)for(let x=x0;x<x0+CW;x+=2){const i=(y*old.width+x)*4;for(let k=0;k<4;k++)if(old.data[i+k]!==now.data[i+k])assert.fail('frame '+frame+' changed at '+x+','+y);}}
  // The other riders on this sheet are untouched.
  for(let y=CH;y<old.height;y+=3)for(let x=0;x<old.width;x+=3){const i=(y*old.width+x)*4;for(let k=0;k<4;k++)if(old.data[i+k]!==now.data[i+k])assert.fail('pixel '+x+','+y+' changed');}
- for(const file of ['level-four-game.js','level-three-game.js','mission-four-scenes.js'])assert.ok(read(file).includes('motos-carretera-v2.png')&&!read(file).includes('motos-carretera-v1.png'),file+' uses the unified soldier');
+ for(const file of ['level-four-game.js','level-three-game.js','mission-four-scenes.js'])assert.ok(read(file).includes('motos-carretera-v3.webp')&&!read(file).includes('motos-carretera-v2.png'),file+' uses the unified soldier');
 });
 test('on the bike the shield covers rider and machine',()=>{
  const powers=read('powers.js');assert.ok(powers.includes('ride=!!p.onMotorcycle'));assert.ok(powers.includes('ride?136:wolf?78:58'),'wide enough for both wheels');
@@ -64,13 +75,13 @@ test('on the bike the shield covers rider and machine',()=>{
 });
 test('mission 4 rides, falls and shows its cards with the unified skins',()=>{
  const game=read('level-four-game.js'),renderer=read('road-renderer.js');
- assert.ok(game.includes("actions:'assets/sprites/motos-personajes-acciones-v2.png'"));assert.ok(game.includes("crashes:'assets/sprites/caidas-carretera-v3.png'"));
+ assert.ok(game.includes("actions:'assets/sprites/motos-personajes-acciones-v2.png'"));assert.ok(game.includes("stunts:'assets/sprites/caidas-moto-v4.webp'"));
  assert.ok(!game.includes('acciones-v1')&&!game.includes('caidas-carretera-v2'));
  // The character cards use the same art the player rides, not the old green zombie or the bare chrome robot.
  assert.ok(game.includes("zombie:own('actions',renderer.actions,1)"));assert.ok(game.includes("robot:own('mounted',renderer.mounted,0)"));assert.ok(game.includes("fighter=own('mounted',renderer.mounted,4)"));
  assert.ok(renderer.includes('riders,actions,mounted,crashes,rig'),'the renderer exposes the sheets the cards need');
- // Every skin really falls: the soldier has his own frames and the robot keeps its own.
- assert.ok(game.includes("soldierCrash:'assets/sprites/caidas-soldado-v1.png'"));assert.ok(renderer.includes('soldierCrash[Math.min(3,Math.floor(s.crashAge/.55))]'));
+ assert.ok(renderer.indexOf('ArcadeRoadCrash.draw')<renderer.indexOf("if(p.form==='hero')"));
+ assert.ok(read('level-four.html').includes('road-crash.js'));
  assert.ok(!renderer.includes('wipeout(c,images.mounted'),'the robot falls with its own crash art');
 });
 test('the soldier has his own fall: thrown, on the ground, lifting the bike, back in the saddle',()=>{

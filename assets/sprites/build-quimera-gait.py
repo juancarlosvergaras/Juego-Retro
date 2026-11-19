@@ -92,10 +92,11 @@ def leg_warp(layer, ankle, hip, seam, side, phase, strength, span, bob):
     return warp(layer,x+(boot_x-x)*boot_mix,y+(boot_y-y)*boot_mix)
 
 
-def gait(kind, rig):
+def gait(kind, rig, stance=None):
     rear, front, seam, hip, span, equipment = rig
-    with Image.open(ROOT/f'quimera-{kind}.png') as sheet:
-        stance = sheet.crop((0,0,120,98)).convert('RGBA')
+    if stance is None:
+        with Image.open(ROOT/f'quimera-{kind}.png') as sheet:
+            stance = sheet.crop((0,0,120,98)).convert('RGBA')
     keep = Image.new('1', stance.size)
     for polygon in equipment:
         ImageDraw.Draw(keep).polygon(polygon, fill=1)
@@ -134,3 +135,7 @@ def gait(kind, rig):
 if __name__ == '__main__':
     for name, rig in RIGS.items():
         gait(name,rig)
+    with Image.open(ROOT/'quimera-armados-claves.webp') as keys:
+        for row, name in enumerate(('batter','foreman','capBat','capAlloy','capRifle','capPistol')):
+            stance = keys.crop((0,row*98,120,(row+1)*98)).convert('RGBA')
+            gait(name,(36,66,53,66,34 if row<2 else 36,[]),stance)

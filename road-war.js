@@ -7,6 +7,29 @@
  // En la carretera las personas se dibujan más grandes que a pie: el soldado que
  // vuela crece con ellas para no parecer un muñeco al lado de los motoristas.
  const JET_SCALE=1.5;
+ const RIDER_WIDTH=104,CRASH_TIME=2.2;
+ function riderPose(s,x,y,offset,bob){
+  const lunge=s.ram>0?Math.sin(s.ram/.42*Math.PI)*32:0;
+  const angle=s.wheelie?-s.wheelie:s.jump?clamp(-s.jumpV*.0005,-.16,.13):s.ram>0?-.1:Math.sin(s.time*17)*.009;
+  return {x:Math.round(x+lunge+offset),y:Math.round(y+Math.sin(s.time*23)*bob),angle};
+ }
+ function soldierMuzzle(s,p){
+  // Pistola y ruedas en la celda de disparo de motos-carretera-v3.
+  const scale=RIDER_WIDTH/360,pose=riderPose(s,p.x,p.y,.5*scale,.6);
+  return mountPoint(pose,(311.4-192.5)*scale,(95.6-335)*scale);
+ }
+ function zombiePalm(s,p){
+  // Celda de ataque: la descarga nace en (348,96), con la base de las ruedas en y=362.
+  const scale=RIDER_WIDTH/383;
+  return mountPoint(riderPose(s,p.x,p.y,0,1.2),(348-209)*scale,(96-362)*scale);
+ }
+ function mountedEyes(s,p){
+  return mountPoint(riderPose(s,p.x,p.y,0,.6),-2.6,-73.6);
+ }
+ function mountPoint(pose,dx,dy){
+  const c=Math.cos(pose.angle),sn=Math.sin(pose.angle);
+  return {x:pose.x+dx*c-dy*sn,y:pose.y+dx*sn+dy*c};
+ }
  // Dos motoristas acompañan al camión del jefe: salen con él y no se retiran.
  const GUARDS=2;
  function guard(s,k){const hp=3*s.difficulty;return{id:'road-guard-'+k,kind:'road',type:'bike',guard:true,x:1040+k*110,y:LANES[k?2:0],w:104,h:76,hp,maxHp:hp,age:0,shot:2.4+k*.9,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:470-k*90};}
@@ -24,7 +47,7 @@
    wave:Math.floor(distance/260),difficulty,bullets:[],effects:[],parts:[],mines:[],pools:[],pickups:[],events:[],enemies:[],
    awarded:new Set(saved.awarded||[]),collected:new Set(saved.collected||[]),taken:new Set(saved.taken||[]),supplyAge:0,shootWait:0,plasmaWait:0,
    boss:{id:'road-rig',kind:'road',type:'rig',x:saved.ending?740:1180,y:425,w:410,h:190,hp:saved.complete||saved.ending?0:180*difficulty,maxHp:180*difficulty,active:!!saved.ending||!!saved.complete,stage:0,phase:'entry',age:0,shot:.6,cycle:0,hit:0,frozen:0,slow:0,flash:0,death:0},
-   obstacles:Array.from({length:16},(_,i)=>({id:i,distance:440+i*510,lane:LANES[i%3],type:i%3===1?'pothole':'ramp',used:false})),crash:0,crashAge:0,jump:0,jumpV:0,boost:0,ramWait:0,ram:0,hitWait:2,shotFlash:0};
+   obstacles:Array.from({length:16},(_,i)=>({id:i,distance:440+i*510,lane:LANES[i%3],type:i%3===1?'pothole':'ramp',used:false})),crash:0,crashAge:0,crashLift:0,fatalCrash:false,jump:0,jumpV:0,boost:0,ramWait:0,ram:0,hitWait:2,shotFlash:0};
  }
  function spawn(s,i){const type=i%6===3?'jetSoldier':i%5===4?'jeep':i%3===1?'sidecar':'bike',hp=(type==='jeep'?10:type==='sidecar'?6:3)*s.difficulty;return{id:'road-'+i,kind:'road',type,x:1020+(i%2)*100,y:type==='jetSoldier'?235:LANES[i%3],w:type==='jetSoldier'?48:type==='jeep'?175:type==='sidecar'?124:104,h:type==='jetSoldier'?60:type==='jeep'?94:76,hp,maxHp:hp,age:0,shot:1.8+(i%3)*.3,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:520+((i*2+Math.floor(i/3))%3)*150};}
  function event(s,type,data={}){s.events.push({type,...data});}
@@ -42,15 +65,23 @@
    if((down||input.kick)&&s.ramWait<=0){s.ram=.42;s.ramWait=.85;if(p.form==='fighter'){p.fighterPose=.8;p.fighterAge=0;p.fighterCombo=((p.fighterCombo||0)+1)%3;p.fighterKick=!!input.kick;}burst(s,p.x+45,p.y-44,50,'claw');for(const n of [...s.enemies,...(s.boss.active?[s.boss]:[])])if(n.hp>0&&Math.abs(n.y-p.y)<75&&n.x+n.w/2>p.x-50&&n.x-n.w/2<p.x+220)damage(n,4*(p.damageBonus||1));event(s,'attack',{sound:'claw'});}return;
   }
   if(p.form==='zombie'){
-   if(down&&s.shootWait<=0){s.shootWait=.72;s.shotFlash=.18;const x=p.x+33,y=p.y-44;const targets=[...s.enemies,...(s.boss.active?[s.boss]:[])].filter(n=>n.hp>0&&n.x>x&&n.x-n.w/2<x+470&&Math.abs(n.y-p.y)<65).sort((a,b)=>a.x-b.x);const n=targets[0];s.effects.push({x,y,toX:n?n.x-n.w/2+12:x+400,toY:n?n.y-n.h*.65:y,life:.22,max:.22,color:'ray'});if(n){damage(n,2*(p.damageBonus||1));n.shock=.4;}event(s,'attack',{sound:'plasma'});}
-   if(input.kick&&s.plasmaWait<=0){s.plasmaWait=.8;s.shotFlash=.2;s.bullets.push({x:p.x+35,y:p.y-44,vx:340,vy:-80,gravity:210,life:2,damage:1.5*(p.damageBonus||1),plasma:true,slot:9,enemy:false});event(s,'attack',{sound:'plasma'});}return;
+   if(down&&s.shootWait<=0){
+    const {x}=zombiePalm(s,p),duration=.22;
+    const targets=[...s.enemies,...(s.boss.active?[s.boss]:[])].filter(n=>n.hp>0&&n.x>x&&n.x-n.w/2<x+470&&Math.abs(n.y-p.y)<65).sort((a,b)=>a.x-b.x);
+    const target=targets[0];s.shootWait=.72;s.shotFlash=duration;
+    s.effects.push({target,life:duration,max:duration,color:'ray'});
+    if(target){damage(target,2*(p.damageBonus||1));target.shock=.4;}
+    event(s,'attack',{sound:'plasma'});
+   }
+   if(input.kick&&s.plasmaWait<=0){s.plasmaWait=.8;s.shotFlash=Math.max(s.shotFlash,.2);s.bullets.push({...zombiePalm(s,p),vx:340,vy:-80,gravity:210,life:2,damage:1.5*(p.damageBonus||1),plasma:true,slot:9,enemy:false});event(s,'attack',{sound:'plasma'});}return;
   }
   if(input.kick&&p.form==='soldier'&&s.ramWait<=0){s.ramWait=.6;burst(s,p.x+50,p.y-36,28,'claw');for(const n of [...s.enemies,...(s.boss.active?[s.boss]:[])])if(n.hp>0&&Math.abs(n.y-p.y)<65&&n.x-n.w/2<p.x+120&&n.x+n.w/2>p.x-30)damage(n,2*(p.damageBonus||1));event(s,'attack',{sound:'kick'});}
   if(!down||s.shootWait>0)return;
   const q={...p,y:p.form==='robot'?p.y:p.y-10,facing:1};const shot=p.form==='robot'?A.fireRobot(e,q):A.fire(e.inventory,q);if(!shot)return;
   s.shootWait=shot.weapon.rate/(p.rateBonus||1);s.shotFlash=p.form==='tank'?.65:.12;event(s,'attack',{sound:p.form==='tank'?'rocket':SOUNDS[shot.weapon.slot||e.inventory.selected]||'pistol'});
   if(shot.weapon.range){for(const n of [...s.enemies,...(s.boss.active?[s.boss]:[])])if(n.hp>0&&Math.abs(n.y-p.y)<65&&n.x-n.w/2<p.x+115&&n.x+n.w/2>p.x)damage(n,shot.weapon.damage*(p.damageBonus||1));burst(s,p.x+65,p.y-40,35,'claw');}
-  for(const b of shot.bullets){if(p.form!=='robot'&&p.form!=='hero'){b.x=p.x+40;b.y=p.y-44;}s.bullets.push(b);}
+  const origin=p.form==='soldier'?soldierMuzzle(s,p):p.form==='hero'?mountedEyes(s,p):p.form==='tank'?{x:p.x+40,y:p.y-44}:null;
+  for(const b of shot.bullets){if(origin)Object.assign(b,origin);s.bullets.push(b);}
  }
  function updateBoss(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(!b.active||b.hp<=0)return;b.age+=dt;if(b.poison>0){b.poison-=dt;damage(b,dt*.6);}b.slow=Math.max(0,b.slow-dt);b.flash=Math.max(0,b.flash-dt);b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);const stage=b.hp<=b.maxHp/3?2:b.hp<=b.maxHp*2/3?1:0;if(stage>b.stage){parts(s,b,8);burst(s,b.x-100+stage*60,b.y-125,95);b.stage=stage;event(s,'armor',{stage});}
   b.x+=(740-b.x)*dt*(b.slow>0?.5:1.2);
@@ -65,16 +96,24 @@
  }
  function collect(s,p,e){for(const item of s.pickups){if(item.taken||Math.abs(item.x-p.x)>65||Math.abs(item.y-p.lane)>36||s.jump>80)continue;item.taken=true;s.taken.add(item.id);if(item.type==='health'){e.hp=Math.min(e.maxHp,e.hp+3);event(s,'pickup',{text:'Botiquín · +3 salud'});}else if(item.type==='star'){s.collected.add(item.id);event(s,'points',{id:item.id,amount:250,text:'Estrella'});}else{const slot=item.slot||3;if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+(A.weapons[slot].ammo||36);event(s,'pickup',{text:A.weapons[slot].name+' · Munición recogida'});}}}
  function supply(s,type,slot,id,x=1060,y=414){if(s.taken.has(id))return;s.pickups.push({id,type,slot,x,y,taken:false});}
+ function advanceCrash(s,dt){
+  const previous=s.crashAge;
+  s.crashAge+=Math.min(s.crash,dt);s.crash=Math.max(0,s.crash-dt);
+  if(previous<.55&&s.crashAge>=.55)event(s,'skid');
+ }
  function update(s,p,e,input,dt){
-  dt=clamp(dt,0,.05);s.events=[];if(e.dead)return s.events;s.time+=dt;s.intro=Math.min(INTRO,s.intro+dt);
+  dt=clamp(dt,0,.05);s.events=[];
+  if(e.dead){if(s.fatalCrash&&s.crash>0){advanceCrash(s,dt);s.time+=dt;s.scroll+=75*dt;}return s.events;}
+  s.time+=dt;s.intro=Math.min(INTRO,s.intro+dt);
   if(s.ending>=0){s.scroll+=dt*endingSpeed(s.ending);s.ending+=dt;
    // Detonaciones en cadena mientras el camión se deshace.
    if(s.ending<3.6){const beat=Math.floor(s.ending/.4);if(beat!==s.blastBeat){s.blastBeat=beat;event(s,'blast',{big:beat===4});}}
-   updateEffects(s,dt);if(s.ending>=ENDING&&!s.complete){s.complete=true;event(s,'complete');}return s.events;}
+   updateEffects(s,p,dt);if(s.ending>=ENDING&&!s.complete){s.complete=true;event(s,'complete');}return s.events;}
   if(s.intro<INTRO){s.scroll+=dt*CRUISE;return s.events;}
   s.elapsed+=dt;
   s.hitWait=Math.max(0,s.hitWait-dt);s.shootWait=Math.max(0,s.shootWait-dt);s.plasmaWait=Math.max(0,s.plasmaWait-dt);s.ramWait=Math.max(0,s.ramWait-dt);s.ram=Math.max(0,s.ram-dt);s.shotFlash=Math.max(0,s.shotFlash-dt);p.hurt=Math.max(0,(p.hurt||0)-dt);e.invincible=Math.max(0,(e.invincible||0)-dt);A.tickRobot(e,dt);
-  if(s.crash>0){s.crash=Math.max(0,s.crash-dt);s.crashAge+=dt;input={};s.hitWait=Math.max(s.hitWait,.25);}
+  if(s.crash>0){advanceCrash(s,dt);input={};s.hitWait=Math.max(s.hitWait,.25);}
+  s.boost=!!input.run;
   const speed=210*(p.speedBonus||1);p.x=clamp(p.x+((input.right?1:0)-(input.left?1:0))*speed*dt,85,s.boss.active?650:790);p.lane=clamp((p.lane||414)+((input.down?1:0)-(input.up?1:0))*125*dt,LANES[0],LANES[2]);
   s.landing=Math.max(0,(s.landing||0)-dt);s.jumpAge=s.jump>0?(s.jumpAge||0)+dt:0;if(input.jumpPressed&&p.jumps<(p.maxJumps||2)){s.jumpV=310;p.jumps++;event(s,'jump');}if(s.jump>0||s.jumpV>0){s.jumpV-=760*dt;s.jump=Math.max(0,s.jump+s.jumpV*dt);if(!s.jump){s.landing=.24;s.jumpV=0;p.jumps=0;burst(s,p.x,p.lane,24,'dust');event(s,'land');}}
   p.y=p.lane-s.jump;p.grounded=s.jump===0;p.facing=1;p.vx=(input.right?speed:0)-(input.left?speed:0);
@@ -87,7 +126,12 @@
    if(o.used||Math.abs(x-p.x)>(o.type==='ramp'?96:60)||Math.abs(o.lane-p.lane)>(o.type==='ramp'?26:20)||s.jump>35)continue;o.used=true;
    if(o.type==='ramp'){s.jumpV=input.run?540:460;s.jump=7;p.y=p.lane-s.jump;p.grounded=false;p.jumps=1;event(s,'jump');event(s,'warning',{text:'¡RAMPA! Mantén el impulso en el aire'});}
    // A pothole always throws the bike, even when a shield or a recent hit spares the damage.
-   else{hurt(s,p,e,1);if(!e.dead){s.crash=2.2;s.crashAge=0;s.jump=0;s.jumpV=0;event(s,'warning',{text:'¡BACHE! Recuperando la moto…'});}}
+   else{
+    hurt(s,p,e,1);s.fatalCrash=e.dead;s.crash=e.dead?.94:CRASH_TIME;s.crashAge=0;s.crashLift=s.jump;
+    s.jump=s.jumpV=s.shotFlash=s.ram=0;s.boost=false;p.y=p.lane;p.grounded=true;p.jumps=0;
+    event(s,'warning',{text:p.form==='tank'?'¡BACHE! Enderezando las orugas…':'¡BACHE! La moto derrapa…'});
+    if(e.dead){updateEffects(s,p,dt);return s.events;}
+   }
   }
   if(s.distance>=LENGTH&&!s.boss.active){s.boss.active=true;for(let k=0;k<GUARDS;k++){const n=guard(s,k);if(!s.awarded.has(n.id))s.enemies.push(n);}event(s,'boss');event(s,'warning',{text:'JEFE · EL DEVORADOR DE ASFALTO'});}
   if(s.boss.active){s.supplyAge+=dt;if(s.supplyAge>11){s.supplyAge=0;supply(s,'ammo',s.time%22<11?3:5,'boss-ammo-'+Math.floor(s.time),1000,p.lane);}}
@@ -105,14 +149,24 @@
   for(const pool of s.pools){pool.life-=dt;pool.x-=travel*5;for(const n of s.enemies)if(n.hp>0&&Math.abs(n.x-pool.x)<n.w/2+45&&Math.abs(n.y-pool.y)<32){n.slow=Math.max(n.slow,.4);damage(n,dt*.75);}}s.pools=s.pools.filter(f=>f.life>0&&f.x>-100).slice(-12);
   for(const item of s.pickups)item.x-=travel*5;collect(s,p,e);s.pickups=s.pickups.filter(i=>!i.taken&&i.x>-60);
   if(s.boss.active&&s.boss.hp<=0){e.dead=false;e.hp=Math.max(1,e.hp);e.invincible=15;s.ending=0;s.bullets=[];s.mines=[];s.enemies=[];parts(s,s.boss,18);burst(s,s.boss.x,s.boss.y-90,180);if(!s.awarded.has('road-rig')){s.awarded.add('road-rig');event(s,'points',{id:'road-rig',amount:6000,text:'El convoy ha caído'});}p.tankUnlocked=true;event(s,'unlock',{form:'tank'});event(s,'ending');}
-  updateEffects(s,dt);return s.events;
+  updateEffects(s,p,dt);return s.events;
  }
- function updateEffects(s,dt){for(const f of s.effects)f.life-=dt;s.effects=s.effects.filter(f=>f.life>0).slice(-90);for(const part of s.parts){part.age+=dt;part.life-=dt;part.x+=part.vx*dt;part.vy+=380*dt;part.y+=part.vy*dt;part.rotation+=dt*3;if(part.y>480){part.y=480;part.vy=-Math.abs(part.vy)*.35;}}s.parts=s.parts.filter(p=>p.life>0).slice(-60);}
+ function updateEffects(s,p,dt){
+  for(const f of s.effects){
+   f.life-=dt;
+   if(f.color!=='ray')continue;
+   if(s.crash||s.ending>=0||p.form!=='zombie'||p.transform>0){f.life=0;continue;}
+   const palm=zombiePalm(s,p);
+   f.x=palm.x;f.y=palm.y;
+   f.toX=f.target?f.target.x-f.target.w/2+12:palm.x+400;
+   f.toY=f.target?f.target.y-f.target.h*.65:palm.y;
+  }
+  s.effects=s.effects.filter(f=>f.life>0).slice(-90);for(const part of s.parts){part.age+=dt;part.life-=dt;part.x+=part.vx*dt;part.vy+=380*dt;part.y+=part.vy*dt;part.rotation+=dt*3;if(part.y>480){part.y=480;part.vy=-Math.abs(part.vy)*.35;}}s.parts=s.parts.filter(p=>p.life>0).slice(-60);}
  function snapshot(s){return{elapsed:s.elapsed,distance:s.distance,checkpoint:s.checkpoint,awarded:[...s.awarded],collected:[...s.collected],taken:[...s.taken],complete:s.complete,ending:s.ending>=0};}
  function retry(s){const result=create({...snapshot(s),distance:s.checkpoint,complete:false,ending:false},s.difficulty);result.intro=INTRO;return result;}
  // Saltar la presentación deja la carretera lista para jugar.
  function skipIntro(s){if(s.intro<INTRO)s.intro=INTRO;return s;}
  // Cifras del parte final. Los vehículos cuentan por identidad, no por los que hay en pantalla.
  function tally(s){const fallen=[...s.awarded].filter(id=>/^road-\d+$/.test(id)).length;return{fallen,total:WAVES,stars:s.collected.size,starTotal:STARS,seconds:s.elapsed};}
- const api={create,update,snapshot,retry,skipIntro,tally,endingSpeed,spawn,hurt,damage,swept,LENGTH,LANES,CHECKPOINTS,STARS,WAVES,INTRO,ENDING,CRUISE,JET_SCALE,GUARDS,guard};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadWar=api;
+ const api={create,update,snapshot,retry,skipIntro,tally,endingSpeed,spawn,hurt,damage,swept,riderPose,soldierMuzzle,zombiePalm,mountedEyes,RIDER_WIDTH,CRASH_TIME,LENGTH,LANES,CHECKPOINTS,STARS,WAVES,INTRO,ENDING,CRUISE,JET_SCALE,GUARDS,guard};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadWar=api;
 })(typeof window!=='undefined'?window:globalThis);

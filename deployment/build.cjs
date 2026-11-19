@@ -12,9 +12,11 @@ while (pending.length) {
   const file = pending.shift();
   const source = fs.readFileSync(path.join(root, file), 'utf8');
   const refs = file.endsWith('.html')
-    ? [...source.matchAll(/(?:src|href)=["']([^"'?#]+\.(?:js|css|html|png|webp|jpg))(?:[?#][^"']*)?["']/g)].map(m => m[1])
+    ? [...source.matchAll(/(?:src|href)=["']([^"'?#]+\.(?:js|css|html|png|webp|jpg|webmanifest))(?:[?#][^"']*)?["']/g)].map(m => m[1])
     : [...source.matchAll(/["'](assets\/[^"']+\.(?:png|webp|jpg|ogg|mp3|wav))["']/g)].map(m => m[1]);
-  for (const ref of refs) {
+  if (file === 'quimera-game.js') refs.push(...Object.values(require('../quimera').characterSprites()));
+  for (const raw of refs) {
+    const ref = raw.replace(/^\.\//, '');
     if (ref.includes('..') || path.isAbsolute(ref)) throw new Error('Unsafe dependency: ' + ref);
     if (!files.has(ref)) {
       files.add(ref);
@@ -32,7 +34,7 @@ const publishedNames = new Map([...files].map(file => {
 }));
 for (const file of [...files].sort()) {
   let data = fs.readFileSync(path.join(root, file));
-  if (file.endsWith('.html')) data = Buffer.from(data.toString('utf8').replace(/((?:src|href)=["'])([^"'?#]+)([?#][^"']*)?(["'])/g, (all, prefix, ref, query, suffix) => prefix + (publishedNames.get(ref) || ref) + (query || '') + suffix));
+  if (file.endsWith('.html')) data = Buffer.from(data.toString('utf8').replace(/((?:src|href)=["'])([^"'?#]+)([?#][^"']*)?(["'])/g, (all, prefix, ref, query, suffix) => prefix + (publishedNames.get(ref.replace(/^\.\//, '')) || ref) + (query || '') + suffix));
   const published = publishedNames.get(file);
   const target = path.join(publicDir, published);
   fs.mkdirSync(path.dirname(target), {recursive: true});

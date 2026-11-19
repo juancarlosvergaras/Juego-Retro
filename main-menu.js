@@ -46,7 +46,7 @@
     document.getElementById('menu-return').onclick=()=>show('home');
     document.getElementById('menu-fullscreen').onclick=async()=>{
       const notice=document.getElementById('settings-message');
-      try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();notice.textContent='Pantalla actualizada.';}
+      try{notice.textContent=await root.ArcadeTouchScreen.toggle();}
       catch{notice.textContent='Tu navegador no permite cambiar a pantalla completa.';}
     };
     layer.addEventListener('keydown',e=>{

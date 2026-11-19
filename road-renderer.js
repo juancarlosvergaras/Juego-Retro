@@ -24,22 +24,48 @@
   // una voltereta completa, aterriza con rebote y recupera el equilibrio.
   function wipeout(c,img,f,x,lane,width,age){const h=width*f[3]/f[2],air=1,u=Math.min(1,age/air),e=u*u*(3-2*u),theta=age<air?e*Math.PI*2:Math.sin(age*22)*.09*Math.max(0,1-(age-air)/.9),hop=age<air?Math.sin(u*Math.PI)*48:0,half=Math.abs(Math.sin(theta))*width/2+Math.abs(Math.cos(theta))*h/2;c.save();c.translate(Math.round(x),Math.round(lane-half-hop));c.rotate(theta);c.drawImage(img,...f,-width/2,-h/2,width,h);c.restore();if(age>=air&&age<air+.6)for(let i=0;i<6;i++){const k=(age-air)/.6;c.globalAlpha=(1-k)*.55;c.fillStyle=i%2?'#c9b28a':'#8f8068';c.fillRect(Math.round(x-36+i*14+(i-2.5)*k*20),Math.round(lane-4-k*12-(i%2)*5),6+Math.round(k*6),4);}c.globalAlpha=1;}
   function player(c,p,s,x=p.x,y=p.y,alpha=1){if(p.cloak>0&&Math.floor(p.cloak*9)%4!==0)return;
+   if((s.crash>0||s.fatalCrash)&&images.stunts){
+    const grounded={...p,hurt:0,transform:0,roadBoost:false,eyeFlash:0};
+    const stopped={...s,shadowed:true,stuntMount:true,crash:0,fatalCrash:false,jump:0,boost:false,ram:0,landing:0,shotFlash:0};
+    c.save();c.globalAlpha*=alpha;
+    root.ArcadeRoadCrash.draw(c,images.stunts,p.form,x,p.lane,s.crashAge,s.crashLift||0,(px,py)=>player(c,grounded,stopped,px,py));
+    c.restore();return;
+   }
    if(!s.shadowed){shadow(c,x,p.lane,104,Math.max(.35,1-(s.jump||0)/160)*alpha);s={...s,shadowed:true};}
    if(root.ArcadeFormTransition?.compose(c,{...p,x,y,onMotorcycle:true,swimming:false},q=>player(c,q,{...s,shotFlash:0,ram:0},x,y,alpha),'road'))return;
-   if(p.form==='hero'){root.ArcadeAdvancedForms.draw(c,{...p,x,y,anim:s.time,onMotorcycle:true});return;}
+   if(p.form==='hero'){
+    if(!images.stunts){root.ArcadeAdvancedForms.draw(c,{...p,x,y,anim:s.time,onMotorcycle:true});return;}
+    const index=s.shotFlash>0?2:s.jump?3:s.boost?1:0;
+    root.ArcadeRoadCrash.mountedHero(c,images.stunts,War.riderPose(s,x,y,0,.6),index);
+    if(s.shotFlash>0){
+     const eyes=War.mountedEyes(s,{x,y}),aim=p.aim||{x:1,y:0};
+     c.save();c.translate(eyes.x,eyes.y);c.rotate(Math.atan2(aim.y,aim.x));c.fillStyle='#489dff';c.fillRect(0,-2,19,4);c.fillStyle='#d1fbff';c.fillRect(0,-1,20,1);c.restore();
+    }
+    return;
+   }
    if(mounted&&!s.crash&&(p.form==='robot'||p.form==='fighter')){
     const robot=p.form==='robot',row=robot?0:4,index=row+(robot?3:s.jump?2:s.ram>0?3:s.boost?1:0),f=mounted[index],scale=104/mounted[row][2],cw=Math.floor(images.mounted.width/4),offset=(f[0]%cw+f[2]/2-cw/2)*scale;
-    c.save();c.globalAlpha*=alpha;exhaust(c,x-43,y-12,s.time,!!s.boost);c.translate(x,y);c.rotate(s.jump?Math.max(-.16,Math.min(.13,s.jumpV*-.0005)):0);const bob=Math.sin(s.time*23)*.6;sprite(c,images.mounted,f,offset,bob,f[2]*scale);
+    c.save();c.globalAlpha*=alpha;if(!s.stuntMount)exhaust(c,x-43,y-12,s.time,!!s.boost);c.translate(x,y);c.rotate(s.jump?Math.max(-.16,Math.min(.13,s.jumpV*-.0005)):0);const bob=Math.sin(s.time*23)*.6;sprite(c,images.mounted,f,offset,bob,f[2]*scale);
     if(robot)root.ArcadeWeaponRenderer.draw(c,{...p,x:0,y:bob,onMotorcycle:true},{inventory:s.inventory,flash:s.shotFlash});c.restore();return;
    }
-   if(p.form==='robot'){root.ArcadeRobotForm.draw(c,{...p,x,y,anim:s.time,onMotorcycle:true,grounded:!s.jump,crash:s.crash,crashAge:s.crashAge});if(!s.crash)root.ArcadeWeaponRenderer.draw(c,{...p,x,y,onMotorcycle:true},{inventory:s.inventory,flash:s.shotFlash});return;}if(s.crash>0){const row={wolf:0,zombie:1,fighter:2,tank:3}[p.form];if(crashes&&row!==undefined){const f=crashes[row*4+Math.min(3,Math.floor(s.crashAge/.55))],k=(p.form==='tank'?105:104)/crashes[row*4+3][2];sprite(c,images.crashes,f,x,p.lane,f[2]*k);}else if(soldierCrash){const f=soldierCrash[Math.min(3,Math.floor(s.crashAge/.55))],k=104/soldierCrash[3][2];sprite(c,images.soldierCrash,f,x,p.lane,f[2]*k);}else wipeout(c,images.riders,riders[0],x,p.lane,104,s.crashAge);return;}if(p.form==='tank'||p.form==='fighter'){c.save();c.globalAlpha=alpha;root.ArcadeAdvancedForms?.draw(c,{...p,x,y,anim:s.time,grounded:!s.jump,vy:-s.jumpV,tankAirAge:s.jumpAge??.2,landing:s.landing||0,cannonPose:s.shotFlash>0?.45:0});c.restore();return;}let i=p.form==='wolf'?(s.jump?7:4):p.form==='zombie'?5:p.form==='robot'?6:s.jump?3:s.shotFlash>0?2:s.boost?1:0;const angle=s.wheelie?-s.wheelie:s.jump?Math.max(-.16,Math.min(.13,-s.jumpV*.0005)):s.ram>0?-.1:Math.sin(s.time*17)*.009;const width=104;
-   c.save();c.globalAlpha=alpha;if(p.hurt>0&&Math.floor(s.time*18)%2)c.globalAlpha*=.45;
-   exhaust(c,x-43,y-12,s.time,!!s.boost);const lunge=s.ram>0?Math.sin(s.ram/.42*Math.PI)*32:0;if(actions&&p.form!=='soldier'){const col=p.form==='wolf'?0:p.form==='zombie'?1:2,row=s.ram>0||s.shotFlash>0?2:s.jump?1:0,f=actions[row*3+col],scale=width/actions[col][2],cw=Math.floor(images.actions.width/3),offset=(f[0]%cw+f[2]/2-cw/2)*scale;sprite(c,images.actions,f,x+lunge+offset,y+Math.sin(s.time*23)*1.2,f[2]*scale,angle);}else{const f=riders[i],scale=width/riders[0][2],cw=Math.floor(images.riders.width/4),offset=(f[0]%cw+f[2]/2-cw/2)*scale;sprite(c,images.riders,f,x+lunge+offset,y+Math.sin(s.time*23)*.6,f[2]*scale,angle);}
-
-   if(s.shotFlash>0&&p.form!=='wolf'&&p.form!=='zombie'){c.fillStyle='#fff1ac';c.fillRect(x+40,y-44,16,5);if(p.form==='robot')c.fillRect(x+53,y-50,13,4);}
+   if(p.form==='robot'){root.ArcadeRobotForm.draw(c,{...p,x,y,anim:s.time,onMotorcycle:true,grounded:!s.jump,crash:s.crash,crashAge:s.crashAge});if(!s.crash)root.ArcadeWeaponRenderer.draw(c,{...p,x,y,onMotorcycle:true},{inventory:s.inventory,flash:s.shotFlash});return;}if(s.crash>0){const row={wolf:0,zombie:1,fighter:2,tank:3}[p.form];if(crashes&&row!==undefined){const f=crashes[row*4+Math.min(3,Math.floor(s.crashAge/.55))],k=(p.form==='tank'?105:104)/crashes[row*4+3][2];sprite(c,images.crashes,f,x,p.lane,f[2]*k);}else if(soldierCrash){const f=soldierCrash[Math.min(3,Math.floor(s.crashAge/.55))],k=104/soldierCrash[3][2];sprite(c,images.soldierCrash,f,x,p.lane,f[2]*k);}else wipeout(c,images.riders,riders[0],x,p.lane,104,s.crashAge);return;}if(p.form==='tank'||p.form==='fighter'){c.save();c.globalAlpha*=alpha;root.ArcadeAdvancedForms?.draw(c,{...p,x,y,anim:s.time,grounded:!s.jump,vy:-s.jumpV,tankAirAge:s.jumpAge??.2,landing:s.landing||0,cannonPose:s.shotFlash>0?.45:0});c.restore();return;}const width=War.RIDER_WIDTH;
+   c.save();c.globalAlpha*=alpha;if(p.hurt>0&&Math.floor(s.time*18)%2)c.globalAlpha*=.45;
+   if(!s.stuntMount)exhaust(c,x-43,y-12,s.time,!!s.boost);
+   const useActions=actions&&p.form!=='soldier',img=useActions?images.actions:images.riders;
+   const col=p.form==='wolf'?0:p.form==='zombie'?1:2;
+   const row=s.ram>0||s.shotFlash>0?2:s.jump?1:0;
+   const rider=p.form==='wolf'?(s.jump?7:4):p.form==='zombie'?5:s.shotFlash>0?2:s.jump?3:s.boost?1:0;
+   const f=useActions?actions[row*3+col]:riders[rider],scale=width/(useActions?actions[col]:riders[0])[2];
+   const cw=Math.floor(img.width/(useActions?3:4)),offset=(f[0]%cw+f[2]/2-cw/2)*scale;
+   const pose=War.riderPose(s,x,y,offset,useActions?1.2:.6);
+   sprite(c,img,f,pose.x,pose.y,f[2]*scale,pose.angle);
    c.restore();
   }
-  function enemy(c,n,s){if(n.type==='jetSoldier'){root.ArcadeExpansionEnemies.draw(c,{...n,kind:'jetSoldier',death:Math.max(0,1-n.death/2.8),facing:-1,scale:War?.JET_SCALE||1},images.expansion);if(n.hp>0&&Kit)Kit.enemyBar(c,n,n.h+10);return;}const index=n.type==='jeep'?2:n.type==='sidecar'?1:0,crop=foes?.[index+(n.hp<n.maxHp*.5?3:0)],img=foes?images.foes:images.riders,frame=crop||riders[8+index];shadow(c,n.x,n.y,n.w,n.hp<=0?Math.max(0,1-n.death/2):1);exhaust(c,n.x-n.w*.45,n.y-16,s.time+n.age);if(n.hp<=0){if(n.type==='jeep'){const k=Math.max(0,1-n.death/3);sprite(c,images.riders,riders[11],n.x,n.y,n.w,0,k);if(Fire&&k>.25){c.save();c.globalAlpha=k;Fire.smoke(c,n.x+8,n.y-52,s.time,7,.5);Fire.flame(c,n.x+10,n.y-30,1,s.time,5);Fire.flame(c,n.x-28,n.y-22,.7,s.time,23);c.restore();}}else sprite(c,img,foes?.[index+3]||frame,n.x,n.y+8,n.w,Math.min(.42,n.death*.4),Math.max(0,1-n.death/3));return;}sprite(c,img,frame,n.x,n.y+Math.sin(s.time*25+n.x)*.6,frame[2]*(n.w/(foes?.[index]||riders[8+index])[2]),0,n.hit>0?.65:1);if(n.escort){}else if(Kit)Kit.enemyBar(c,n,n.h+12);else{c.fillStyle='#1a202dcc';c.fillRect(n.x-26,n.y-n.h-12,52,5);c.fillStyle='#df8262';c.fillRect(n.x-25,n.y-n.h-11,50*n.hp/n.maxHp,3);}if(n.flash>0){c.fillStyle='#fff1aa';c.fillRect(n.x-n.w*.4-13,n.y-n.h*.7,22,5);}if(n.shock>0){c.strokeStyle='#9ffff0';c.lineWidth=2;c.beginPath();for(let i=0;i<12;i++){const x=n.x-50+i*9,y=n.y-30+Math.sin(i*8+s.time*70)*24;if(i)c.lineTo(x,y);else c.moveTo(x,y);}c.stroke();}}
+  function enemy(c,n,s){if(n.type==='jetSoldier'){root.ArcadeExpansionEnemies.draw(c,{...n,kind:'jetSoldier',death:Math.max(0,1-n.death/2.8),facing:-1,scale:War?.JET_SCALE||1},images.expansion);if(n.hp>0&&Kit)Kit.enemyBar(c,n,n.h+10);return;}const index=n.type==='jeep'?2:n.type==='sidecar'?1:0,crop=foes?.[index+(n.hp<n.maxHp*.5?3:0)],img=foes?images.foes:images.riders,frame=crop||riders[8+index];shadow(c,n.x,n.y,n.w,n.hp<=0?Math.max(0,1-n.death/2):1);
+   if(n.hp<=0&&images.stunts&&(n.type==='bike'||n.type==='sidecar')){
+    root.ArcadeRoadCrash.convoy(c,images.stunts,n.type,n.x,n.y,n.death,()=>sprite(c,img,frame,0,0,n.w));return;
+   }
+   if(n.hp>0)exhaust(c,n.x-n.w*.45,n.y-16,s.time+n.age);if(n.hp<=0){if(n.type==='jeep'){const k=Math.max(0,1-n.death/3);sprite(c,images.riders,riders[11],n.x,n.y,n.w,0,k);if(Fire&&k>.25){c.save();c.globalAlpha=k;Fire.smoke(c,n.x+8,n.y-52,s.time,7,.5);Fire.flame(c,n.x+10,n.y-30,1,s.time,5);Fire.flame(c,n.x-28,n.y-22,.7,s.time,23);c.restore();}}else sprite(c,img,foes?.[index+3]||frame,n.x,n.y+8,n.w,Math.min(.42,n.death*.4),Math.max(0,1-n.death/3));return;}sprite(c,img,frame,n.x,n.y+Math.sin(s.time*25+n.x)*.6,frame[2]*(n.w/(foes?.[index]||riders[8+index])[2]),0,n.hit>0?.65:1);if(n.escort){}else if(Kit)Kit.enemyBar(c,n,n.h+12);else{c.fillStyle='#1a202dcc';c.fillRect(n.x-26,n.y-n.h-12,52,5);c.fillStyle='#df8262';c.fillRect(n.x-25,n.y-n.h-11,50*n.hp/n.maxHp,3);}if(n.flash>0){c.fillStyle='#fff1aa';c.fillRect(n.x-n.w*.4-13,n.y-n.h*.7,22,5);}if(n.shock>0){c.strokeStyle='#9ffff0';c.lineWidth=2;c.beginPath();for(let i=0;i<12;i++){const x=n.x-50+i*9,y=n.y-30+Math.sin(i*8+s.time*70)*24;if(i)c.lineTo(x,y);else c.moveTo(x,y);}c.stroke();}}
   // Puntos calientes de los restos, como fracción del cuadro (izquierda→derecha, suelo→arriba).
   const HOT=[[.283,.66,1.1],[.76,.36,1],[.32,.1,.85],[.5,.57,1.1],[.665,.61,.9]],STACKS=[[.3,.86],[.72,.64]],rnd=v=>{const q=Math.sin(v*127.1+311.7)*43758.5453;return q-Math.floor(q);};
   // Todos los cuadros del camión comparten escala y anclaje: no salta al disparar ni al romperse.
@@ -72,7 +98,7 @@
    else if(end)things.push({y:p.lane,draw:()=>hero(c,p,s,end)});
    else if(s.ending<4)things.push({y:p.lane,draw:()=>player(c,p,s)});
    things.sort((a,b)=>a.y-b.y).forEach(t=>t.draw());if(cut?.heli.visible)helicopter(c,cut.heli,s.time);
-   for(const b of s.bullets){if(root.ArcadeBossAttackSprites?.projectile(c,b,s.time))continue;c.fillStyle=b.plasma?'#83ff88':b.enemy?'#ff6259':'#fff1b1';if(b.plasma){c.fillRect(b.x-7,b.y-5,14,10);c.fillStyle='#d8ffc5';c.fillRect(b.x-3,b.y-3,6,5);}else{c.save();c.translate(b.x,b.y);c.rotate(Math.atan2(b.vy,b.vx));c.fillRect(-9,-2,b.slot===6?19:12,b.slot===6?6:3);c.restore();}}
+   for(const b of s.bullets){if(root.ArcadeBossAttackSprites?.projectile(c,b,s.time))continue;c.fillStyle=b.eyeRay?'#71cfff':b.plasma?'#83ff88':b.enemy?'#ff6259':'#fff1b1';if(b.plasma){c.fillRect(b.x-7,b.y-5,14,10);c.fillStyle='#d8ffc5';c.fillRect(b.x-3,b.y-3,6,5);}else{c.save();c.translate(b.x,b.y);c.rotate(Math.atan2(b.vy,b.vx));c.fillRect(-9,-2,b.slot===6?19:12,b.slot===6?6:3);c.restore();}}
    if(powers&&s.ending<0&&!cut){root.ArcadePowers?.draw(c,powers,p,e,{top:0,bottom:540});root.ArcadePowerFx?.draw(c,powers,p,e);}effects(c,s);foreground(c,s.scroll,s.boost&&!cut&&!end);
    // Atardecer: el cielo conserva su luz y la calzada se oscurece entre farolas.
    if(Stage&&root.ArcadeMissionOneFx)root.ArcadeMissionOneFx.lightmap(c,{x:0,y:0},960,540,[{x:480,y:40,r:520,a:.95},{x:120,y:120,r:360,a:.8},{x:840,y:120,r:360,a:.8},...Stage.lights(s,p),...(powers&&root.ArcadePowerFx?root.ArcadePowerFx.lights(powers,p):[])],AMBIENT);

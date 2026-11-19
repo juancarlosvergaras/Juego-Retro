@@ -73,7 +73,8 @@
   function ending(c,art,t){
     if(t<4.5){
       lab(c,art,.85+clamp(t/4.5)*.14);
-      sprite(c,art.lizard,11,Math.min(11,t*8),440,440,1.6,-1);
+      c.save();c.translate(440,440);c.scale(-1.6,1.6);
+      c.drawImage(art.actions,12*164,2*112,164,112,-82,-102,164,112);c.restore();
       const x=165+Math.min(2.6,t)*77;
       if(t<2.7)walkCap(c,art,x,446,1.4,x-165,clamp((2.7-t)/.13));
       else sprite(c,art.fighter,12,t*8,x,446,1.4);

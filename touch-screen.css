@@ -1,0 +1,88 @@
+/* Shared phone layout for the campaign and the two special missions. */
+.touch-fullscreen,.touch-home-full,.play-notices{display:none}
+.touch-game body{margin:0;overflow:hidden;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+.touch-game .game-card,.touch-game .game-card *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.touch-game .game-card canvas,.touch-game .mobile-controls,.touch-game .touch,.touch-game .drive-touch{touch-action:none}
+.touch-game button,.touch-game a{touch-action:manipulation}
+.touch-game .mobile-controls button,.touch-game .touch button,.touch-game .drive-touch button,.touch-game .mobile-stick{touch-action:none}
+.touch-game .main-menu,.touch-game #briefing,.touch-game #mission-results,.touch-game .overlay-panel{overscroll-behavior:contain}
+.touch-game .game-toolbar .touch-fullscreen,.touch-game .touch-home-full{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.touch-game .game-toolbar .touch-fullscreen{font:600 12px/1 system-ui;min-height:44px;padding:0 10px}
+html.game-expanded,html.game-expanded body{width:100%;height:100%;height:100dvh;overflow:hidden}
+html.game-expanded body{position:fixed;inset:0}
+.touch-game .game-toolbar{flex:none;height:44px;min-height:44px;padding:0 6px;gap:5px}
+.touch-game .game-toolbar button{min-height:44px;flex-shrink:0}
+.touch-game .game-toolbar .touch-fullscreen{margin-left:0}
+.touch-game .play-notices{display:flex;align-items:center;gap:8px;flex:0 0 auto;min-height:24px;padding:0 8px;color:#e5ede9;background:#172731;font:12px/1.35 system-ui;z-index:1}
+.game-expanded-fallback .play-notices:not(.open){display:none}
+.touch-game .game-toolbar .play-notices-toggle{min-width:44px}
+.play-notices>button{font:600 11px/1.1 system-ui;color:#9edacf;background:transparent;border:0;padding:4px;align-self:stretch;min-width:44px}
+.play-notices>button::after{content:' ▾'}
+.play-notices.open>button::after{content:' ▴'}
+.play-notice-text{flex:1;min-width:0;overflow:hidden}
+.touch-game .play-notice-text :is(#radio,#tutorial-hint,#boss-banner,#context-two,#message,#notice){position:static!important;inset:auto!important;display:block!important;transform:none!important;width:auto!important;max-width:100%!important;height:auto!important;min-height:0;margin:0!important;padding:0!important;border:0!important;background:none!important;box-shadow:none!important;text-align:left;animation:none;pointer-events:none}
+.touch-game .play-notice-text :is(#radio,#tutorial-hint,#boss-banner,#context-two,#message,#notice)[hidden]{display:none!important}
+.touch-game .play-notice-text :is(.radio-icon,.tutorial-label,.boss-banner-kicker),.touch-game .play-notices:not(.open) #tutorial-hint button{display:none}
+.touch-game .play-notice-text :is(strong,p,span,.radio-text,.boss-banner-sub){display:inline;margin:0;font:inherit;letter-spacing:normal;text-shadow:none}
+.touch-game .play-notice-text :is(strong,.radio-speaker){color:#ffdaa0;font-weight:700;margin-right:.4em}
+.touch-game .play-notice-text #radio .radio-icon,.touch-game .play-notice-text #tutorial-hint .tutorial-label,.touch-game .play-notice-text #boss-banner .boss-banner-kicker{display:none}
+.touch-game .play-notice-text :is(#radio,#boss-banner,#tutorial-hint,#context-two,#message) :is(strong,p,span):not(.radio-icon,.tutorial-label,.boss-banner-kicker){display:inline;font:inherit;letter-spacing:normal;text-shadow:none}
+.touch-game .play-notice-text :is(#radio,#boss-banner,#tutorial-hint) :is(strong,.radio-speaker){font-weight:700}
+.touch-game .play-notices:not(.open) .play-notice-text{max-height:1.5em;line-height:1.4}
+.touch-game .play-notices:not(.open) .play-notice-text>*,.touch-game .play-notices:not(.open) #radio>div{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.touch-game .play-notices:not(.open) .play-notice-text:has(#boss-banner:not([hidden]))>:not(#boss-banner),
+.touch-game .play-notices:not(.open) .play-notice-text:not(:has(#boss-banner:not([hidden]))):has(#radio:not([hidden]))>:not(#radio),
+.touch-game .play-notices:not(.open) .play-notice-text:not(:has(#boss-banner:not([hidden]),#radio:not([hidden]))):has(#tutorial-hint:not([hidden]))>:not(#tutorial-hint){display:none!important}
+.touch-game .play-notices.open .play-notice-text{max-height:18dvh;overflow:auto;touch-action:pan-y}
+.touch-game .play-notices.open .play-notice-text>*{white-space:normal!important;padding-block:2px!important}
+.touch-game .play-notices.open #tutorial-hint button{display:inline-block;pointer-events:auto;min-height:32px;margin-left:8px}
+.touch-game :is(#briefing,.level-loading,#mission-results,.main-menu){padding:max(6px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.touch-game #briefing .briefing-card,.touch-game #mission-results .results-card,.touch-game .overlay .overlay-panel{max-height:100%;overflow:auto;overscroll-behavior:contain}
+.touch-game #briefing .briefing-text{min-height:0;font-size:14px;line-height:1.4}
+.touch-game #briefing .briefing-actions{position:sticky;bottom:0;background:#101c28;padding-block:4px}
+.touch-special body{box-sizing:border-box;height:100vh;height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.touch-special .header,.touch-special .page-footer,.touch-special main>details,.touch-special .keys,.touch-special .game-footer,.touch-special #steer-drift{display:none}
+:root.touch-special body main{width:100%;height:100%;max-width:none;margin:0;padding:0}
+.touch-special .game-card{position:relative;display:flex;flex-direction:column;width:100%;height:100%;border:0;border-radius:0;overflow:hidden}
+.touch-special .game-toolbar>span:first-child,.touch-special .game-toolbar kbd{display:none}
+.touch-special .game-toolbar #pause{margin-left:auto}
+:root.touch-special .game-card :is(.stage,.highway){position:relative;display:grid;place-items:center;flex:1 1 0%;min-height:0;height:auto;width:auto;aspect-ratio:auto;background:#101923}
+:root.touch-special .game-card :is(#arena,#road){width:100%;height:100%;min-height:0;object-fit:contain;display:block}
+:root.touch-special :is(.stage,.highway) #panel{position:absolute;inset:0;overflow:auto;background:#13232eea}
+.touch-special #panel .brief{width:min(440px,100%);padding:12px 18px}
+.touch-special #panel .brief h1{font-size:clamp(26px,7vw,46px)}
+.touch-special #panel .brief p{font-size:13px;line-height:1.35}
+.touch-special #combat-hud:not([hidden]){position:static;display:flex;min-height:22px;align-items:center;justify-content:space-between;padding:1px 10px;gap:8px}
+.touch-special #combat-hud :is(.fighter-badge,.health-hud){position:static;transform:none;display:flex;align-items:center;gap:6px;min-width:0!important;padding:1px 4px;font:12px system-ui;background:none;border:0;box-shadow:none}
+.touch-special #combat-hud :is(canvas,.hud-label,.life-track){display:none}
+.touch-special #combat-hud .fighter-badge .hud-label{display:block;font-size:0}
+.touch-special #combat-hud strong{font-size:12px}
+.touch-special .touch,.touch-special .drive-touch{display:flex;flex:none;justify-content:space-between;align-items:center;gap:8px;padding:6px;background:#13222c}
+.touch-special :is(.touch,.drive-touch)>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.touch-special .touch>div:last-child{flex:1;max-width:310px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.touch-special .drive-touch>div:last-child{grid-template-columns:repeat(2,minmax(0,1fr))}
+.touch-special :is(.touch,.drive-touch) button{min-width:44px;min-height:44px;padding:3px;font:600 12px/1.1 system-ui;touch-action:none}
+.touch-special button.held{background:#416275;border-color:#ffca72}
+@media (orientation:landscape) and (min-width:500px){
+ .touch-game.mobile-play .mobile-hud{position:absolute;z-index:1;left:6px;top:1px;display:grid;width:min(45%,350px);height:42px;padding:2px 6px;border:0;pointer-events:none}
+ .touch-game.mobile-play .game-toolbar :is(.score-hud,.mobile-stars){display:none}
+ .touch-game.mobile-play .game-toolbar :is(#pause-two,#pause){margin-left:auto}
+ :root.touch-game.mobile-play .game-card .viewport{margin-inline:108px}
+ .touch-game.mobile-play .mobile-tools{width:100px;left:4px;top:70px;gap:2px}
+ .touch-game.mobile-play .mobile-stick-area{width:98px;left:4px}.touch-game.mobile-play .mobile-stick-area>small{display:none}
+ .touch-game.mobile-play .mobile-actions{right:4px;width:100px;grid-template-columns:repeat(2,48px);gap:3px}
+ :root.touch-special .game-card :is(.stage,.highway){margin:0 112px}
+ .touch-special .touch,.touch-special .drive-touch{display:contents}
+ .touch-special :is(.touch,.drive-touch)>div{position:absolute;left:4px;bottom:8px;width:104px}
+ .touch-special :is(.touch,.drive-touch)>div:last-child{left:auto;right:4px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .touch-game #briefing .briefing-card{padding:10px 16px}
+ .touch-game #briefing .briefing-scene{display:none}
+ .touch-game #briefing .briefing-card h2{font-size:20px;margin-block:4px}
+}
+@media(orientation:portrait){
+ .touch-game.game-expanded .game-toolbar,.touch-game.game-expanded .mobile-hud{padding-block:0}
+ .touch-game.game-expanded .mobile-hud{height:30px;flex-basis:30px}
+ .touch-game.game-expanded .mobile-controls{flex-basis:155px;grid-template-rows:97px 44px}
+}
+.touch-game .touch-home-full{width:100%;min-height:44px}
+

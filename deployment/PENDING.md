@@ -1,5 +1,13 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T040910Z
+
+La versión activa incorpora los controles multitáctiles y la pantalla completa en las diez misiones. El dominio sirve el juego desde el Mac mini. [Registro de publicación móvil](releases/20261119T040910Z.md)
+
+## Publicado en Mac mini · 20261119T033108Z
+
+La versión activa incluye las ocho misiones, Distrito Quimera, Fuga del Sol y los ajustes del Capitán del Abismo y del nado. Se verificaron los 325 archivos por SHA256 en el dominio público. La versión anterior, `20260928T145040Z`, sigue disponible en el Mac mini. [Registro de publicación](releases/20261119T033108Z.md)
+
 ## Publicado en Mac mini: 20260928T145040Z · ocho misiones
 
 Nueva York publicada como misión 8 y cierre de campaña. **246 archivos, 221113022 bytes**, verificados por SHA256 desde HTTPS; seis rutas privadas devuelven 404. Servicio saludable. Versión anterior conservada: **20260928T140348Z**. [Registro de publicación](releases/20260928T145040Z.md) · [Misión 8, validación y arte](mission-eight-2026-09-28.md).

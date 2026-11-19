@@ -1,6 +1,24 @@
 const test=require('node:test'),assert=require('node:assert/strict'),R=require('../road-war'),P=require('../physics'),E=require('../mission-combat'),A=require('../arsenal'),C=require('../campaign');
 function game(distance=0,form='soldier'){const s=R.create({distance}),p=Object.assign(P.createPlayer(),{form,x:200,lane:414,y:414,maxJumps:2,grounded:true}),e=E.create(A.createInventory());e.invincible=999;return{s,p,e};}
 function tick(g,seconds,input={}){const events=[];for(let i=0;i<Math.round(seconds*120);i++)events.push(...R.update(g.s,g.p,g.e,input,1/120));return events;}
+test('each road form falls, lands once, and regains control on the same lane',()=>{
+ for(const form of ['soldier','wolf','zombie','robot','fighter','hero','tank']){
+  const g=game(100,form),{s,p}=g;s.obstacles=[{distance:104,lane:p.lane,type:'pothole'}];
+  tick(g,.01);assert.ok(s.crash>0);const at=p.x,lane=p.lane;
+  const events=tick(g,1.9,{fire:true,right:true,up:true,jumpPressed:true});
+  assert.equal(events.filter(e=>e.type==='skid').length,1);
+  assert.ok(!events.some(e=>e.type==='attack'||e.type==='jump'));assert.equal(p.x,at);assert.equal(p.lane,lane);
+  tick(g,.35);assert.equal(s.crash,0);assert.equal(p.form,form);
+  tick(g,.04,{right:true});assert.ok(p.x>at);
+ }
+});
+test('a fatal pothole lands before retry and stops before the rider gets back up',()=>{
+ const g=game(100),{s,p,e}=g;Object.assign(e,{hp:1,invincible:0});s.hitWait=0;
+ s.obstacles=[{distance:104,lane:p.lane,type:'pothole'}];tick(g,.01);
+ assert.ok(e.dead&&s.fatalCrash&&s.crash>0);assert.equal(e.hp,0);
+ const events=tick(g,2.5,{fire:true});assert.equal(s.crash,0);assert.ok(s.crashAge>=.9&&s.crashAge<1);
+ assert.equal(events.filter(e=>e.type==='skid').length,1);assert.equal(R.retry(s).fatalCrash,false);
+});
 test('road hits use the protection interval of each difficulty',()=>{
  for(const level of require('../difficulty').levels){
   const {s,p,e}=game(100);e.invincible=0;e.hitProtection=level.grace;e.combatDamage=level.damage;s.hitWait=0;

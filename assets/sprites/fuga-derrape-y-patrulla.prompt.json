@@ -1,0 +1,15 @@
+{
+  "tool": "ImageGen",
+  "sprites": [
+    {
+      "asset": "fuga-derrape.webp",
+      "reference": "fuga-coches.png",
+      "prompt": "Use case: identity-preserve. Production game sprite sheet 2 columns by 2 rows on transparent background. Reference is a sheet of six arcade vehicles. Use ONLY the TOP LEFT red 1980s mid-engine wedge sports coupé as the sole subject. Draw that exact same car four times with the same warm chunky detailed hand-shaded pixel art, dark pixel outlines, squat wide proportions, two cream racing stripes, slatted rear deck, paired rectangular amber red rear lights either side, quad low exhausts, no license plate and NO spoiler. All four are chase camera views BEHIND the car, with identical slight overhead camera elevation, distance, chassis height and wheel size. Car rotates progressively to ITS RIGHT, its nose pointing away and towards screen right, rear facing viewer, increasingly showing the car's right-pointing side silhouette extending to the right. In top left cell exactly straight rear, in top right cell 12 degrees of yaw, bottom left cell 24 degrees, bottom right cell 38 degrees. At largest angle see one detailed side panel, dark side window, black intake and silver wheel while both rear light clusters and cream stripes remain very visible. Four entire vehicles separately centered in four equal cells, plenty of transparent gutter, flat wheel contact line in each cell. No other elements, no debris, no captions, no background or shadow, no smoke, no grid lines. For in-game animation."
+    },
+    {
+      "asset": "fuga-agente.webp",
+      "reference": "nueva-york-policias-soldados-v1.png",
+      "prompt": "Identity-preserve. Production pixel-art run cycle for a side-view arcade game. The ONE character to use is the first-row, top-left police officer in the reference: navy peaked cap with silver shield badge, blue short-sleeve shirt with blue and yellow shoulder patch, black tactical vest and small backpack, navy trousers, gloves and black boots; same large head and short, stocky Cap Dollar pixel-art body proportions. Draw EIGHT sequential side-view sprint poses of JUST this same unarmed officer running toward screen RIGHT, arranged four columns by two rows, equal cells and clear transparent gutters, all centered individually and same size. Continuous full gait viewed in profile, fists pumping, forward lean, both left and right leg alternate. First row near-leg contact forward, recoil, passing, toe-off, second row opposite contact forward, recoil, passing, toe-off, vary the legs and arms significantly; preserve the same face and identity. Very readable at 40px tall, thick dark pixel silhouette, warm shaded skin, crisp clusters of navy pixels. Full head and feet visible in all eight. Real transparent background, no ground shadow, letters, weapons, vehicles, objects, lines or effects."
+    }
+  ]
+}

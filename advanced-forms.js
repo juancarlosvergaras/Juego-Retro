@@ -9,10 +9,16 @@
  function icon(form){return sheets[form]?{image:sheets[form],frame:frames[form][0]}:null;}
  function special(p){return p.form==='tank'||p.form==='fighter'||p.form==='hero';}
  function heroAirRow(p){
-    if(!(p.heroFlight||p.swimming||p.onMotorcycle))return null;
+    if(p.swimming)return 16;
+    if(!(p.heroFlight||p.onMotorcycle))return null;
     return p.onMotorcycle||Math.hypot(p.vx||0,p.vy||0)>8?16:18;
   }
   function heroEyes(p){
+    if(p.swimming){
+      const cel=Math.floor((p.anim||0)*12)%12;
+      const swim=typeof module!=='undefined'&&module.exports?require('./sea-sprites'):root.ArcadeSeaSprites;
+      return swim.point(p,8.6,cel>=3&&cel<=8?1.2:1.9);
+    }
     const forward=heroAirRow(p)===16;
     return {x:p.x+(p.facing||1)*(forward?12:6),y:p.y-(forward?20:42)};
   }

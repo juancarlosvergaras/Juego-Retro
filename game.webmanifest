@@ -1,0 +1,15 @@
+{
+  "id": "./",
+  "name": "Cap Dollar · The Hunt Begins",
+  "short_name": "Cap Dollar",
+  "lang": "es",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
+  "background_color": "#101821",
+  "theme_color": "#101821"
+}

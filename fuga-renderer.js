@@ -128,6 +128,7 @@
       c.fillStyle='#16212ce8';c.fillRect(697,17,245,48);label('DISTANCIA AL FUGITIVO',711,34,12,'#f8c68e');label(Math.ceil(Math.max(0,s.boss.z-s.z))+' m',927,55,21,'#fff1ce','right');
       c.fillStyle='#16212ce8';c.fillRect(18,469,155,54);label('KM/H',120,508,12,'#e2c593');label(String(Math.round(s.speed*3.6)).padStart(3,'0'),30,509,36,'#fff1d3');
       c.fillStyle='#16212ce8';c.fillRect(735,468,207,55);for(const [j,key,val,color] of [[0,'CARROCERÍA',s.hp/100,'#ffb46c'],[1,'NITRO',s.nitro,'#68e4df']]){label(key,746,488+j*21,12,'#e2dfd2');c.fillStyle='#43505b';c.fillRect(827,480+j*21,101,7);c.fillStyle=color;c.fillRect(827,480+j*21,101*val,7);}
+      if(s.driftSide||Math.abs(s.slip)>.18){c.fillStyle='#16212ce8';c.fillRect(18,440,155,25);label('DERRAPE '+((s.driftSide||s.slip)<0?'◀':'▶'),30,458,15,'#ffcd81');}
       if(s.mode==='launch')label('EL FUGITIVO SE ADELANTA',480,115,20,'#fff5d7','center');
     }
     return {draw};

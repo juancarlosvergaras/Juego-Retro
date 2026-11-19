@@ -23,7 +23,7 @@
   function dust(c,x,y,t,seed,strength=1){for(let i=0;i<6;i++){const u=(t*1.6+i/6+hash(seed))%1,size=Math.round((4+u*10)*strength);c.globalAlpha=(1-u)*.4;c.fillStyle=i%2?'#c9a777':'#a88a62';c.fillRect(Math.round(x-u*70*strength),Math.round(y-size-u*8),size*2,size);}c.globalAlpha=1;}
   function shadow(c,x,y,w){c.fillStyle='rgba(8,12,16,.5)';c.fillRect(Math.round(x-w*.42),Math.round(y-2),Math.round(w*.84),3);c.fillStyle='rgba(8,12,16,.28)';c.fillRect(Math.round(x-w*.5),Math.round(y),Math.round(w),3);}
   function dusk(c,w,h,top,bottom){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,top);g.addColorStop(1,bottom);c.fillStyle=g;c.fillRect(0,0,w,h);}
-  Scenes.register('four',{road:'assets/worlds/mission-04/carretera-atardecer-v1.png',riders:'assets/sprites/motos-carretera-v2.png',rig:'assets/sprites/jefe-convoy-v3.png'},[
+  Scenes.register('four',{road:'assets/worlds/mission-04/carretera-atardecer-v1.png',riders:'assets/sprites/motos-carretera-v3.webp',rig:'assets/sprites/jefe-convoy-v3.png'},[
     // 1 · La huida: el convoy se aleja por la autopista con su escolta.
     function(c,w,h,t){
       const riders=sheet('riders',4,3),rig=sheet('rig',2,3),ground=h-46;

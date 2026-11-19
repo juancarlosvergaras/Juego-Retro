@@ -1,16 +1,15 @@
 (function(root){
  'use strict';
- const QUERY='(max-width: 720px), (max-width: 1100px) and (pointer: coarse), (max-width: 1100px) and (max-height: 500px)';
+ const {contacts,QUERY}=typeof module!=='undefined'&&module.exports?require('./touch-screen'):root.ArcadeTouchScreen;
  function stickActions(x,y){
   const distance=Math.hypot(x,y);if(distance<.22)return[];
   const angle=Math.round(Math.atan2(y,x)/(Math.PI/4))*Math.PI/4,dx=Math.cos(angle),dy=Math.sin(angle),ids=[];
   if(dx<-.4)ids.push('left');if(dx>.4)ids.push('right');if(dy<-.4)ids.push('up');if(dy>.4)ids.push('down');
   if(distance>.86)ids.push('run');return ids;
  }
- function contacts(send){const held=new Map();return{held,start(id,element){held.set(id,{element});},end(id){const item=held.get(id);if(!item)return null;held.delete(id);send(id,[]);return item;},clear(){for(const id of [...held.keys()])this.end(id);}};}
  function mount(){
   const doc=root.document,card=doc.querySelector('.game-card'),viewport=doc.querySelector('.viewport');if(!card||!viewport)return{};
-  const media=root.matchMedia(QUERY),touches=contacts((id,ids)=>root.ArcadeControls?.setTouch(id,ids)),pointers=touches.held;let active=false,locked=true,descending=false;
+  const media=root.ArcadeTouchScreen.media;let active=false,locked=true,descending=false;
   const hud=doc.createElement('div');hud.className='mobile-hud';hud.setAttribute('aria-label','Estado del jugador');
   hud.innerHTML='<div class="mobile-life"><small>VIDA</small><strong></strong><progress max="100" value="100" aria-label="Salud"></progress></div><div class="mobile-loadout"><strong></strong><small></small></div><div class="mobile-resources"><strong></strong><small></small></div>';
   card.insertBefore(hud,viewport);
@@ -19,20 +18,25 @@
   viewport.after(controls);
   const stick=controls.querySelector('.mobile-stick'),knob=stick.querySelector('i'),buttons=[...controls.querySelectorAll('button')];
   const send=(id,ids)=>root.ArcadeControls?.setTouch(id,ids);
-  function release(){const old=[...pointers];touches.clear();for(const [id,{element}]of old){element.classList.remove('held');if(element.hasPointerCapture?.(id))element.releasePointerCapture(id);}knob.style.transform='translate(0,0)';}
-  function end(e){const item=touches.end(e.pointerId);if(!item)return;if(![...pointers.values()].some(p=>p.element===item.element))item.element.classList.remove('held');if(item.element===stick)knob.style.transform='translate(0,0)';}
-  function move(e){const item=pointers.get(e.pointerId);if(!item||item.element!==stick)return;e.preventDefault();const r=stick.getBoundingClientRect(),radius=r.width/2,x=(e.clientX-r.left-radius)/radius,y=(e.clientY-r.top-radius)/radius,len=Math.max(1,Math.hypot(x,y));send(e.pointerId,descending?stickActions(x,y).filter(a=>a==='down'):stickActions(x,y));knob.style.transform='translate('+Math.round(x/len*radius*.55)+'px,'+Math.round(y/len*radius*.55)+'px)';}
-  for(const element of [stick,...buttons]){
-   element.addEventListener('pointerdown',e=>{if(!active||locked||element.disabled||e.button>0||element===stick&&[...pointers.values()].some(p=>p.element===stick))return;e.preventDefault();element.setPointerCapture(e.pointerId);touches.start(e.pointerId,element);element.classList.add('held');if(element===stick)move(e);else send(e.pointerId,[descending?'down':element.dataset.mobileAction]);});
-   element.addEventListener('pointermove',move);for(const event of ['pointerup','pointercancel','lostpointercapture'])element.addEventListener(event,end);
-   element.addEventListener('contextmenu',e=>e.preventDefault());
-   if(element!==stick)element.addEventListener('click',e=>{if(e.detail===0&&active&&!locked&&!element.disabled){send('accessible',[descending?'down':element.dataset.mobileAction]);send('accessible',[]);}});
+  function moveStick(id,el,e){
+   if(el!==stick)return;
+   const r=stick.getBoundingClientRect(),radius=r.width/2,x=(e.clientX-r.left-radius)/radius,y=(e.clientY-r.top-radius)/radius,len=Math.max(1,Math.hypot(x,y));
+   send(id,descending?stickActions(x,y).filter(a=>a==='down'):stickActions(x,y));
+   knob.style.transform='translate('+Math.round(x/len*radius*.55)+'px,'+Math.round(y/len*radius*.55)+'px)';
   }
+  const pad=root.ArcadeTouchScreen.bindPads([stick,...buttons],{
+   stick,allow:()=>active&&!locked,
+   down(id,el,e){if(el===stick)moveStick(id,el,e);else send(id,[descending?'down':el.dataset.mobileAction]);},
+   move:moveStick,
+   up(id,el){send(id,[]);if(el===stick)knob.style.transform='translate(0,0)';}
+  });
+  const release=pad.clear;
+  for(const button of buttons)button.addEventListener('click',e=>{
+   if(e.detail===0&&active&&!locked&&!button.disabled){send('accessible',[descending?'down':button.dataset.mobileAction]);send('accessible',[]);}
+  });
   const stars=doc.createElement('span');stars.className='mobile-stars';card.querySelector('.game-toolbar').append(stars);
-  const full=doc.createElement('button');full.className='mobile-fullscreen';full.type='button';full.textContent='⛶';full.setAttribute('aria-label','Pantalla completa');
-  full.onclick=async()=>{try{if(doc.fullscreenElement)await doc.exitFullscreen();else if(doc.documentElement.requestFullscreen)await doc.documentElement.requestFullscreen();else full.textContent='↔';}catch{full.textContent='↔';}};card.querySelector('.game-toolbar').append(full);
   function layout(){release();active=media.matches;doc.documentElement.classList.toggle('mobile-play',active);}
-  media.addEventListener('change',layout);root.addEventListener('resize',release);root.addEventListener('blur',release);doc.addEventListener('visibilitychange',()=>{if(doc.hidden)release();});layout();
+  if(media.addEventListener)media.addEventListener('change',layout);else media.addListener(layout);layout();
   const nodes={health:hud.querySelector('.mobile-life strong'),life:hud.querySelector('progress'),weapon:hud.querySelector('.mobile-loadout strong'),power:hud.querySelector('.mobile-loadout small'),jumps:hud.querySelector('.mobile-resources strong'),fuel:hud.querySelector('.mobile-resources small'),form:controls.querySelector('[data-mobile-action="form"]'),kick:controls.querySelector('[data-mobile-action="kick"]')};
   const text=(node,value)=>{value=String(value);if(node.textContent!==value)node.textContent=value;};
   function update(p,e,profile,powers,blocked,arrival=false){

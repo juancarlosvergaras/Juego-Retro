@@ -4,22 +4,22 @@
   const right=kind=>({kind,route:'right'}),left=kind=>({kind,route:'left'}),hatch=kind=>({kind,route:'hatch'}),
     shutter=kind=>({kind,route:'shutter'}),air=()=>({kind:'jet',route:'air'});
   const waves=[
-    {x:400,cast:[shutter('knife'),right('rifle')]},
-    {x:815,cast:[right('warden'),left('knife')]},
+    {x:400,cast:[shutter('batter'),right('rifle')]},
+    {x:815,cast:[right('warden'),left('knife'),right('batter')]},
     {x:1250,cast:[hatch('infected'),right('knife'),hatch('infected')]},
     {x:1640,cast:[air(),shutter('rifle')]},
-    {x:2090,cast:[left('knife'),right('warden'),air()]},
+    {x:2090,cast:[left('foreman'),right('warden'),air()]},
     {x:2490,cast:[shutter('blackWolf')]},
-    {x:2915,cast:[right('rifle'),hatch('infected')]},
+    {x:2915,cast:[right('rifle'),hatch('infected'),left('batter')]},
     {x:3330,cast:[air(),left('knife'),right('rifle')]},
-    {x:3790,cast:[shutter('robot'),right('knife')]},
+    {x:3790,cast:[shutter('robot'),right('foreman')]},
     {x:4195,cast:[hatch('infected'),hatch('infected'),left('warden')]},
     {x:4610,cast:[right('robot'),air(),left('rifle')]},
     {x:5070,cast:[shutter('gunner')]},
-    {x:5490,cast:[shutter('warden'),right('robot'),left('knife')]},
+    {x:5490,cast:[shutter('warden'),right('batter'),left('knife')]},
     {x:5915,cast:[air(),hatch('infected'),air()]},
     {x:6350,cast:[shutter('robot'),left('rifle'),right('knife')]},
-    {x:6770,cast:[hatch('infected'),air(),right('warden')]},
+    {x:6770,cast:[hatch('infected'),air(),right('foreman')]},
     {x:7200,cast:[left('knife'),shutter('robot'),right('rifle')]},
     {x:7620,cast:[shutter('scientist')]}
   ];
@@ -31,25 +31,46 @@
     kick:{duration:.37,impact:.14,damage:19,reach:99,depth:23,push:38},
     uppercut:{duration:.43,impact:.15,damage:23,reach:58,depth:26,push:40},
     sweep:{duration:.46,impact:.17,damage:14,reach:86,depth:31,push:30},
+    batSwing:{duration:.45,impact:.18,damage:27,reach:113,depth:28,push:49},
+    heavySwing:{duration:.51,impact:.22,damage:34,reach:119,depth:26,push:54},
+    rifleShot:{duration:.30,impact:.10,damage:29,reach:640,depth:18,push:19},
+    pistolShot:{duration:.25,impact:.09,damage:23,reach:460,depth:17,push:13},
     airkick:{duration:.35,impact:.10,damage:21,reach:92,depth:25,push:42}
   };
+  const weapons={
+    bat:{label:'Bate',move:'batSwing',sprite:'capBat',icon:0},
+    alloy:{label:'Bate de metal',move:'heavySwing',sprite:'capAlloy',icon:1},
+    carbine:{label:'Fusil',move:'rifleShot',sprite:'capRifle',icon:2,ranged:true},
+    pistol:{label:'Pistola',move:'pistolShot',sprite:'capPistol',icon:3,ranged:true}
+  };
   const foes={
-    rifle:{hp:34,speed:130,wind:.43,reach:59,damage:9},
+    batter:{hp:29,speed:177,wind:.46,reach:84,damage:10,drop:'bat'},
+    foreman:{hp:49,speed:119,wind:.71,reach:100,damage:15,drop:'alloy'},
+    rifle:{drop:'carbine',hp:34,speed:130,wind:.43,reach:59,damage:9},
     knife:{hp:26,speed:204,wind:.30,reach:52,damage:7},
     warden:{hp:62,speed:100,wind:.55,reach:77,damage:16},
-    jet:{hp:28,speed:155,wind:.42,reach:184,damage:8},
+    jet:{drop:'pistol',hp:28,speed:155,wind:.42,reach:184,damage:8},
     infected:{hp:42,speed:126,wind:.39,reach:62,damage:11},
     robot:{hp:52,speed:102,wind:.58,reach:170,damage:12},
     blackWolf:{hp:138,speed:178,wind:.49,reach:70,damage:14,boss:true},
     gunner:{hp:152,speed:0,wind:.66,reach:900,damage:11,boss:true},
-    scientist:{hp:84,speed:105,wind:.59,reach:185,damage:9,boss:true},
-    lizard:{hp:135,speed:158,wind:.48,reach:100,damage:16,boss:true}
+    scientist:{hp:220,speed:105,wind:.59,reach:185,damage:9,boss:true},
+    lizard:{hp:365,speed:158,wind:.48,reach:100,damage:16,boss:true}
   };
   const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
   const zoneOf=wave=>Math.min(zones.length-1,Math.floor(wave/2));
   // Pixel span of a planted sole in the authored gait, before projection.
-  const stepSpan={fighter:36,knife:33,rifle:30,warden:32,infected:25,robot:28};
-  const bodyScale={fighter:1.28,knife:1.34,rifle:1.22,warden:1.29,jet:1.63,infected:1.28,robot:1.28,
+  const stepSpan={batter:34,foreman:34,fighter:36,knife:33,rifle:30,warden:32,infected:25,robot:28};
+  const armedRows={batter:0,foreman:1,capBat:2,capAlloy:3,capRifle:4,capPistol:5};
+  function characterSprites(){
+    const paths={};
+    for(const kind of ['fighter',...Object.keys(foes).filter(k=>!(k in armedRows)),'hero'])
+      paths[kind]='assets/sprites/quimera-'+kind+'.png';
+    for(const kind of new Set([...Object.keys(stepSpan),...Object.keys(armedRows)]))
+      paths['steps_'+kind]='assets/sprites/quimera-pasos-'+kind+'.webp';
+    return paths;
+  }
+  const bodyScale={batter:1.27,foreman:1.32,fighter:1.28,knife:1.34,rifle:1.22,warden:1.29,jet:1.63,infected:1.28,robot:1.28,
     scientist:1.29,lizard:1.59,blackWolf:1.53,gunner:1.34};
   function floorScale(y){return (y-80)/(366-80);}
   function scaleAt(a){
@@ -83,14 +104,42 @@
   function supplySnapshot(items){
     return items.filter(item=>item.hp<supplies[item.kind].hp).map(({id,hp,taken})=>({id,hp,taken}));
   }
+  function savedWeapon(item){
+    if(!item||!Object.hasOwn(weapons,item.kind)||!Number.isInteger(item.uses)||item.uses<1||item.uses>3)return null;
+    return {kind:item.kind,uses:item.uses};
+  }
+  function gearSnapshot(s){
+    return {weapon:savedWeapon(s.player.weapon),floor:s.drops.filter(d=>d.x>=s.cam-30).map(({kind,uses,x,y})=>({kind,uses,x,y}))};
+  }
+  function nearestDrop(s){
+    const p=s.player;if(p.z>0||p.vz>0)return null;
+    let nearest=null,best=Infinity;
+    for(const d of s.drops){
+      const dx=d.x-p.x,dy=d.y-p.y,dist=dx*dx+dy*dy*2;
+      if(s.age>=d.readyAt&&Math.abs(dx)<=38&&Math.abs(dy)<=22&&dist<best){nearest=d;best=dist;}
+    }
+    return nearest;
+  }
+  function equipDrop(s,d){
+    const p=s.player;s.drops.splice(s.drops.indexOf(d),1);
+    if(p.weapon){
+      const left=s.locked?s.arenaLeft+24:Math.max(28,s.cam+22),right=s.locked?s.arenaLeft+768:worldEnd-60;
+      const behind=p.x-51*p.face,at=behind<left||behind>right?p.x+51*p.face:behind;
+      s.drops.push({...p.weapon,x:clamp(at,left,right),y:p.y,readyAt:s.age+.22});
+    }
+    p.weapon=savedWeapon(d);s.events.push('equip');
+  }
   function create(saved={}){
     const cp=saved.version===2?saved.checkpoint:[0,2,4].includes(saved.checkpoint)?saved.checkpoint*3:0;
     const wave=Number.isInteger(cp)&&cp>=0&&cp<waves.length&&cp%2===0?cp:0;
-    const objects=createSupplies(saved.supplies);
+    const objects=createSupplies(saved.supplies),weapon=savedWeapon(saved.gear?.weapon);
+    const floor=(Array.isArray(saved.gear?.floor)?saved.gear.floor:[]).filter(d=>savedWeapon(d)&&Number.isFinite(d.x)&&d.x>=0&&d.x<=worldEnd&&d.y>=306&&d.y<=429).map(d=>({...savedWeapon(d),x:d.x,y:d.y}));
+
     return {wave,checkpoint:wave,locked:false,arenaLeft:0,mode:'play',age:0,clears:wave,pending:[],waveTime:0,cam:wave?Math.min(maxCam,Math.max(0,waves[wave].x-650)):0,
+      drops:floor.map(d=>({...d,readyAt:0})),tracers:[],goSince:-10,checkpointGear:{weapon,floor},
       supplies:objects,checkpointSupplies:supplySnapshot(objects),
-      player:{kind:'fighter',x:wave?waves[wave].x-290:145,y:366,z:0,vz:0,face:1,hp:100,maxHp:100,act:'idle',stride:0,stepping:false,gaitWeight:0,age:0,stun:0,immune:0,attack:null,chain:0,chainTime:0},
-      enemies:[],shots:[],sparks:[],food:[],score:Number.isFinite(saved.score)?Math.max(0,saved.score):0,
+      player:{kind:'fighter',weapon:weapon&&{...weapon},x:wave?waves[wave].x-290:145,y:366,z:0,vz:0,face:1,hp:100,maxHp:100,act:'idle',stride:0,stepping:false,gaitWeight:0,age:0,stun:0,immune:0,attack:null,pickup:null,chain:0,chainTime:0},
+      enemies:[],shots:[],chemicals:[],sparks:[],food:[],score:Number.isFinite(saved.score)?Math.max(0,saved.score):0,
       checkpointScore:Number.isFinite(saved.score)?Math.max(0,saved.score):0,combo:0,comboTime:0,hitstop:0,shake:0,serial:0,events:[]};
   }
   function portal(gate,route){return route==='shutter'?{x:gate.x+116,y:307}:{x:gate.x+42,y:406};}
@@ -114,11 +163,11 @@
   }
   function activity(a,act){if(a.act!==act){a.age=0;a.act=act;}}
   function spark(s,x,y,type){s.sparks.push({x,y,type,t:.25});s.shake=type==='block'?2:5;}
-  function startAttack(p,name){p.attack={name,t:0,hit:false};p.face=p.face||1;p.age=0;activity(p,name);}
-  function hitSupplies(s,move){
+  function startAttack(p,name,weapon=null){p.attack={name,t:0,hit:false,weapon};p.face=p.face||1;p.age=0;activity(p,name);}
+  function hitSupplies(s,move,only=null){
     const p=s.player;
     for(const box of s.supplies){
-      if(box.hp<=0)continue;
+      if(box.hp<=0||(only&&only!==box))continue;
       const spec=supplies[box.kind],ahead=(box.x-p.x)*p.face;
       if(ahead< -spec.width/2||ahead>move.reach+spec.width/2||Math.abs(box.y-p.y)>move.depth||p.z>spec.height+10)continue;
       box.hp=Math.max(0,box.hp-move.damage);box.hitAt=s.age;
@@ -140,26 +189,60 @@
       box.taken=true;box.takenAt=s.age;s.events.push(reward);
     }
   }
+  const fallTime=.48,downTime=1.12,riseTime=.65;
+  function knockDown(s,n,push){
+    n.fall=downTime;n.down={fromX:n.x,toX:clamp(n.x+push,s.arenaLeft+27,s.arenaLeft+745),fromZ:n.z||0,
+      returns:n.kind==='infected'&&!n.revived,landed:false};
+    n.wind=n.strike=n.stun=n.dash=0;n.tech=null;n.evade=null;n.age=0;activity(n,'fall');
+    s.events.push(n.down.returns?'knockdown':'knockout');if(!n.down.returns)s.score+=150;
+  }
+  function settle(s,n,dt){
+    n.fall=Math.max(0,n.fall-dt);
+    const d=n.down,t=clamp((downTime-n.fall)/fallTime,0,1);
+    n.x=d.fromX+(d.toX-d.fromX)*(1-(1-t)**2);
+    n.z=d.fromZ*(1-t)+44*t*(1-t);
+    if(t===1&&!d.landed){d.landed=true;s.sparks.push({type:'land',x:n.x,y:n.y,t:.25});s.events.push('land');}
+    if(!n.fall&&d.returns){
+      n.revived=true;n.rise=riseTime;n.hp=Math.ceil(n.maxHp*.48);n.cool=.4;n.down=null;
+      activity(n,'rise');s.events.push('rise');
+    }
+  }
   function damageEnemy(s,n,m){
+    if(n.rise>0||n.down||n.morph>0)return;
     const p=s.player,boss=foes[n.kind].boss;
-    const armored=(n.kind==='gunner'&&!(n.overheat>0))||(n.kind==='blackWolf'&&!(n.exposed>0))||
-      (n.wind>0&&(n.kind==='lizard'||n.kind==='robot'));
+    const final=n.kind==='scientist'||n.kind==='lizard';
+    const armored=final||(n.kind==='gunner'&&!(n.overheat>0))||(n.kind==='blackWolf'&&!(n.exposed>0))||
+      (n.wind>0&&n.kind==='robot');
     if(n.kind==='warden'&&!n.stun&&n.act==='guard'&&(p.x-n.x)*n.face>0&&(m===moves.jab||m===moves.cross)){
       spark(s,n.x,n.y-45,'block');s.events.push('block');return;
     }
-    n.hp=Math.max(0,n.hp-m.damage*(n.kind==='gunner'&&n.overheat>0?1.5:1));
-    if(n.kind!=='gunner')n.x=clamp(n.x+p.face*m.push*(boss?.24:1),s.arenaLeft+32,s.arenaLeft+740);
-    if(!armored){n.wind=0;n.stun=n.kind==='lizard'?.19:m===moves.uppercut||m===moves.sweep?.65:.32;n.cool=Math.max(n.cool,.18);}
-    spark(s,n.x,n.y-49,'hit');s.hitstop=.024;s.events.push('hit');
+    const multiplier=final&&n.tech?(techPhase(n)==='recovery'?1.25:.83):n.kind==='gunner'&&n.overheat>0?1.5:1;
+    n.hp=Math.max(0,n.hp-Math.round(m.damage*multiplier));
+    if(n.hp>0&&n.kind!=='gunner'&&!n.tech&&!n.evade)n.x=clamp(n.x+p.face*m.push*(boss?.24:1),s.arenaLeft+32,s.arenaLeft+740);
+    if(!armored){n.wind=0;n.stun=m===moves.uppercut||m===moves.sweep?.65:.32;n.cool=Math.max(n.cool,.18);}
+    spark(s,n.x,n.y-(n.z||0)-49,'hit');s.hitstop=.024;s.events.push('hit');
     s.combo=s.comboTime>0?s.combo+1:1;s.comboTime=1.45;s.score+=m.damage*7;
-    if(n.hp<=0&&n.kind==='scientist'){n.hp=1;n.morph=1.8;n.stun=0;activity(n,'morph');s.shots=[];s.events.push('morph');}
-    else if(n.hp<=0){n.fall=.65;activity(n,'fall');s.score+=150;s.events.push('knockout');}
+    if(n.hp<=0&&n.kind==='scientist'){n.hp=1;n.morph=1.8;n.stun=0;n.tech=null;n.evade=null;n.wind=0;n.z=0;activity(n,'morph');s.shots=[];s.chemicals=[];s.events.push('morph');}
+    else if(n.hp<=0){if(final)s.chemicals=[];knockDown(s,n,p.face*Math.min(67,m.push+17));}
     else if(!armored){activity(n,'hurt');n.age=0;}
+  }
+  function fireWeapon(s,move){
+    const p=s.player;let target=null,range=move.reach;
+    for(const body of [...s.enemies,...s.supplies]){
+      if(body.hp<=0||body.entry||body.morph||body.rise>0||(body.z||0)>56||Math.abs(body.y-p.y)>move.depth)continue;
+      const forward=(body.x-p.x)*p.face;
+      if(forward< -12||forward>range)continue;
+      target=body;range=Math.max(0,forward);
+    }
+    const scale=scaleAt(p),pistol=move===moves.pistolShot;
+    s.tracers.push({x:p.x+p.face*Math.min(range,(pistol?36:47)*scale),end:p.x+range*p.face,
+      y:p.y,height:(pistol?47:44)*scale,until:s.age+.13});
+    if(target){if(supplies[target.kind])hitSupplies(s,move,target);else damageEnemy(s,target,move);}
   }
   function hurt(s,source,damage){
     const p=s.player;if(p.immune>0||p.hp<=0)return;
     if(p.act==='guard'&&(source.x-p.x)*p.face>=-5){p.immune=.16;spark(s,p.x+p.face*20,p.y-56,'block');s.events.push('block');return;}
-    p.hp=Math.max(0,p.hp-damage);p.stun=.33;p.immune=.72;p.attack=null;s.combo=0;activity(p,p.hp?'hurt':'fall');p.age=0;
+    p.hp=Math.max(0,p.hp-damage);p.stun=.33;p.immune=.72;p.attack=null;p.pickup=null;s.combo=0;activity(p,p.hp?'hurt':'fall');p.age=0;
     spark(s,p.x,p.y-45,'hurt');s.events.push('hurt');if(!p.hp)s.mode='down';
   }
   function fighter(s,i,dt){
@@ -168,21 +251,40 @@
     p.age+=dt;p.stun=Math.max(0,p.stun-dt);p.immune=Math.max(0,p.immune-dt);p.chainTime-=dt;
     if(p.z>0||p.vz>0){p.z=Math.max(0,p.z+p.vz*dt);p.vz-=935*dt;if(!p.z)p.vz=0;}
     if(p.stun>0)return;
+    if(!p.pickup&&!p.attack&&(i.pickup||(i.primaryPressed??(i.attack==='jab')))){
+      const item=nearestDrop(s);
+      if(item){
+        if(Math.abs(item.x-p.x)>3)p.face=Math.sign(item.x-p.x);
+        p.pickup={item,t:0,gripped:false};p.gaitWeight=0;activity(p,'pickup');
+      }
+    }
+    if(p.pickup){
+      const action=p.pickup;action.t+=dt;
+      if(!action.gripped&&action.t>=.26){equipDrop(s,action.item);action.gripped=true;}
+      if(action.t>=.48){p.pickup=null;activity(p,'idle');}
+      return;
+    }
     if(!p.attack){
       if(dx)p.face=dx;
       if(i.jump&&!p.z&&!p.vz){p.vz=350;p.z=.1;s.events.push('jump');}
       let move=i.attack;
+      if(move==='jab'&&p.weapon&&!p.z)move=weapons[p.weapon.kind].move;
       if(move==='jab'){p.chain=p.chainTime>0?(p.chain+1)%3:0;move=['jab','cross','uppercut'][p.chain];p.chainTime=.83;}
       if(p.z>0&&move)move='airkick';
-      if(move&&moves[move])startAttack(p,move);
+      if(move&&moves[move])startAttack(p,move,p.weapon&&weapons[p.weapon.kind].move===move?p.weapon.kind:null);
     }
     if(p.attack){
       const a=p.attack,m=moves[a.name];a.t+=dt;p.age=a.t;
       if(a.name==='airkick')p.x+=p.face*105*dt;
-      if(!a.hit&&a.t>=m.impact){a.hit=true;s.events.push('swing');
-        hitSupplies(s,m);
-        for(const n of s.enemies){const ahead=(n.x-p.x)*p.face;
-          if(n.hp>0&&!n.entry&&!n.morph&&ahead>=-19&&ahead<=m.reach+(n.kind==='lizard'?18:0)&&Math.abs(n.y-p.y)<=m.depth)damageEnemy(s,n,m);}
+      if(!a.hit&&a.t>=m.impact){
+        a.hit=true;const weapon=weapons[a.weapon];
+        if(weapon&&--p.weapon.uses===0){p.weapon=null;s.events.push('spent');}
+        if(weapon?.ranged){fireWeapon(s,m);s.events.push('playerShot');}
+        else{
+          s.events.push(weapon?'batHit':'swing');hitSupplies(s,m);
+          for(const n of s.enemies){const ahead=(n.x-p.x)*p.face;
+            if(n.hp>0&&!n.entry&&!n.morph&&Math.abs(p.z-(n.z||0))<73&&ahead>=-19&&ahead<=m.reach+(n.kind==='lizard'?18:0)&&Math.abs(n.y-p.y)<=m.depth)damageEnemy(s,n,m);}
+        }
       }
       if(a.t>=m.duration){p.attack=null;activity(p,'idle');}
     }else{
@@ -215,11 +317,112 @@
     n.face=p.x<n.x?-1:1;n.cool-=dt;activity(n,'idle');
     if(n.cool<=0){n.wind=foes.gunner.wind;n.aimY=p.y;n.aimDistance=Math.max(90,Math.abs(p.x-n.x));activity(n,'guard');s.events.push('wind');}
   }
+  const techniques={
+    flask:{label:'Frasco de suero',row:3,wind:.62,active:.28,recover:.56,range:430,damage:12},
+    gas:{label:'Nube química',row:4,wind:.68,active:.34,recover:.64,range:105,damage:15},
+    tail:{label:'Latigazo de cola',row:5,wind:.53,active:.31,recover:.48,range:150,damage:17},
+    leap:{label:'Salto de caza',row:6,wind:.58,active:.53,recover:.65,range:380,damage:21},
+    acid:{label:'Escupitajo ácido',row:7,wind:.56,active:.32,recover:.56,range:480,damage:14}
+  };
+  const bossPatterns={scientist:['flask','gas'],lizard:['tail','leap','acid']};
+  function techPhase(n){
+    const a=n.tech,m=techniques[a.kind];
+    return a.t<m.wind?'windup':a.t<m.wind+m.active?'active':'recovery';
+  }
+  function newChemical(s,kind,x,y,toX,toY,damage){
+    const duration=kind==='gas'?.96:kind==='flask'?.54:Math.max(.30,Math.abs(toX-x)/445);
+    s.chemicals.push({kind,x,y,startX:x,startY:y,toX,toY,t:0,duration,damage,hit:false,z:kind==='gas'?0:51});
+  }
+  function updateChemicals(s,dt){
+    const p=s.player;
+    for(const b of s.chemicals){
+      b.t+=dt;const t=Math.min(1,b.t/b.duration);
+      if(b.kind==='gas'){
+        const radius=30+68*Math.min(1,t*2.8);
+        if(!b.hit&&((p.x-b.x)/radius)**2+((p.y-b.y)/26)**2<1&&p.z<30){hurt(s,b,b.damage);b.hit=true;}
+      }else{
+        b.x=b.startX+(b.toX-b.startX)*t;b.y=b.startY+(b.toY-b.startY)*t;
+        if(b.kind==='flask'){
+          b.z=51*(1-t)+260*t*(1-t);
+          if(t===1){
+            s.sparks.push({x:b.x,y:b.y-6,t:.25,type:'acid'});s.events.push('shatter');
+            if(((p.x-b.x)/46)**2+((p.y-b.y)/21)**2<1&&p.z<34)hurt(s,b,b.damage);
+          }
+        }else{
+          b.z=48-13*t;
+          if(!b.hit&&Math.abs(p.x-b.x)<24&&Math.abs(p.y-b.y)<17&&p.z<45){
+            hurt(s,b,b.damage);b.hit=true;
+          }
+        }
+      }
+    }
+    s.chemicals=s.chemicals.filter(b=>b.t<b.duration&&!(b.kind==='acid'&&b.hit));
+  }
+  function finalBoss(s,n,dt){
+    const p=s.player,pattern=bossPatterns[n.kind];
+    if(n.evade){
+      const step=n.evade;step.t+=dt;
+      const t=Math.min(1,step.t/step.duration),ease=t*t*(3-2*t);
+      n.x=step.fromX+(step.toX-step.fromX)*ease;n.y=step.fromY+(step.toY-step.fromY)*ease;
+      n.face=Math.sign(step.toX-step.fromX)||n.face;activity(n,'walk');
+      if(t===1)n.evade=null;
+      return;
+    }
+    if(!n.tech){
+      const dx=p.x-n.x,dy=p.y-n.y,cfg=foes[n.kind],kind=pattern[n.turn%pattern.length],m=techniques[kind];
+      n.face=dx<0?-1:1;n.cool-=dt;
+      if(n.cool>0||Math.abs(dx)>m.range||Math.abs(dy)>25){
+        const ox=n.x,oy=n.y;
+        if(Math.abs(dx)>m.range*.72)n.x=clamp(n.x+n.face*cfg.speed*dt,s.arenaLeft+22,s.arenaLeft+748);
+        if(Math.abs(dy)>4)n.y=clamp(n.y+Math.sign(dy)*cfg.speed*.72*dt,306,429);
+        activity(n,ox!==n.x||oy!==n.y?'walk':'idle');return;
+      }
+      n.tech={kind,t:0,fromX:n.x,fromY:n.y,toX:clamp(p.x,s.arenaLeft+22,s.arenaLeft+748),toY:p.y};
+      n.turn++;n.age=0;activity(n,kind);s.events.push('wind');return;
+    }
+    const a=n.tech,m=techniques[a.kind];a.t+=dt;
+    const t=clamp((a.t-m.wind)/m.active,0,1);
+    if(a.t>=m.wind&&!a.released){
+      a.released=true;s.events.push(a.kind);
+      if(a.kind==='flask')newChemical(s,'flask',n.x+n.face*36,n.y,a.toX,a.toY,m.damage);
+      if(a.kind==='gas')newChemical(s,'gas',n.x+20*n.face,n.y,n.x,n.y,m.damage);
+      if(a.kind==='acid'){
+        const start=n.x+n.face*43,end=n.x+n.face*515;
+        const slope=clamp((a.toY-n.y)/Math.max(75,Math.abs(a.toX-n.x)),-.32,.32);
+        newChemical(s,'acid',start,n.y,end,n.y+slope*Math.abs(end-start),m.damage);
+      }
+    }
+    if(a.kind==='leap'&&a.released){
+      const travel=t*t*(3-2*t);
+      n.x=a.fromX+(a.toX-a.fromX)*travel;n.y=a.fromY+(a.toY-a.fromY)*travel;n.z=102*4*t*(1-t);
+      if(t===1&&!a.landed){
+        a.landed=true;s.sparks.push({x:n.x,y:n.y,t:.25,type:'land'});s.events.push('land');
+        if(Math.abs(p.x-n.x)<73&&Math.abs(p.y-n.y)<26&&p.z<38)hurt(s,n,m.damage);
+      }
+    }
+    if(a.kind==='tail'&&!a.connected&&t>=.33&&t<.94){
+      const front=(p.x-n.x)*n.face;
+      if(front>=-25&&front<=m.range&&Math.abs(p.y-n.y)<28&&p.z<40){hurt(s,n,m.damage);a.connected=true;}
+    }
+    if(a.t>=m.wind+m.active+m.recover){
+      n.tech=null;n.cool=.30;n.z=0;activity(n,'idle');
+      if(a.kind==='gas'||a.kind==='tail'){
+        // Make space for the next vial or leap, including when pressed against a gate.
+        const left=s.arenaLeft+38,right=s.arenaLeft+730,stride=a.kind==='gas'?154:118;
+        let dir=p.x>=n.x?-1:1;
+        if(n.x+dir*stride<left||n.x+dir*stride>right)dir=-dir;
+        n.evade={fromX:n.x,fromY:n.y,toX:clamp(n.x+dir*stride,left,right),
+          toY:clamp(n.y+(n.y>366?-27:27),310,424),t:0,duration:a.kind==='gas'?.75:.52};
+      }
+    }
+  }
   function enemy(s,n,dt){
     n.age+=dt;if(n.kind==='jet')n.hoverAge+=dt;
     if(n.entry){arrive(n,dt);return;}
-    if(n.morph>0){n.morph-=dt;if(n.morph<=0){Object.assign(n,{kind:'lizard',hp:foes.lizard.hp,maxHp:foes.lizard.hp,cool:1,wind:0,age:0,act:'idle',morph:0});s.events.push('roar');}return;}
-    if(n.hp<=0){n.fall-=dt;return;}
+    if(n.morph>0){n.morph-=dt;if(n.morph<=0){Object.assign(n,{kind:'lizard',hp:foes.lizard.hp,maxHp:foes.lizard.hp,cool:.28,wind:0,turn:0,age:0,act:'idle',morph:0});s.events.push('roar');}return;}
+    if(n.down){settle(s,n,dt);return;}
+    if(n.rise>0){n.rise=Math.max(0,n.rise-dt);if(!n.rise)activity(n,'idle');return;}
+    if(n.kind==='scientist'||n.kind==='lizard'){finalBoss(s,n,dt);return;}
     if(n.kind==='jet')n.z=13+Math.sin(n.hoverAge*6)*5;
     if(n.overheat>0)n.overheat-=dt;if(n.exposed>0)n.exposed-=dt;
     if(n.stun>0){n.stun-=dt;return;}
@@ -232,33 +435,31 @@
       n.wind-=dt;
       if(n.wind<=0){n.strike=.25;activity(n,n.move);n.age=0;
         if(n.move==='charge'){n.dash=.45;n.connected=false;}
-        else if(n.move==='throw'||n.move==='shoot'||n.move==='pulse'){
+        else if(n.move==='shoot'||n.move==='pulse'){
           const count=n.kind==='warden'?3:1;
           for(let j=0;j<count;j++)s.shots.push({kind:n.move,x:n.x+28*n.face,y:n.y,dir:n.face,age:-j*.095,damage:cfg.damage});
-          s.events.push(n.move==='throw'?'vial':'shot');
+          s.events.push('shot');
         }
-        else{const reach=n.move==='pounce'?146:cfg.reach;if(n.move==='pounce')n.x=clamp(n.x+n.face*40,s.arenaLeft+24,s.arenaLeft+745);
-          if((n.move==='sweep'||dx*n.face>-25)&&Math.abs(dx)<reach+14&&Math.abs(dy)<(n.move==='sweep'?33:23)&&!(p.z>33&&n.move!=='uppercut'))hurt(s,n,cfg.damage);}
-        n.cool=n.kind==='knife'?.68:n.kind==='lizard'?.72:1.05;
+        else if(dx*n.face>-25&&Math.abs(dx)<cfg.reach+14&&Math.abs(dy)<23&&p.z<=33)hurt(s,n,cfg.damage);
+        n.cool=n.kind==='knife'?.68:1.05;
       }return;
     }
     if(n.strike>0){n.strike-=dt;return;}
     n.face=dx<0?-1:1;
     const ranged=n.kind==='jet'||(n.kind==='rifle'||n.kind==='warden')&&n.turn%2===0;
-    const range=n.kind==='blackWolf'&&n.turn%2===0?210:ranged?168:n.kind==='lizard'&&n.turn%2===1?146:cfg.reach;
+    const range=n.kind==='blackWolf'&&n.turn%2===0?210:ranged?168:cfg.reach;
     if(Math.abs(dx)<range&&Math.abs(dy)<19&&n.cool<=0){
       switch(n.kind){
         case 'blackWolf':n.move=n.turn%2?'jab':'charge';break;
+        case 'batter':case 'foreman':n.move='batStrike';break;
         case 'robot':n.move='pulse';break;
-        case 'scientist':n.move='throw';break;
-        case 'lizard':n.move=n.turn%2?'pounce':'sweep';break;
         default:n.move=ranged?'shoot':n.kind==='warden'?'bash':n.kind==='knife'?'slash':'jab';
       }
       n.turn++;
       n.wind=cfg.wind;activity(n,'guard');n.age=0;s.events.push('wind');return;
     }
     const startX=n.x,startY=n.y;
-    const tooClose=n.kind==='jet'?122:(n.kind==='scientist'||n.kind==='rifle')&&n.cool>.18?85:32;
+    const tooClose=n.kind==='jet'?122:n.kind==='rifle'&&n.cool>.18?85:32;
     if(Math.abs(dx)<tooClose&&Math.abs(dy)<32)n.x-=n.face*cfg.speed*dt;
     else if(Math.abs(dx)>range*.74)n.x+=n.face*cfg.speed*dt;
     if(Math.abs(dy)>5)n.y+=Math.sign(dy)*cfg.speed*.72*dt;
@@ -275,13 +476,13 @@
     activity(n,Math.hypot(n.x-startX,n.y-startY)>.001?'walk':'idle');
   }
   function update(s,input={},dt){
-    s.events=[];if(s.mode!=='play')return s.events;dt=Math.min(.05,dt);s.age+=dt;
+    s.events=[];if(s.mode!=='play')return s.events;dt=Math.min(.05,dt);s.age+=dt;s.tracers=s.tracers.filter(b=>b.until>s.age);
     s.shake=Math.max(0,s.shake-28*dt);s.sparks=s.sparks.filter(f=>(f.t-=dt)>0);
     if(s.hitstop>0){s.hitstop-=dt;return s.events;}
     s.comboTime-=dt;if(s.comboTime<=0)s.combo=0;
     fighter(s,input,dt);
     const gate=waves[s.wave];if(!gate)return s.events;
-    if(!s.locked&&s.player.x>=gate.x-80){
+    if(!s.locked&&s.age-s.goSince>=.75&&s.player.x>=gate.x-80){
       s.locked=true;s.arenaLeft=clamp(gate.x-375,0,worldEnd-810);s.waveTime=0;
       s.pending=gate.cast.map((_,i)=>({i,at:.12+i*(.72+(s.wave%3)*.18)}));s.events.push('wave');
     }
@@ -301,16 +502,22 @@
     }
     for(const b of s.shots){b.age+=dt;if(b.age<0)continue;b.x+=b.dir*(b.speed||(b.kind==='shoot'?460:270))*dt;b.y+=(b.vy||0)*dt;if(Math.abs(b.x-s.player.x)<19&&Math.abs(b.y-s.player.y)<22&&s.player.z<44){hurt(s,b,b.damage||9);b.age=9;}}
     s.shots=s.shots.filter(b=>b.age<2.8);
+    updateChemicals(s,dt);
+    for(const n of s.enemies){
+      const kind=foes[n.kind].drop;
+      if(n.hp<=0&&n.fall<=0&&kind)s.drops.push({kind,uses:3,x:n.x,y:n.y,readyAt:s.age+.12});
+    }
     s.enemies=s.enemies.filter(n=>n.hp>0||n.fall>0);
+    s.drops=s.drops.filter(d=>d.x>s.cam-80);
     if(s.locked&&!s.enemies.length&&!s.pending.length&&s.mode==='play'){
-      s.locked=false;s.wave++;s.clears++;s.shots=[];s.score+=400;s.events.push('clear');
+      s.locked=false;s.wave++;s.clears++;s.shots=[];s.chemicals=[];s.score+=400;s.events.push('clear');
       if(s.wave===waves.length){s.mode='won';activity(s.player,'win');}
-      else{if(s.wave%2===0){s.checkpoint=s.wave;s.checkpointScore=s.score;s.checkpointSupplies=supplySnapshot(s.supplies);s.events.push('checkpoint');}
+      else{s.goSince=s.age;if(s.wave%2===0){s.checkpoint=s.wave;s.checkpointGear=gearSnapshot(s);s.checkpointScore=s.score;s.checkpointSupplies=supplySnapshot(s.supplies);s.events.push('checkpoint');}
         s.food=[{x:clamp(s.player.x+62,s.cam+32,worldEnd-50),y:s.player.y,used:false}];}
     }
     return s.events;
   }
-  function checkpoint(s){return {version:2,checkpoint:s.checkpoint,score:s.checkpointScore,supplies:s.checkpointSupplies};}
-  const api={zones,waves,moves,foes,supplies,stepSpan,floorScale,scaleAt,maxCam,portal,zoneOf,create,update,checkpoint};
+  function checkpoint(s){return {version:2,checkpoint:s.checkpoint,score:s.checkpointScore,supplies:s.checkpointSupplies,gear:s.checkpointGear};}
+  const api={zones,waves,moves,techniques,techPhase,fallTime,downTime,riseTime,foes,supplies,weapons,nearestDrop,stepSpan,armedRows,characterSprites,floorScale,scaleAt,maxCam,portal,zoneOf,create,update,checkpoint};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeQuimera=api;
 })(typeof window!=='undefined'?window:globalThis);

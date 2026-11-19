@@ -97,6 +97,57 @@ test('street lamps are planted on the guardrail and travel with the road',()=>{
  const xs=a.map(l=>l.x).sort((p,q)=>p-q);for(let i=1;i<xs.length;i++)assert.ok(Math.abs(xs[i]-xs[i-1]-S.LAMP_GAP)<1e-9);
  for(let scroll=0;scroll<6000;scroll+=137)for(const l of S.lamps(scroll))assert.ok(l.x>-90&&l.x<1050);
 });
+test('mounted soldier rounds and their light originate at the painted pistol in every lane',()=>{
+ const dt=1/120;
+ for(const lane of R.LANES)for(const jumping of [false,true]){
+  const {s,p,e}=game(150);p.lane=lane;
+  R.update(s,p,e,{fire:true,run:true,jumpPressed:jumping},dt);
+  const b=s.bullets[0],light=S.lights(s,p).find(l=>l.glow==='255,214,140');
+  assert.ok(b&&light);const x=b.x-b.vx*dt,y=b.y-b.vy*dt;
+  assert.ok(Math.hypot(x-light.x,y-light.y)<.001);
+  // Measured barrel relative to the wheels of the displayed 104 px bike.
+  const angle=jumping?Math.max(-.16,-s.jumpV*.0005):0;
+  const dx=34.4*Math.cos(angle)+69.2*Math.sin(angle),dy=34.4*Math.sin(angle)-69.2*Math.cos(angle);
+  assert.ok(Math.hypot(x-p.x-dx,y-p.y-dy)<1.1);
+ }
+});
+test('the mounted zombie ray stays attached to the open palm with valid dusk lights on every frame',()=>{
+ for(const jumping of [false,true]){
+  const g=game(1020,'zombie'),{s,p,e}=g,dt=1/120;
+  R.update(s,p,e,{fire:true,jumpPressed:jumping},dt);
+  const ray=s.effects.find(f=>f.color==='ray');
+  assert.ok(ray);
+  const initial={x:ray.x,y:ray.y};
+  let frames=0;
+  while(s.effects.includes(ray)&&frames<30){
+   const lights=S.lights(s,p),palm=lights.find(l=>l.glow==='150,240,255');
+   assert.ok(lights.every(l=>Number.isFinite(l.x)&&Number.isFinite(l.y)&&Number.isFinite(l.r)&&l.r>0));
+   assert.ok(s.shotFlash>0&&palm);
+   // Raster coordinates of the first spark at the fingertips in the 104 px motorcycle sprite.
+   const angle=s.jump?Math.max(-.16,Math.min(.13,-s.jumpV*.0005)):Math.sin(s.time*17)*.009;
+   const px=p.x+37.7*Math.cos(angle)+72.2*Math.sin(angle),py=p.y+37.7*Math.sin(angle)-72.2*Math.cos(angle);
+   assert.ok(Math.hypot(ray.x-px,ray.y-py)<2.2);
+   assert.deepEqual([palm.x,palm.y],[ray.x,ray.y]);
+   assert.equal(ray.toY,ray.y);assert.ok(Math.abs(ray.toX-ray.x-400)<1e-8);
+   R.update(s,p,e,{right:true,up:true},dt);frames++;
+  }
+  assert.ok(frames>=25&&frames<=27);assert.ok(!s.effects.includes(ray));
+  assert.ok(ray.x>initial.x+25&&ray.y<initial.y-15);
+ }
+});
+test('zombie plasma leaves the same palm while the beam tracks a struck rider and deals damage once',()=>{
+ const {s,p,e}=game(1020,'zombie'),dt=1/120;
+ const foe={...R.spawn(s,4),x:470,y:p.y,targetX:400};s.enemies=[foe];
+ R.update(s,p,e,{fire:true,kick:true},dt);
+ const ray=s.effects.find(f=>f.color==='ray'),plasma=s.bullets.find(b=>b.plasma);
+ assert.ok(ray&&plasma);assert.equal(foe.hp,foe.maxHp-2);
+ assert.ok(Math.hypot(plasma.x-plasma.vx*dt-ray.x,plasma.y-plasma.vy*dt-ray.y)<.001);
+ for(let i=0;i<15;i++){
+  R.update(s,p,e,{left:true},dt);
+  assert.equal(ray.toX,foe.x-foe.w/2+12);assert.equal(ray.toY,foe.y-foe.h*.65);
+  assert.equal(foe.hp,foe.maxHp-2);
+ }
+});
 test('the dusk lighting follows the bike, the boss, the shots and the fire',()=>{
  const g=game(500);g.s.time=3;const idle=S.lights(g.s,g.p),head=idle.filter(l=>l.glow==='255,236,180');
  assert.equal(head.length,2);assert.ok(head.every(l=>l.x>g.p.x),'the headlight points ahead');assert.ok(idle.some(l=>l.glow==='255,70,50'&&l.x<g.p.x),'tail light behind');

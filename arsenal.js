@@ -61,7 +61,7 @@
   const fireKeys=['KeyJ','KeyX','Numpad0','KeyQ','KeyC','KeyO','KeyM'];
   function triggerInput(keys,pointerHeld=false,queued=false){
     const fireHeld=pointerHeld||fireKeys.some(code=>keys.has(code));
-    return{fireHeld,fire:fireHeld||queued,aimRight:keys.has('KeyO')||keys.has('KeyM'),diagonalUp:keys.has('KeyQ')||keys.has('KeyO'),diagonalDown:keys.has('KeyC')||keys.has('KeyM')};
+    return{fireHeld,fire:fireHeld||queued,diagonalUp:keys.has('KeyQ')||keys.has('KeyO'),diagonalDown:keys.has('KeyC')||keys.has('KeyM')};
   }
   function createFireBuffer(){
     let remaining=0,slot=null;
@@ -82,6 +82,15 @@
     // direction at trigger time; a held trigger continues to track live aim.
     if(queuedAim&&input.fire&&input.fireHeld===false)return queuedAim;
     return aimDirection(input,facing);
+  }
+  // Puntería única de todas las misiones y formas. Arriba y abajo apuntan; las
+  // cuatro teclas de diagonal (Q/C y O/M) siguen hacia donde mira el personaje;
+  // una pulsación breve conserva la dirección del momento del disparo.
+  function aimInput(input){return{...input,aimUp:!!(input.aimUp||input.up),aimDown:!!(input.aimDown||input.down)};}
+  function playerAim(p,input,{queuedAim=null,turn=true}={}){
+    const aim=firingAim(aimInput(input),p.facing||1,queuedAim);
+    if(turn&&aim.x&&!p.rope&&(turn==='always'||p.form!=='wolf'))p.facing=Math.sign(aim.x);
+    p.aim=aim;return aim;
   }
   function aimDirection(input,facing=1){
     if(input.aimVector&&Number.isFinite(input.aimVector.x)&&Number.isFinite(input.aimVector.y)){const {x,y}=input.aimVector,length=Math.hypot(x,y);if(length>.01)return{x:x/length,y:y/length};}
@@ -126,6 +135,6 @@
     if(!shots.length)return null;
     return{weapon:{...shots[0].weapon,rate:Math.max(.001,Math.min(...e.robotWait))*(p.rateBonus||1)},bullets:shots.flatMap(s=>s.bullets)};
   }
-  const api={supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
+  const api={supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,aimInput,playerAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
 })(typeof window!=='undefined'?window:globalThis);
 

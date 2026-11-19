@@ -12,7 +12,7 @@
   ['prevWeapon','Arma anterior','BracketLeft',['BracketLeft'],8],['pause','Pausa / continuar','Escape',['Escape','KeyP'],9],
   ['aimUp','Apuntar arriba','KeyI',['KeyI'],null],['aimDown','Apuntar abajo','KeyK',['KeyK'],null],
   ['diagonalUp','Disparar diagonal arriba','KeyQ',['KeyQ'],null],['diagonalDown','Disparar diagonal abajo','KeyC',['KeyC'],null],
-  ['diagonalRightUp','Diagonal derecha arriba','KeyO',['KeyO'],null],['diagonalRightDown','Diagonal derecha abajo','KeyM',['KeyM'],null],
+  ['diagonalRightUp','Diagonal arriba (mano derecha)','KeyO',['KeyO'],null],['diagonalRightDown','Diagonal abajo (mano derecha)','KeyM',['KeyM'],null],
   ['restart','Checkpoint (misión 1)','KeyR',['KeyR'],null],
   ...Array.from({length:9},(_,i)=>['weapon'+(i+1),'Arma '+(i+1),'Digit'+(i+1),['Digit'+(i+1),'Numpad'+(i+1)],null])
  ].map(([id,label,code,keys,button])=>({id,label,code,keys,button}));
@@ -43,7 +43,6 @@
   if(held.has('up'))result.aimUp=true;if(held.has('down'))result.aimDown=true;
   if(['fire','diagonalUp','diagonalDown','diagonalRightUp','diagonalRightDown'].some(id=>held.has(id)))result.fire=result.fireHeld=true;
   if(held.has('diagonalUp')||held.has('diagonalRightUp'))result.diagonalUp=true;if(held.has('diagonalDown')||held.has('diagonalRightDown'))result.diagonalDown=true;
-  if(held.has('diagonalRightUp')||held.has('diagonalRightDown'))result.aimRight=true;
   if(aim)result.aimVector=aim;return result;
  }
  function keyName(code){return({Space:'Espacio',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',ShiftLeft:'Shift izq.',ShiftRight:'Shift der.',Escape:'Esc',BracketLeft:'[',BracketRight:']'})[code]||code.replace(/^Key/,'').replace(/^Digit/,'').replace(/^Numpad/,'Num ');}

@@ -63,10 +63,10 @@ test('both missions share trigger mapping, including independent pointer and key
  for(const key of A.fireKeys){const held=new Set([key]);assert.equal(A.triggerInput(held).fire,true);held.clear();assert.equal(A.triggerInput(held).fire,false);}
  const keys=new Set(['ArrowUp','ArrowLeft']);assert.equal(A.triggerInput(keys).fire,false);
  assert.equal(A.triggerInput(keys,true).fireHeld,true);keys.add('KeyJ');assert.equal(A.triggerInput(keys,false).fireHeld,true);
- keys.delete('KeyJ');assert.deepEqual(A.triggerInput(keys,false,true),{fireHeld:false,fire:true,aimRight:false,diagonalUp:false,diagonalDown:false});
+ keys.delete('KeyJ');assert.deepEqual(A.triggerInput(keys,false,true),{fireHeld:false,fire:true,diagonalUp:false,diagonalDown:false});
  for(const key of ['KeyQ','KeyC','KeyO','KeyM'])for(const facing of [-1,1]){
   const controls=A.triggerInput(new Set([key])),p=Object.assign(P.createPlayer(),{facing});p.aim=A.aimDirection(controls,facing);
   const e=E.createEncounter();e.enemies=[];e.boss.hp=0;e.finalBoss.hp=0;E.updateEncounter(e,p,controls,1/120,[]);
-  assert.equal(e.inventory.ammo[3],35);const b=e.bullets.find(b=>!b.enemy);assert.ok(b);assert.equal(Math.sign(b.vx),['KeyO','KeyM'].includes(key)?1:facing);assert.equal(Math.sign(b.vy),['KeyC','KeyM'].includes(key)?1:-1);
+  assert.equal(e.inventory.ammo[3],35);const b=e.bullets.find(b=>!b.enemy);assert.ok(b);assert.equal(Math.sign(b.vx),facing);assert.equal(Math.sign(b.vy),['KeyC','KeyM'].includes(key)?1:-1);
  }
 });

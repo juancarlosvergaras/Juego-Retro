@@ -194,7 +194,7 @@
     if(!state.inside)window.ArcadeSkyExpedition?.update(state.geometry.platforms,player,state.time);
     if(cemetery)player.speedBonus=(1+(profile.levels.speed||0)*.08)*ArcadeCemeteryEvents.slow(cemetery,player,state.inside);
     const oldX=player.x,oldJumps=player.jumps,wasGrounded=player.grounded,oldLadder=player.ladder;
-    player.aim=ArcadeArsenal.firingAim({...input,aimUp:input.aimUp||input.up,aimDown:input.aimDown||input.down},player.facing,queuedAim);
+    ArcadeArsenal.playerAim(player,input,{queuedAim,turn:false});
     if(input.hookPressed&&(player.form==='wolf'||player.form==='zombie'))notify('El gancho solo está disponible para el soldado');
     mode=P.step(player,ArcadeArsenal.movementInput(player,input),dt,state.geometry.platforms,{ladders:state.geometry.ladders,anchors:[]});
     L.finishClimb(player,oldLadder,state.geometry);

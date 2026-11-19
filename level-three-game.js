@@ -139,7 +139,7 @@
     if(arrival?.active){audio.loop('helicopter',.3);arrivalAge+=dt;if(arrivalAge>=7.7&&!staged.title){staged.title=true;presentation?.title('MISIÓN 03','GUERRA EN EL AIRE','Cubierta de despegue');}state.introAge=arrivalAge;player.x=160;player.y=620;player.grounded=true;queue.clear();queuedAim=null;fireBuffer.clear();if(arrivalAge>=9){arrival=null;audio.loop('helicopter',0);player.ground=state.geometry.platforms[0];player.fallPeak=620;save();}return;}
     if(player.transform>0){queue.clear();queuedAim=null;fireBuffer.clear();return;}
     const oldX=player.x,oldJumps=player.jumps,wasGrounded=player.grounded,oldLadder=player.ladder;
-    player.aim=ArcadeArsenal.firingAim({...input,aimUp:input.aimUp||input.up,aimDown:input.aimDown||input.down},player.facing,queuedAim);
+    ArcadeArsenal.playerAim(player,input,{queuedAim,turn:false});
     if(input.hookPressed&&(player.form==='wolf'||player.form==='zombie'))notify('El gancho solo está disponible para el soldado');
     mode=P.step(player,ArcadeArsenal.movementInput(player,input),dt,state.geometry.platforms,{ladders:state.geometry.ladders,anchors:[]});
     if(mecha.active&&mecha.hp>0)player.x=Math.max(6170,Math.min(7610,player.x));

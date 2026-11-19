@@ -240,7 +240,7 @@ test('single-key diagonals in mission two match mission one without a three-key 
  for(const key of ['KeyQ','KeyC','KeyO','KeyM'])for(const facing of [-1,1]){
   const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:1700,landed:true,hp:8,shield:99})});g.state.player.facing=facing;
   g.key(key);g.tick(.03);assert.equal(g.state.combat.inventory.ammo[3],35);
-  const shot=g.state.bullets.find(b=>!b.enemy);assert.ok(shot);assert.equal(Math.sign(shot.vx),['KeyO','KeyM'].includes(key)?1:facing);assert.equal(Math.sign(shot.vy),['KeyC','KeyM'].includes(key)?1:-1);assert.equal(g.state.player.x,1700);
+  const shot=g.state.bullets.find(b=>!b.enemy);assert.ok(shot);assert.equal(Math.sign(shot.vx),facing);assert.equal(Math.sign(shot.vy),['KeyC','KeyM'].includes(key)?1:-1);assert.equal(g.state.player.x,1700);
   g.tick(.3);assert.equal(g.state.combat.inventory.ammo[3],34);g.key(key,false);g.tick(.4);assert.equal(g.state.combat.inventory.ammo[3],34);
  }
 });

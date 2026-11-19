@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T140406Z
+
+En la misión seis, las escaleras desembocan directamente en los pasillos de las galerías, los restaurantes y la azotea. La cámara sigue el mismo rellano durante el cruce. [Registro de la publicación](releases/20261119T140406Z.md)
+
 ## Publicado en Mac mini · 20261119T134609Z
 
 Las escaleras de la misión seis permiten subir al pisarlas, saltar y regresar entre plantas por los rellanos abiertos. [Registro de la publicación](releases/20261119T134224Z.md)

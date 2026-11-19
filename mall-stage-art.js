@@ -52,15 +52,20 @@
    }else c.drawImage(img,x,y);
   }
  }
- function background(c,s,images){
+ function background(c,s,images,dy=0){
   if(s.floor===3){
    const img=images.roof,k=W/img.width;
-   c.drawImage(img,0,Math.round(edge-img.height*k*.82),W,img.height*k);
+   c.drawImage(img,-Math.round(s.camera.x),Math.round(edge-img.height*k*.82)+dy,W,img.height*k);
    return;
   }
   const art=interiorArt(images,s.floor),x=s.camera.x;
-  repeat(c,art.back,x*.72,0,true);
-  repeat(c,art.front,x*root.ArcadeMallInterior.parallax,art.layout.top);
+  if(dy>0){
+   // The next span of glazing continues above the painting as the camera rises.
+   c.save();c.translate(0,dy);c.scale(1,-1);c.beginPath();c.rect(0,0,W,dy);c.clip();
+   repeat(c,art.back,x*.72,0,true);c.restore();
+  }
+  repeat(c,art.back,x*.72,dy,true);
+  repeat(c,art.front,x*root.ArcadeMallInterior.parallax,art.layout.top+dy);
   return art;
  }
  function balcony(c,pl){
@@ -77,7 +82,7 @@
  function stairs(c,s,front,st=root.ArcadeMallWorld.escalator(s.floor)){
   const world=root.ArcadeMallWorld;
   const {entry,lower,upper,exit,rise}=st,top=ground-rise;
-  const rail=[[entry,ground],[lower,ground],[upper,top],[exit,top]];
+  const comb=exit-14,rail=[[entry,ground],[lower,ground],[upper,top],[comb,top]];
   const offset=(dx,dy)=>rail.map(([x,y])=>[x+dx,y+dy]);
   if(front){
    // The near stringer hides the underside. Feet and treads remain visible.
@@ -85,12 +90,6 @@
    line(c,'#a3aaa1',2,offset(0,5));
    for(let x=lower+20;x<upper;x+=45){const y=world.treadY(st,x);c.fillStyle='#7e8983';c.fillRect(x,y+9,2,2);}
    return;
-  }
-  // An open steel landing continues the upper walkway beyond the comb plate.
-  polygon(c,'#36454a',[[upper-4,top+5],[exit+8,top+5],[exit+8,top+12],[upper-4,top+12]]);
-  for(const x of [upper+6,exit-4]){
-   c.fillStyle='#3c4b50';c.fillRect(x,top+12,5,rise-12);
-   line(c,'#637273',3,[[x+2,top+37],[x+(x<exit-4?23:-19),top+12]]);
   }
   polygon(c,'#34454a',[...offset(-5,-15),...offset(0,4).reverse()]);
   polygon(c,'#658b91bb',[...offset(-5,-25),...offset(-5,-12).reverse()]);
@@ -101,7 +100,7 @@
    const y=world.treadY(st,x);line(c,'#98a8a0',2,[[x-5,y-26],[x-5,y-12]]);
   }
   const pitch=st.pitch,phase=(s.time*st.speed)%pitch;
-  for(let x=lower+phase-120;x<exit;x+=pitch){
+  for(let x=lower+phase-120;x<comb;x+=pitch){
    if(x<entry)continue;
    const y=Math.round(world.treadY(st,x)),ix=Math.round(x);
    c.fillStyle='#253035';c.fillRect(ix-pitch/2,y,pitch,7);
@@ -109,18 +108,122 @@
    c.fillStyle='#d8ae53';c.fillRect(ix-pitch/2,y-1,2,2);
    for(let j=2-pitch/2;j<pitch/2;j+=3){c.fillStyle='#617174';c.fillRect(ix+j,y+2,1,4);}
   }
-  c.fillStyle='#233336';c.fillRect(entry-12,ground-3,35,5);c.fillRect(exit-6,top-3,30,5);
-  c.fillStyle='#daaf53';c.fillRect(entry-12,ground-3,35,2);c.fillRect(exit-6,top-3,30,2);
+  c.fillStyle='#233336';c.fillRect(entry-12,ground-3,35,5);c.fillRect(comb-6,top-2,22,4);
+  c.fillStyle='#daaf53';c.fillRect(entry-12,ground-3,35,2);c.fillRect(comb-6,top-2,22,1);
  }
- function returnLanding(c,s,front){
-  const world=root.ArcadeMallWorld,st=world.escalator(s.floor-1),end=world.landingX;
-  c.save();c.beginPath();c.rect(0,ground-34,end+22,49);c.clip();
-  c.translate(end-st.exit,st.rise);stairs(c,s,front,st);c.restore();
-  if(!front){
-   c.fillStyle='#20323a';c.fillRect(5,ground-58,88,17);
-   c.fillStyle='#edd6a0';c.font='bold 10px monospace';c.textAlign='left';
-   c.fillText('↙ PLANTA '+s.floor,10,ground-46);
+ // The corner of the slab turns toward the viewer. It leaves the escalator
+ // well open on the left and widens into the actual walkable floor on the right.
+ const lip=[[17,ground+8],[164,ground+8],[184,ground+11],[199,ground+18],[256,H-9],[273,H-3],[289,H]];
+ function lipY(x){
+  for(let i=1;i<lip.length;i++){
+   const [end,y]=lip[i],[start,previous]=lip[i-1];
+   if(x<=end)return previous+(y-previous)*clamp((x-start)/(end-start),0,1);
   }
+  return H;
+ }
+ function landingBackdrop(c,s,images,v){
+  const {from,st,upperCamera,lowerCamera,lift,progress}=v,next=from+1;
+  const upperY=lift-st.rise,cam=Math.round(upperCamera),right=cam+W;
+  const below=background(c,{floor:from,camera:{x:lowerCamera}},images,lift);
+  if(!v.incoming){
+   c.save();c.translate(0,lift);
+   root.ArcadeMallShoppers.draw(c,s,images.shoppers,below);c.restore();
+  }
+  const upstairs=next===3?null:interiorArt(images,next);
+  const left=lip[0][0],back=left+36,ceiling=upstairs?upstairs.layout.top:ground-134;
+  if(right<left)return;
+  // The expansion joint separates two opaque bays of glass. Each has its own
+  // view and vanishing lines, even when the camera is halfway between floors.
+  c.save();c.beginPath();c.rect(back-cam,0,W,upstairs?ceiling+upperY:edge+upperY+1);c.clip();
+  if(upstairs){
+   repeat(c,upstairs.back,upperCamera*.72,upperY,true);
+  }else{
+   background(c,{floor:3,camera:{x:cam}},images,upperY);
+   if(v.incoming){c.translate(-cam,upperY);giant(c,s,images.giant);}
+  }
+  c.restore();
+  c.save();c.translate(-cam,upperY);
+  // Stone piers and soffit beneath the occupied wing are sampled at shop scale.
+  const stone=images.gallery,k=stone.width/root.ArcadeMallInterior.referenceWidth;
+  function stoneRect(sx,sy,sw,sh,x,y,w,h){
+   c.drawImage(stone,sx*k,sy*k,sw*k,sh*k,x,y,w,h);
+  }
+  for(let x=52;x<right+45;x+=164){
+   if(x<cam-50)continue;
+   const head=lipY(x)+10;
+   c.fillStyle='#25202d63';c.fillRect(x+8,Math.round(head),27,st.rise+ground-head);
+   stoneRect(389,182,23,147,x,Math.round(head),20,st.rise+ground-head-1);
+   stoneRect(387,164,26,21,x-4,Math.round(head),28,12);
+   stoneRect(389,310,23,20,x-3,ground+st.rise-8,26,8);
+  }
+  const outer=[...lip,[Math.max(290,right+1),H]];
+  polygon(c,'#392d32',[...outer,...outer.map(([x,y])=>[x,y+16]).reverse()]);
+  for(const [color,w,dy] of [['#796254',4,12],['#b09a77',2,7],['#504344',3,4],['#e1c9a0',2,1]]){
+   line(c,color,w,outer.map(([x,y])=>[x,y+dy]));
+  }
+  stoneRect(233,161,123,18,17,ground+11,146,11);
+  const title=['GALERÍAS','RESTAURANTES','AZOTEA'][from];
+  c.font='bold 8px monospace';c.textAlign='left';
+  const plaqueX=82,plaqueY=ground+11,plaqueW=Math.ceil(c.measureText(title).width)+19;
+  c.fillStyle='#937959';c.fillRect(plaqueX-1,plaqueY-1,plaqueW+2,12);
+  c.fillStyle='#253336';c.fillRect(plaqueX,plaqueY,plaqueW,10);
+  c.fillStyle='#e4d2a5';c.fillText(title+' ›',plaqueX+4,plaqueY+8);
+  c.save();c.beginPath();
+  c.moveTo(back,ceiling);c.lineTo(right+1,ceiling);c.lineTo(right+1,H);
+  for(const [x,y] of lip.slice().reverse())c.lineTo(x,y);
+  c.lineTo(back,ground-27);c.closePath();c.clip();
+  c.translate(cam,0);
+  if(upstairs){
+   repeat(c,upstairs.front,upperCamera*root.ArcadeMallInterior.parallax,ceiling);
+  }else{
+   c.save();c.translate(-cam,0);
+   rooftop(c,images.roofDeck,s.time);c.restore();
+  }
+  c.restore();
+  // A rear corner pilaster and cornice frame the shops; the route in front is open.
+  if(right>=back){
+   const beamTop=-upperY,beamBase=upstairs?ceiling:edge;
+   c.fillStyle='#332f33';c.fillRect(back-7,beamTop,15,beamBase-beamTop);
+   for(let y=beamBase;y>beamTop;y-=57)stoneRect(157,72,14,57,back-6,y-57,13,57);
+   for(let y=beamBase-27;y>beamTop;y-=57)stoneRect(154,63,18,7,back-8,y,17,5);
+   if(upstairs){
+    stoneRect(389,182,23,147,back-5,ceiling+4,13,upstairs.layout.threshold-ceiling-4);
+    stoneRect(386,159,30,29,back-8,ceiling-1,19,11);
+    stoneRect(388,310,25,18,back-7,upstairs.layout.threshold-8,17,8);
+    if(progress<1){
+     c.save();c.globalAlpha=1-progress;
+     for(let x=Math.max(0,Math.floor((cam-back)/120))*120+back-4;x<right;x+=120)stoneRect(231,160,125,17,x,ceiling-4,120,9);
+     c.restore();
+    }
+   }else{
+    c.fillStyle='#394b4f';c.fillRect(back-4,edge+1,9,24);
+    c.fillStyle='#a99980';c.fillRect(back-6,edge,13,3);
+   }
+  }
+  // A low rail follows the outer balcony edge, well in front of the walking lane.
+  if(upperY<0){
+   c.globalAlpha=clamp(-upperY/18,0,1);
+   const start=294,railY=H-16;
+   for(let x=start;x<right;x+=56){
+    c.fillStyle='#443635';c.fillRect(x,railY,3,16);
+    c.fillStyle='#a28a66';c.fillRect(x,railY+1,1,14);
+    c.fillStyle='#5e4d41';c.fillRect(x+12,railY+5,1,10);c.fillRect(x+42,railY+5,1,10);
+    line(c,'#78634e',1,[[x+18,railY+9],[x+28,railY+4],[x+37,railY+9],[x+28,railY+14],[x+18,railY+9]]);
+   }
+   if(right>start){
+    c.fillStyle='#504039';c.fillRect(start-1,railY,right-start+1,3);
+    c.fillStyle='#c3a579';c.fillRect(start-1,railY,right-start+1,1);
+   }
+  }
+  c.restore();
+  if(v.incoming&&upstairs){
+   c.save();c.translate(0,upperY);root.ArcadeMallShoppers.draw(c,s,images.shoppers,upstairs);c.restore();
+  }
+ }
+ function landingStairs(c,s,v,front){
+  c.save();
+  if(v.incoming)c.translate(-v.origin,v.st.rise);
+  stairs(c,s,front,v.st);c.restore();
  }
  function gait(c,sheet,actor,k,time,cycle){
   const weight=Math.min(1,Math.abs(actor.vx||0)/68);
@@ -201,5 +304,5 @@
    }
   }
  }
- root.ArcadeMallStageArt={background,balcony,stairs,returnLanding,giant,giantPose,rooftop,hazards,gait,guard};
+ root.ArcadeMallStageArt={background,balcony,landingBackdrop,landingStairs,giant,giantPose,rooftop,hazards,gait,guard};
 })(window);

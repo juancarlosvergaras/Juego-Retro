@@ -24,6 +24,21 @@ test('stepping on a belt boards immediately and each open landing changes floors
   assert.ok(Math.abs(p.x-M.landingX)<2);assert.equal(p.y,M.FLOOR);
  }
 });
+test('the gallery, stair and feet stay in the same screen positions across both floor boundaries',()=>{
+ for(const floor of [0,1,2]){
+  const st=M.escalator(floor);
+  for(const local of [M.landingX,M.landingX-18]){
+   const x=st.exit+local-M.landingX,before=M.landingView(floor,x),after=M.landingView(floor+1,local);
+   assert.equal(before.upperCamera,after.upperCamera);
+   assert.equal(before.lift,after.lift);
+   assert.equal(x-M.cameraX(floor,x),local-M.cameraX(floor+1,local));
+   assert.equal(M.treadY(st,x)+before.actorOffset,M.FLOOR+after.actorOffset);
+  }
+  const atCrest=M.cameraX(floor,st.upper);
+  assert.ok(atCrest+960-st.exit>=320,'the corridor is visible before crossing');
+ }
+ assert.equal(M.cameraX(3,270),0,'the boss arena is framed before combat starts');
+});
 test('Arcade entry still requires proximity, ground and no burrow; saves restore the current tread',()=>{
  const game=atStair(0,96),{s,p,e,st}=game;
  advance(game,12);const saved=M.snapshot(s,p),loaded=M.create(saved);M.configure(loaded,p,e);

@@ -124,7 +124,7 @@ main{max-width:1440px;padding:18px 20px 0}
 .brand{gap:8px;font-size:20px;letter-spacing:1px}.brand small{font-size:9px;color:#e3ba72;letter-spacing:2px}.brand .brand-mark{margin-right:0}
 .main-menu[hidden],.main-menu [hidden]{display:none!important}
 .main-menu{position:fixed;inset:0;z-index:80;isolation:isolate;overflow:auto;background:#0b131b;display:grid;place-items:center;padding:30px 20px}
-.menu-art{position:fixed;inset:0;z-index:-2;background:linear-gradient(90deg,#071018ec 10%,#0c1820ad 60%,#0c15205c),url('assets/worlds/ciudad-fondo-v2.png') center/cover;image-rendering:pixelated}
+.menu-art{position:fixed;inset:0;z-index:-2;background:linear-gradient(90deg,#071018ec 10%,#0c1820ad 60%,#0c15205c),url('assets/thumbs/menu-fondo.webp') center/cover}
 .main-menu:after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;background:linear-gradient(0deg,#061018ef,transparent 55%),repeating-linear-gradient(0deg,#0001 0 1px,transparent 1px 4px)}
 .menu-content{width:min(560px,100%);margin:auto;padding:32px 40px;border-left:3px solid #ddae57;background:linear-gradient(90deg,#111e2ce8,#111d2a95);box-shadow:0 22px 100px #0006}
 .menu-brand h1{font-size:clamp(40px,7vw,68px);font-weight:950;line-height:.95;letter-spacing:-2px;margin:20px 0 10px;color:#f4f0df;text-shadow:3px 4px #060b12}
@@ -168,3 +168,13 @@ main{max-width:1440px;padding:18px 20px 0}
 .level-loading{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 20%,#263d4c,#0b121a 75%);padding:24px}.level-loading[hidden]{display:none}.loading-card{width:min(100%,460px);border:1px solid #907444;border-radius:12px;background:#15222de6;padding:30px;box-shadow:0 18px 60px #0007}.loading-card h2{font-size:22px;line-height:1.4}.loading-card progress{width:100%;height:15px;accent-color:#ffc04e}.loading-card>strong{display:block;text-align:right;color:#ffd278;margin-top:10px}.loading-card p{line-height:1.5}.loading-card button{width:100%}
 .shop-summary{position:sticky;top:0;z-index:3;padding:12px;margin-bottom:12px;background:#182733;border:1px solid #b48c42;border-radius:8px;box-shadow:0 5px 12px #0006}.shop-summary h3{margin:0 0 5px;font-size:14px}.shop-summary #shop-balance{display:block;font-size:20px;line-height:1.3}.shop-summary p{margin:7px 0 0;font-size:11px;line-height:1.4;color:#bfced6}.shop-summary #shop-message{color:#a7ebca}.shop-summary #shop-message:empty{display:none}#shop-list .shop-availability{font-size:11px;color:#f1cb85;line-height:1.4}
 button.gamepad-focus,a.gamepad-focus,select.gamepad-focus,input.gamepad-focus{outline:3px solid #ffd36c!important;outline-offset:3px;box-shadow:0 0 0 5px #101e2ccc,0 0 18px #ffd36c55}#difficulty-choices input.gamepad-focus+span{outline:3px solid #ffd36c;outline-offset:3px}#shop-list button{scroll-margin-top:170px}
+
+/* Menú único: la pausa abre el menú; el panel de estado solo conserva su acción y el acceso al menú. */
+.menu-unified #pause-options,.menu-unified #show-shop{display:none!important}
+.menu-unified #open-main-menu{width:100%;margin-top:10px}
+.main-menu .menu-content:has([data-menu-page="shop"]:not([hidden])){width:min(940px,100%)}
+.menu-content:has([data-menu-page="shop"]:not([hidden])) .menu-brand{display:none}
+.menu-shop-host #shop{margin-top:6px}
+.main-menu.in-game .profile-selector{display:none}
+.main-menu.in-game .menu-art{opacity:.82}
+#menu-restart,#menu-developer{color:#d7c9a2}

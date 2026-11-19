@@ -184,7 +184,9 @@ test('the fire on the wreck sits on the wreck and is made of flames, not bars',(
 test('one mission selector in every mission: the map',()=>{
  for(const page of ['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html']){const html=read(page);
   assert.ok(html.includes('mission-map.css'),page+' styles the map');assert.ok(html.includes('"mission-map.js"'),page+' loads the map');assert.ok(html.indexOf('"main-menu.js"')<html.indexOf('"mission-map.js"'),page+': the map mounts over the menu list');
-  assert.ok(html.includes('class="level-choices"'),page+' keeps the list the map replaces');}
+  assert.ok(html.indexOf('"menu-shell.js"')>0&&html.indexOf('"menu-shell.js"')<html.indexOf('"player-profiles.js"'),page+': the shared menu is built before the modules that extend it');
+  assert.ok(html.includes('id="main-menu"')&&!html.includes('data-menu-page'),page+' no longer carries its own copy of the menu');}
+ assert.ok(read('menu-shell.js').includes('class="level-choices"'),'the shared menu keeps the list the map replaces');
  const map=read('mission-map.js');assert.ok(map.includes('list.hidden=true'),'the plain list is never shown next to the map');
 });
 test('mission 4 is wired to the shared systems of missions 1 to 3',()=>{

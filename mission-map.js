@@ -44,11 +44,11 @@
     for(const fork of forks){const sign=doc.createElement('div');sign.className='map-fork';sign.style.left=fork.x+'%';sign.innerHTML='<i aria-hidden="true">◆</i><span>BIFURCACIÓN</span><small>elige una ruta</small>';map.append(sign);}
     const cards=nodes.map(node=>{
       if(node.id==='assault'){
-        const card=doc.createElement('a');card.className='secondary mission-card';card.href='fuga.html';card.innerHTML='<img src="assets/worlds/fuga-costa.webp" alt=""><div><small>ESPECIAL 02 · PERSECUCIÓN</small><strong>Fuga del Sol</strong><span>Persigue al coupé negro por la costa y cruza su escolta antes del peaje.</span><em>Premio · Invisibilidad</em></div>';return card;
+        const card=doc.createElement('a');card.className='secondary mission-card';card.href='fuga.html';card.innerHTML='<img src="assets/thumbs/especial-fuga.webp" alt="Carretera costera al atardecer"><div><small>ESPECIAL 02 · PERSECUCIÓN</small><strong>Fuga del Sol</strong><span>Persigue al coupé negro por la costa y cruza su escolta antes del peaje.</span><em>Premio · Invisibilidad</em></div>';return card;
       }
       if(node.special){
         const card=doc.createElement('a');card.className='secondary mission-card';card.href='quimera.html';
-        card.innerHTML='<img src="assets/worlds/distrito-quimera.png" alt=""><div><small>ESPECIAL 01 · COMBATE CALLEJERO</small><strong>Distrito Quimera</strong><span>Cruza el muelle con el luchador y enfréntate al doctor Varela en su laboratorio.</span><em>Premio: Centella Azul · Vuelo, rayos oculares y rebote de balas</em></div>';
+        card.innerHTML='<img src="assets/thumbs/especial-quimera.webp" alt="Muelle del distrito Quimera de noche"><div><small>ESPECIAL 01 · COMBATE CALLEJERO</small><strong>Distrito Quimera</strong><span>Cruza el muelle con el luchador y enfréntate al doctor Varela en su laboratorio.</span><em>Premio: Centella Azul · Vuelo, rayos oculares y rebote de balas</em></div>';
         return card;
       }
       if(!node.soon){const card=source[node.mission-1];return card;}

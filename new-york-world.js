@@ -7,11 +7,15 @@
  function geometry(floor){const platforms=[{id:'ny-ground',x:0,y:FLOOR,w:widths[floor],kind:'ground',thickness:68}];if(floor<2){for(const [i,x]of posts.entries())platforms.push({id:'police-cover-'+i,x:x-55,y:FLOOR-36,w:110,kind:'barricade',solid:true,thickness:36});for(const [i,x]of [1740,3300,5120].entries())platforms.push({id:'ny-awning-'+i,x,y:FLOOR-118,w:180,kind:'deck',thickness:12});}return{platforms,anchors:[],ladders:[]};}
  function soldiers(floor,defeated,difficulty){if(floor===2)return[];return Array.from({length:15},(_,i)=>{const kind=i%5===3?'cityGrenadier':i%3===1?'cityAssault':i%5===4?'turret':'rifle',n=N.createSoldier({x:920+i*295,y:FLOOR,kind,facing:-1},'ny-'+floor+'-'+i);n.hp=n.maxHp=(kind==='cityAssault'?5:kind==='cityGrenadier'?6:3)*difficulty;if(defeated.has(n.id))n.hp=0;n.shot=1.4;n.age=0;return n;});}
  function makeAllies(floor,recruited){if(floor===2)return [...recruited].slice(-2).map((id,i)=>Object.assign(P.createPlayer(),{id,x:75-i*35,y:FLOOR,joined:true,grounded:true,shot:1,flash:0,anim:0,variant:i}));return posts.map((x,i)=>Object.assign(P.createPlayer(),{id:'police-'+floor+'-'+i,x:x-85,y:FLOOR,h:46,w:24,facing:1,grounded:true,joined:recruited.has('police-'+floor+'-'+i),shot:1,flash:0,anim:0,variant:i%2}));}
- function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?15:saved.ending?0:-1,floor=ending>=0?2:clamp(Math.floor(num(saved.floor,0)),0,2),awarded=new Set(saved.awarded||[]),recruited=new Set(saved.recruited||[]);return{floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),60,FLOOR),time:Math.max(0,num(saved.trafficTime,0)),intro:saved.started?4:0,travel:-1,ending,complete,difficulty,checkpoint:floor,checkpointX:clamp(num(saved.checkpointX,140),40,widths[floor]-40),camera:{x:0,y:0},events:[],awarded,recruited,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],traffic:[],trafficWait:2,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),allies:makeAllies(floor,recruited),supplyAge:0,boss:{id:'ny-commander',kind:'cityBoss',x:720,y:FLOOR,w:32,h:59,hp:ending>=0?0:90*difficulty,maxHp:90*difficulty,active:false,invulnerable:false,stage:ending>=0?2:1,phase:'arrival',age:0,anim:0,hit:0,frozen:0,sticky:0,targets:[],facing:-1,shot:0,shots:0,robotX:800}};}
+ function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?15:saved.ending?0:-1,floor=ending>=0?2:clamp(Math.floor(num(saved.floor,0)),0,2),awarded=new Set(saved.awarded||[]),recruited=new Set(saved.recruited||[]),taken=new Set(saved.taken||[]);
+  const districtLoot=[0,1].map(zone=>makeDistrictLoot(zone,taken,saved.pickupTypes?.[zone]));
+  const activePickup=districtLoot[floor]?.find(item=>item.id===saved.activePickupId)||null;
+  return{floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),60,FLOOR),time:Math.max(0,num(saved.trafficTime,0)),intro:saved.started?4:0,travel:-1,ending,complete,difficulty,checkpoint:floor,checkpointX:clamp(num(saved.checkpointX,140),40,widths[floor]-40),camera:{x:0,y:0},events:[],awarded,recruited,taken,districtLoot,activePickup,stars:new Set(saved.stars||[]),hazards:[],debris:[],traffic:[],trafficWait:2,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),allies:makeAllies(floor,recruited),supplyAge:0,boss:{id:'ny-commander',kind:'cityBoss',x:720,y:FLOOR,w:32,h:59,hp:ending>=0?0:90*difficulty,maxHp:90*difficulty,active:false,invulnerable:false,stage:ending>=0?2:1,phase:'arrival',age:0,anim:0,hit:0,frozen:0,sticky:0,targets:[],facing:-1,shot:0,shots:0,robotX:800}};}
  function configure(s,p,e){Object.assign(P.WORLD,{top:0,width:widths[s.floor],height:540,ground:FLOOR});s.geometry=geometry(s.floor);Object.assign(p,{x:s.x,y:s.y,vx:0,vy:0,grounded:s.y===FLOOR,ground:s.y===FLOOR?s.geometry.platforms[0]:null,fallPeak:s.y,jumps:0,rope:null,ladder:null,jetpack:false,heroFlight:false,burrow:null,submersible:false,swimming:false,onMotorcycle:false,inSeaMission:false});e.enemies=s.enemies;e.bullets=[];e.explosions=[];e.debris=[];e.playerPools=[];e.playerPlasma=[];e.plasmaDrips=[];e.zombieEffects=[];
   s.traffic=s.floor===2?[]:crossings.map((_,i)=>trafficAt(s.time,i,s.floor));s.trafficWarning=s.playerCarHit=null;
-  updateCamera(s,p);e.invincible=2;}
- function updateCamera(s,p){s.camera.x=clamp(p.x-320,0,widths[s.floor]-960);s.camera.y=0;}
+  updateCamera(s,p);selectPickup(s,p);e.invincible=2;}
+ function cameraLeft(floor,x){return clamp(x-320,0,widths[floor]-960);}
+ function updateCamera(s,p){s.camera.x=cameraLeft(s.floor,p.x);s.camera.y=0;}
  const emit=(s,type,data={})=>s.events.push({type,...data});
  function interact(s,p){if(s.floor<2&&s.travel<0&&p.x>widths[s.floor]-260&&p.grounded&&!p.burrow){s.travel=0;return'street';}return null;}
  function enemyUpdate(n,p,dt,bullets,platforms=[]){if(!['cityAssault','cityGrenadier'].includes(n.kind))return false;n.age=(n.age||0)+dt;n.anim+=dt;n.hit=Math.max(0,n.hit-dt);n.flash=Math.max(0,n.flash-dt);if(n.hp<=0){n.death=Math.max(0,n.death-dt);return true;}if(n.frozen>0){n.frozen=Math.max(0,n.frozen-dt);return true;}const dx=p.x-n.x,dy=p.y-n.y;if(Math.abs(dx)>570||Math.abs(dy)>210){n.shot=Math.max(1,n.shot);n.vx=0;return true;}n.facing=dx<0?-1:1;n.vx=Math.abs(dx)>280?n.facing*(n.kind==='cityAssault'?85:35):0;const dir=Math.sign(n.vx),blocked=platforms.some(pl=>pl.solid&&Math.abs(pl.x+pl.w/2-n.x)<pl.w/2+35&&pl.y<n.y);n.speedBonus=n.kind==='cityAssault'?85/145:35/145;P.step(n,{left:dir<0,right:dir>0,jumpPressed:blocked&&n.grounded},dt,platforms);n.shot-=dt;
@@ -61,16 +65,58 @@
     if(Math.abs(p.x-h.x)<(p.w||28)/2+8&&h.y>=p.y-(p.h||46)&&previousY<=p.y){E.hurtPlayer(e,p,h.x,true,2);e.explosions.push({x:h.x,y:h.y,life:.4,max:.4,radius:40,kind:'rocket'});h.life=0;}
     else if(h.y>=FLOOR){h.life=0;e.explosions.push({x:h.x,y:FLOOR,life:.55,max:.55,radius:75,kind:'rocket'});s.debris.push({x:h.x,y:FLOOR,age:0});if(Math.abs(p.x-h.x)<75&&p.y>FLOOR-80)E.hurtPlayer(e,p,h.x,false,2);}}}s.hazards=s.hazards.filter(h=>h.life>0);
  }
- function pickups(floor){if(floor===2)return[];return Array.from({length:9},(_,i)=>({id:floor+'-'+i,x:420+i*540,y:FLOOR,type:i%4===0?'health':i%4===1?'ammo':i%4===2?'fuel':'star',amount:3,slot:[3,5,6][i%3]}));}
+ function makeDistrictLoot(floor,taken,savedTypes){
+  const original=['health','ammo','fuel','star','health','ammo','fuel','star','health'];
+  const valid=Array.isArray(savedTypes)&&savedTypes.length===original.length&&
+   ['health','ammo','fuel','star'].every(type=>
+    savedTypes.filter(t=>t===type).length===original.filter(t=>t===type).length);
+  const types=valid?savedTypes:original.slice();
+  if(!valid){
+   // Collected positions in older saves keep their original rewards.
+   const free=types.map((_,i)=>i).filter(i=>!taken.has(floor+'-'+i));
+   for(let i=free.length-1;i>0;i--){
+    const a=free[i],b=free[Math.floor(Math.random()*(i+1))];
+    [types[a],types[b]]=[types[b],types[a]];
+   }
+  }
+  return types.map((type,i)=>({id:floor+'-'+i,x:420+i*540,y:FLOOR,type,amount:3,slot:[3,5,6][i%3]}));
+ }
+ function selectPickup(s,p){
+  const items=s.districtLoot[s.floor]||[],left=cameraLeft(s.floor,p.x);
+  // A skipped item at the edge of the screen must not block the next block when backtracking.
+  const available=item=>!s.taken.has(item.id)&&Math.abs(p.x-item.x)<=420&&item.x>=left-32&&item.x<=left+960+32;
+  if(items.includes(s.activePickup)&&available(s.activePickup))return;
+  s.activePickup=null;
+  for(const item of items){
+   if(available(item)&&(!s.activePickup||Math.abs(p.x-item.x)<Math.abs(p.x-s.activePickup.x)))s.activePickup=item;
+  }
+ }
+ function collectPickup(s,p,e){
+  selectPickup(s,p);
+  const item=s.activePickup;
+  if(!item||Math.abs(p.x-item.x)>38||p.y<FLOOR-60)return;
+  s.taken.add(item.id);
+  s.activePickup=null;
+  if(item.type==='star'){
+   s.stars.add(item.id);emit(s,'points',{amount:400,text:'Estrella de la ciudad'});
+  }else if(item.type==='health')e.hp=Math.min(e.maxHp,e.hp+3);
+  else if(item.type==='fuel')p.fuel=p.fuelMax;
+  else{
+   if(!e.inventory.owned.includes(item.slot))e.inventory.owned.push(item.slot);
+   e.inventory.ammo[item.slot]=(e.inventory.ammo[item.slot]||0)+(item.slot===6?5:40);
+  }
+  const message={health:'Botiquín · +3 salud',fuel:'Gasolina recuperada',ammo:'Arma y munición recogidas',star:'Estrella recogida'};
+  emit(s,'pickup',{text:message[item.type]});
+ }
  function update(s,p,e,input,dt){s.events=[];dt=clamp(dt,0,.05);s.time+=dt;s.traffic=s.floor===2?[]:crossings.map((_,i)=>trafficAt(s.time,i,s.floor));s.debris=s.debris.filter(f=>(f.age+=dt)<1);
   if(s.ending>=0){s.boss.hit=Math.max(0,s.boss.hit-dt);s.ending+=dt;if(s.ending>=15&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
   if(s.travel>=0){const old=s.travel;s.travel+=dt;p.vx=p.vy=0;if(old<1.5&&s.travel>=1.5){s.floor++;s.checkpoint=s.floor;s.checkpointX=140;s.x=140;s.y=FLOOR;s.trafficWait=2;s.enemies=soldiers(s.floor,s.awarded,s.difficulty);s.allies=makeAllies(s.floor,s.recruited);configure(s,p,e);emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});}if(s.travel>=3)s.travel=-1;return s.events;}
   for(const n of s.enemies)if(n.hp<=0&&!s.awarded.has(n.id)){s.awarded.add(n.id);emit(s,'points',{amount:180,text:'Soldado neutralizado'});}
-  if(s.floor<2){for(const x of checkpoints)if(p.x>x&&s.checkpointX<x){s.checkpointX=x;emit(s,'checkpoint',{text:'CHECK POINT · Puesto policial'});}for(const item of pickups(s.floor)){if(s.taken.has(item.id)||Math.abs(p.x-item.x)>38||p.y<FLOOR-60)continue;s.taken.add(item.id);if(item.type==='star'){s.stars.add(item.id);emit(s,'points',{amount:400,text:'Estrella de la ciudad'});}else if(item.type==='health')e.hp=Math.min(e.maxHp,e.hp+3);else if(item.type==='fuel')p.fuel=p.fuelMax;else{if(!e.inventory.owned.includes(item.slot))e.inventory.owned.push(item.slot);e.inventory.ammo[item.slot]=(e.inventory.ammo[item.slot]||0)+(item.slot===6?5:40);}emit(s,'pickup',{text:item.type==='health'?'Botiquín · +3 salud':item.type==='fuel'?'Gasolina recuperada':item.type==='ammo'?'Arma y munición recogidas':'Estrella recogida'});}}
+  if(s.floor<2){for(const x of checkpoints)if(p.x>x&&s.checkpointX<x){s.checkpointX=x;emit(s,'checkpoint',{text:'CHECK POINT · Puesto policial'});}collectPickup(s,p,e);}
   bossUpdate(s,p,e,dt);e.enemies=s.floor===2&&s.boss.active&&!s.boss.invulnerable&&s.boss.phase!=='arrival'&&s.boss.phase!=='robotArrival'?[s.boss]:s.enemies;
-  if(s.ending<0){traffic(s,p,e,dt);allies(s,p,e,dt);}if(s.floor===2&&s.boss.active&&!s.boss.invulnerable){s.supplyAge+=dt;if(s.supplyAge>10){s.supplyAge=0;for(const slot of [3,5]){if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+35;}emit(s,'pickup',{text:'La policía te entrega munición'});}}return s.events;
+  if(s.ending<0){traffic(s,p,e,dt);allies(s,p,e,dt);}if(s.floor===2&&s.boss.active&&!s.boss.invulnerable){s.supplyAge+=dt;if(s.supplyAge>10){s.supplyAge=0;const slot=Math.random()<.5?3:5;if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+35;emit(s,'pickup',{text:'La policía te entrega munición'});}}return s.events;
  }
- function snapshot(s,p){const departing=s.travel>=0&&s.travel<1.5;return{floor:s.floor,trafficTime:s.time,x:departing?widths[s.floor]-200:p.x,y:departing?FLOOR:p.y,checkpointX:s.checkpointX,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars],recruited:[...s.recruited]};}
+ function snapshot(s,p){const departing=s.travel>=0&&s.travel<1.5;return{floor:s.floor,trafficTime:s.time,x:departing?widths[s.floor]-200:p.x,y:departing?FLOOR:p.y,checkpointX:s.checkpointX,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],pickupTypes:s.districtLoot.map(items=>items.map(item=>item.type)),activePickupId:s.activePickup?.id||null,stars:[...s.stars],recruited:[...s.recruited]};}
  function retry(s){return create({...snapshot(s,{x:s.checkpointX,y:FLOOR}),x:s.checkpointX,y:FLOOR,ending:false,complete:false,started:true},s.difficulty);}
- const api={create,configure,update,interact,snapshot,retry,geometry,updateCamera,blockWidth,widths,names,FLOOR,enemyUpdate,trafficAt,pickups,crossings,posts,checkpoints};if(common)module.exports=api;else root.ArcadeNewYorkWorld=api;
+ const api={create,configure,update,interact,snapshot,retry,geometry,updateCamera,blockWidth,widths,names,FLOOR,enemyUpdate,trafficAt,crossings,posts,checkpoints};if(common)module.exports=api;else root.ArcadeNewYorkWorld=api;
 })(typeof window!=='undefined'?window:globalThis);

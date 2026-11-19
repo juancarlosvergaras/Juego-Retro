@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),M=require('../new-york-world'),P=require('../physics'),C=require('../mission-combat'),N=require('../enemies'),V=require('../powers'),Campaign=require('../campaign');
 const setup=(floor=0)=>{const s=M.create({floor,started:true}),p=P.createPlayer(),e=C.create({owned:[1,3],selected:3,ammo:{3:200}});M.configure(s,p,e);return{s,p,e};};const tick=(g,t)=>{const events=[];for(let i=0;i<Math.ceil(t*60);i++)events.push(...M.update(g.s,g.p,g.e,{},1/60));return events;};
-test('two long districts, thirty soldiers and shared supplies',()=>{assert.deepEqual(M.widths,[6000,5400,960]);let stars=0;for(const floor of [0,1]){const {s}=setup(floor);assert.equal(s.enemies.length,15);assert.ok(s.enemies.some(n=>n.kind==='cityAssault'));assert.ok(s.enemies.some(n=>n.kind==='cityGrenadier'));assert.ok(s.enemies.every(n=>Number.isFinite(n.shot)));stars+=M.pickups(floor).filter(v=>v.type==='star').length;}assert.equal(stars,4);});
+test('two long districts, thirty soldiers and shared supplies',()=>{assert.deepEqual(M.widths,[6000,5400,960]);let stars=0;for(const floor of [0,1]){const {s}=setup(floor);assert.equal(s.enemies.length,15);assert.ok(s.enemies.some(n=>n.kind==='cityAssault'));assert.ok(s.enemies.some(n=>n.kind==='cityGrenadier'));assert.ok(s.enemies.every(n=>Number.isFinite(n.shot)));stars+=s.districtLoot[floor].filter(v=>v.type==='star').length;}assert.equal(stars,4);});
 test('crossing warning precedes traffic and jumping/burrowing avoids collision',()=>{assert.equal(M.trafficAt(1,0).warn,true);assert.equal(M.trafficAt(3,0).active,true);const g=setup();g.s.time=2.95;g.s.trafficWait=0;g.p.x=1250;g.p.y=390;g.e.invincible=0;tick(g,.02);assert.equal(g.e.hp,8);g.s.time=2.95;g.p.y=472;g.p.burrow={};tick(g,.02);assert.equal(g.e.hp,8);g.s.time=2.95;g.p.burrow=null;tick(g,.02);assert.equal(g.e.hp,6);});
 test('police recruit by proximity, fire friendly bullets and persist into final plaza',()=>{const g=setup();g.p.x=565;tick(g,.03);assert.equal(g.s.recruited.size,1);g.s.enemies[0].x=850;tick(g,1.2);assert.ok(g.e.bullets.some(b=>b.fromPolice&&!b.enemy));const saved=M.snapshot(g.s,g.p);const resumed=M.create({...saved,floor:2});assert.equal(resumed.allies.length,1);assert.equal(resumed.allies[0].joined,true);});
 test('district exit preserves recruits and retry uses last checkpoint',()=>{const g=setup();g.p.x=2000;tick(g,.02);assert.equal(g.s.checkpointX,1900);const retried=M.retry(g.s);assert.equal(retried.x,1900);g.p.x=5900;g.p.grounded=true;assert.equal(M.interact(g.s,g.p),'street');tick(g,3.1);assert.equal(g.s.floor,1);assert.equal(g.p.x,140);assert.equal(g.s.checkpointX,140);});
@@ -61,4 +61,64 @@ test('resume keeps cars in place, and saving during a district change keeps its 
  tick({s,p,e},.6);const arrival=M.snapshot(s,p);
  assert.equal(arrival.floor,1);assert.equal(arrival.x,140);assert.equal(s.camera.x,0);
  tick({s,p,e},1.5);assert.equal(s.travel,-1);
+});
+
+test('only the active street item can be collected, and returning to a skipped item works',()=>{
+ for(const floor of [0,1]){
+  const {s,p,e}=setup(floor),items=s.districtLoot[floor];
+  assert.equal(s.activePickup.id,items[0].id);
+  p.y=M.FLOOR-90;
+  for(p.x=140;p.x<1800;p.x+=15)M.update(s,p,e,{},1/60);
+  assert.equal(s.taken.size,0);
+  for(;p.x>140;p.x-=15)M.update(s,p,e,{},1/60);
+  assert.equal(s.activePickup.id,items[0].id);
+  p.y=M.FLOOR;
+  for(const item of items){
+   p.x=item.x;
+   const events=M.update(s,p,e,{},1/60);
+   assert.equal(events.filter(ev=>ev.type==='pickup').length,1);
+   assert.ok(s.taken.has(item.id));assert.equal(s.activePickup,null);
+   assert.equal(M.update(s,p,e,{},1/60).filter(ev=>ev.type==='pickup').length,0);
+  }
+  assert.equal(s.taken.size,9);assert.equal(s.stars.size,2);assert.equal(s.activePickup,null);
+ }
+});
+
+test('random rewards and the visible choice survive reload, checkpoints and older saves',t=>{
+ const original=['health','ammo','fuel','star','health','ammo','fuel','star','health'];
+ const rng=t.mock.method(Math,'random',()=>.999);
+ const a=M.create({started:true});
+ assert.deepEqual(a.districtLoot[0].map(i=>i.type),original);
+ rng.mock.mockImplementation(()=>0);
+ const {s,p,e}=setup();
+ assert.notDeepEqual(s.districtLoot[0].map(i=>i.type),original);
+ p.y=M.FLOOR-100;p.x=780;M.update(s,p,e,{},.02);
+ p.x=660;M.update(s,p,e,{},.02);
+ // At this camera position both locations fit, and the first is closer now.
+ assert.equal(s.activePickup.id,'0-1');
+ const saved=JSON.parse(JSON.stringify(M.snapshot(s,p)));
+ rng.mock.mockImplementation(()=>.5);
+ const restored=M.create(saved);M.configure(restored,p,e);
+ assert.equal(restored.activePickup.id,'0-1');
+ assert.deepEqual(restored.districtLoot,s.districtLoot);
+ assert.deepEqual(M.retry(restored).districtLoot,s.districtLoot);
+ const legacy=M.create({floor:1,started:true,taken:['1-3','1-4'],stars:['1-3']});
+ M.configure(legacy,p,e);
+ assert.equal(legacy.districtLoot[1][3].type,'star');
+ assert.equal(legacy.districtLoot[1].filter(item=>item.type==='star'&&!legacy.taken.has(item.id)).length,1);
+ p.x=5900;p.grounded=true;assert.equal(M.interact(s,p),'street');tick({s,p,e},3.1);
+ assert.equal(s.activePickup.id,'1-0');
+ p.x=5300;p.grounded=true;M.interact(s,p);tick({s,p,e},3.1);assert.equal(s.activePickup,null);
+});
+
+test('each police resupply in the plaza grants only one randomly selected ammunition type',t=>{
+ const {s,p,e}=setup(2);s.boss.active=true;s.boss.phase='recover';
+ const rng=t.mock.method(Math,'random',()=>0);
+ for(const [choice,slot] of [[0,3],[.999,5]]){
+  rng.mock.mockImplementation(()=>choice);
+  const before={...e.inventory.ammo};s.supplyAge=10;
+  const events=M.update(s,p,e,{},.01);
+  assert.equal(events.filter(ev=>ev.type==='pickup').length,1);
+  assert.deepEqual(e.inventory.ammo,{...before,[slot]:(before[slot]||0)+35});
+ }
 });

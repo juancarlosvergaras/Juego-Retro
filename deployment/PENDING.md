@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T192024Z
+
+Manhattan y Midtown muestran un ítem por vez, con los premios repartidos al azar en cada partida. [Cambios en los ítems de Nueva York](releases/20261119T192024Z.md)
+
 ## Publicado en Mac mini · 20261119T191334Z
 
 Los carros de Nueva York siguen los carriles de los seis cruces de Manhattan y Midtown. El impacto coincide con el paso del vehículo por el personaje. [Cambios en el tráfico de la misión 8](releases/20261119T191334Z.md)

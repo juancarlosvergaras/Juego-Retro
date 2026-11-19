@@ -43,6 +43,19 @@
     return items;
   }
   function selectWeapon(inv,slot){if(!weapons[slot]||!inv.owned.includes(slot))return false;inv.selected=slot;return true;}
+  function supplyRolls(choices,count,saved){
+    if(Array.isArray(saved)&&saved.length===count&&saved.every(value=>choices.includes(value)))return saved.slice();
+    const rolls=[],bag=[];
+    while(rolls.length<count){
+      if(!bag.length)bag.push(...choices);
+      rolls.push(bag.splice(Math.floor(Math.random()*bag.length),1)[0]);
+    }
+    return rolls;
+  }
+  function grantAmmo(inventory,slot,amount){
+    if(!inventory.owned.includes(slot))inventory.owned.push(slot);
+    inventory.ammo[slot]=(inventory.ammo[slot]||0)+amount;
+  }
   function collect(inv,pickups,p){const found=[];for(const item of pickups){if(item.taken||Math.abs(p.x-item.x)>23||Math.abs(p.y-item.y)>24)continue;item.taken=true;const w=weapons[item.slot];if(!inv.owned.includes(item.slot))inv.owned.push(item.slot);if(w.ammo!==null)inv.ammo[item.slot]=(inv.ammo[item.slot]||0)+w.ammo;found.push(w.name);}return found;}
   function controlCode(event){return /^Arrow(Left|Right|Up|Down)$/.test(event.key||'')?event.key:event.code;}
   const fireKeys=['KeyJ','KeyX','Numpad0','KeyQ','KeyC','KeyO','KeyM'];
@@ -113,6 +126,6 @@
     if(!shots.length)return null;
     return{weapon:{...shots[0].weapon,rate:Math.max(.001,Math.min(...e.robotWait))*(p.rateBonus||1)},bullets:shots.flatMap(s=>s.bullets)};
   }
-  const api={reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
+  const api={supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
 })(typeof window!=='undefined'?window:globalThis);
 

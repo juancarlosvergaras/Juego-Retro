@@ -50,12 +50,8 @@
   function supplies(c,s,p,floor,camera){
    if(camera<210&&camera+960>130)prop(c,9,170,472,38);
    if(floor===3)return;
-   for(const [id,x,type] of [['kit',400,'health'],['ammo',1410,'ammo'],['star',1980,'star'],['fuel',ArcadeMallWorld.widths[floor]-650,'fuel']]){
-    if(x<camera-90||x>camera+1050||s.taken.has(floor+'-'+id))continue;
-    if(type==='ammo'){
-     for(const [i,slot] of [3,5,6].entries())root.ArcadePickupRenderer.draw(c,{type,slot,x:x+(i-1)*50,y:472},s.time,p);
-    }else root.ArcadePickupRenderer.draw(c,{id,type,x,y:472,amount:3},s.time,p);
-   }
+   for(const item of ArcadeMallWorld.pickups(s))
+    if(item.x>=camera-32&&item.x<=camera+992&&!s.taken.has(item.id))root.ArcadePickupRenderer.draw(c,item,s.time,p);
   }
   function title(c,small,big,detail){c.fillStyle='#081b29eb';c.fillRect(0,0,960,66);c.fillRect(0,458,960,82);c.textAlign='center';c.fillStyle='#ffc96c';c.font='bold 15px monospace';c.fillText(small,480,39);c.fillStyle='#ebf7ed';c.font='bold 25px monospace';c.fillText(big,480,491);c.fillStyle='#b8d5d6';c.font='12px monospace';c.fillText(detail,480,520);}
   function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;const landing=s.camera.landing;

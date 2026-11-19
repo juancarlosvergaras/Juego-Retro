@@ -34,7 +34,7 @@
  }
  function emit(s,type,data={}){s.events.push({type,...data});}
  function fx(s,x,y,color='blast',size=40){s.effects.push({x,y,color,size,life:.5,max:.5});}
- function hurt(s,p,e,amount=1){if(s.hitWait>0||e.invincible>0||e.developerInvulnerable||e.dead||p.transform>0||s.ending>=0||s.airlock>=0)return false;if(p.shield>0)p.shield--;else e.hp=Math.max(0,e.hp-amount*(e.combatDamage||1)/(p.form==='zombie'||p.form==='tank'?2:1));s.hitWait=1;p.hurt=.3;emit(s,'hurt');if(e.hp<=0)e.dead=true;return true;}
+ function hurt(s,p,e,amount=1){if(s.hitWait>0||e.invincible>0||e.developerInvulnerable||e.dead||p.transform>0||s.ending>=0||s.airlock>=0)return false;if(p.shield>0)p.shield--;else e.hp=Math.max(0,e.hp-amount*(e.combatDamage||1)/(p.form==='zombie'||p.form==='tank'?2:1));s.hitWait=e.hitProtection??1.2;p.hurt=.3;emit(s,'hurt');if(e.hp<=0)e.dead=true;return true;}
  function damage(n,amount){if(n.hp<=0||!(amount>0))return;n.hp=Math.max(0,n.hp-amount);n.hit=.18;}
  function aim(p,input){return A.aimDirection({...input,up:false,down:false,aimUp:input.aimUp&&!input.up,aimDown:input.aimDown&&!input.down},p.facing||1);}
  function targets(s){return s.inside?(s.boss.active&&s.boss.phase!=='arrival'?[s.boss]:[]):s.enemies;}
@@ -222,7 +222,7 @@
   }s.bullets=s.bullets.filter(b=>b.life>0&&b.x>-100&&b.x<WIDTH+100&&b.y>-100&&b.y<HEIGHT+100).slice(-180);
   if(!s.inside)for(const m of s.mines){if(!m.active)continue;if(Math.hypot(p.x-m.x,p.y-20-m.y)<48){m.active=false;hurt(s,p,e,2);fx(s,m.x,m.y,'blast',90);}for(const b of s.bullets)if(!b.enemy&&Math.hypot(b.x-m.x,b.y-m.y)<27){m.active=false;b.life=0;fx(s,m.x,m.y,'blast',70);}}
   for(const pool of s.pools){pool.life-=dt;for(const n of targets(s))if(n.hp>0&&Math.hypot(n.x-pool.x,n.y-pool.y)<85){n.sticky=Math.max(n.sticky,.5);damage(n,dt*.5);}}s.pools=s.pools.filter(f=>f.life>0).slice(-12);
-  collect(s,p,e);s.supplyAge+=dt;if(s.inside&&s.supplyAge>12){s.supplyAge=0;for(const slot of [3,5]){if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+(slot===3?18:30);}emit(s,'pickup',{text:'Reserva de la armería · Munición repuesta'});}
+  collect(s,p,e);s.supplyAge+=dt;if(s.inside&&s.supplyAge>12){s.supplyAge=0;const slot=Math.random()<.5?3:5;A.grantAmmo(e.inventory,slot,slot===3?18:30);emit(s,'pickup',{text:'Reserva de la armería · '+A.weapons[slot].name});}
   if(s.inside&&s.boss.hp<=0){turn.reset(p);e.dead=false;e.hp=Math.max(1,e.hp);s.ending=0;s.bullets=[];s.hazards=[];s.pools=[];p.fighterUnlocked=true;emit(s,'unlock',{form:'fighter'});if(!s.awarded.has('captain')){s.awarded.add('captain');emit(s,'points',{amount:7000,text:'Capitán derrotado · Luchador desbloqueado'});}emit(s,'ending');}
   return s.events;
  }

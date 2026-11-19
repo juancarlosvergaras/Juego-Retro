@@ -1,7 +1,7 @@
 (function(root){
  'use strict';
  const KEY='cap-dollar.dev-session.v1',PREFIX='cap-dollar.dev-data.v1:';
- const SAVE_KEYS=['obra10.progress.v1','cap-dollar.campaign.v1','cap-dollar.mission-one-loadout.v1','cap-dollar.mission-two.v1','cap-dollar.mission-three.v1','cap-dollar.mission-four.v1','cap-dollar.mission-five.v1','cap-dollar.mission-six.v1','cap-dollar.mission-seven.v1','cap-dollar.mission-eight.v1','cap-dollar.mall-arcade.v1','cap-dollar.difficulty.v1','cap-dollar.tutorial.v1','cap-dollar.mission-one.v1'];
+ const SAVE_KEYS=['obra10.progress.v1','cap-dollar.campaign.v1','cap-dollar.mission-one-loadout.v1','cap-dollar.mission-two.v1','cap-dollar.mission-three.v1','cap-dollar.mission-four.v1','cap-dollar.mission-five.v1','cap-dollar.mission-six.v1','cap-dollar.mission-seven.v1','cap-dollar.mission-eight.v1','cap-dollar.mall-arcade.v1','cap-dollar.difficulty.v1','cap-dollar.tutorial.v1','cap-dollar.mission-one.v1','cap-dollar.quimera.v1',...Array.from({length:8},(_,i)=>'cap-dollar.completed.v1:'+(i+1))];
  function create(persistent,session,now=()=>Date.now()){
   function read(){try{const value=JSON.parse(session.getItem(KEY));return value?.version===1&&typeof value.token==='string'&&Number.isFinite(value.expires)?value:null;}catch{return null;}}
   // Every page retains its original store. A pagehide save after disabling or

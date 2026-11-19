@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Candidata lista para publicar · 20261119T194338Z
+
+Revisión de las ocho misiones y los dos especiales. La candidata incluye correcciones de progreso, suministros y reintentos. [Cambios, pruebas y paquete para la Mac mini](releases/20261119T194338Z.md)
+
 ## Publicado en Mac mini · 20261119T192807Z
 
 Los enemigos que bajan de un piso buscan un aterrizaje al costado del jugador y le dan tiempo para esquivar. [Cambios en el descenso entre pisos](releases/20261119T192807Z.md)

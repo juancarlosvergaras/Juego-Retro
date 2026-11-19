@@ -12,3 +12,23 @@ async function game(mission,query,initial={}){const data=new Map(Object.entries(
  context.ArcadeNewYorkWorld=require('../new-york-world');context.ArcadeNewYorkRenderer={...renderer,paths:JSON.parse(fs.readFileSync('new-york-renderer.js','utf8').match(/const paths=(\{.*?\});function create/)[1])};
  vm.runInNewContext(fs.readFileSync(mission===8?'level-eight-game.js':mission===7?'level-seven-game.js':mission===6?'level-six-game.js':mission===5?'level-five-game.js':'level-four-game.js','utf8'),context);await new Promise(r=>setImmediate(r));let now=0;const tick=t=>{for(let i=0;i<Math.ceil(t*120);i++){now+=1000/120;frame(now);}};tick(.02);return{data,el,tick,loader:()=>loader(),play:()=>el('play-two').click(),key:(code,down=true)=>listeners[down?'keydown':'keyup']?.({code,key:code.slice(-1),repeat:false,preventDefault(){}}),pagehide:()=>listeners.pagehide?.(),get menu(){return menu;},get navigation(){return navigation;},get view(){return view;}};
 }
+
+test('reanudar las misiones 4 a 8 conserva el combustible y respeta la dificultad y el destino elegido',async()=>{
+ const worlds=[['four','road'],['five','sea'],['six','mall'],['seven','space'],['eight','newYork']];
+ for(const [i,[name,world]] of worlds.entries()){
+  const level=i+4,saveKey='cap-dollar.mission-'+name+'.v1';
+  const g=await game(level,'?entry=resume',{
+   [saveKey]:JSON.stringify({fuel:123,hp:6,formCooldown:2,[world]:{started:true}}),
+   'cap-dollar.difficulty.v1':'novato'
+  });
+  assert.equal(g.view.p.fuel,123,'combustible en misión '+level);
+  assert.ok(g.view.p.formCooldown>1.5&&g.view.p.formCooldown<=2);
+  assert.equal(g.view.e.hitProtection,1.7);
+  g.menu.onDifficulty('extrema');
+  assert.equal(g.view.e.hitProtection,1);
+  g.menu.onSelectMission();
+  g.data.set('cap-dollar.campaign.v1',JSON.stringify({version:1,level:1}));
+  g.pagehide();
+  assert.equal(JSON.parse(g.data.get('cap-dollar.campaign.v1')).level,1);
+ }
+});

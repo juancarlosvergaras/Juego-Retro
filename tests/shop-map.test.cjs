@@ -74,14 +74,14 @@ test('los dos especiales ocupan la segunda bifurcación',()=>{
   }
 });
 test('el estado del mapa distingue superadas, actual, alternativas y pendientes',()=>{
-  const {nodes,edges}=Map.graph(),at=level=>Object.fromEntries(Map.states(level,nodes).map((s,i)=>[nodes[i].id,s]));
+  const {nodes,edges}=Map.graph(),cleared=[1,2,4],at=level=>Object.fromEntries(Map.states(level,nodes,false,false,!level||level===1?[]:cleared.filter(id=>id!==level)).map((s,i)=>[nodes[i].id,s]));
   assert.deepEqual(at(1),{m1:'current',m2:'open',m3:'open',m4:'open',m5:'open',m6:'open',m7:'open',chase:'open',assault:'open',m8:'open'});
   const fork=at(4);
   assert.equal(fork.m4,'current');assert.equal(fork.m3,'choice');assert.equal(fork.m5,'choice');assert.equal(fork.m2,'done');assert.equal(fork.m6,'open');
   const late=at(6);
-  assert.deepEqual([late.m3,late.m4,late.m5,late.m6],['done','done','done','current']);
+  assert.deepEqual([late.m3,late.m4,late.m5,late.m6],['open','done','open','current']);
   assert.equal(at(undefined).m1,'current');assert.equal(at(99).m8,'current');
-  const lit=level=>{const list=Map.states(level,nodes);return edges.filter(e=>Map.travelled(e,list,nodes)).map(e=>e.from.id+'-'+e.to.id);};
+  const lit=level=>{const list=Map.states(level,nodes,false,false,!level||level===1?[]:cleared.filter(id=>id!==level));return edges.filter(e=>Map.travelled(e,list,nodes)).map(e=>e.from.id+'-'+e.to.id);};
   assert.deepEqual(lit(1),[]);
   assert.deepEqual(lit(4),['m1-m2','m2-m3','m2-m4','m2-m5']);
   assert.ok(!lit(8).some(id=>id.includes('chase')||id.includes('assault')),'los tramos en construcción no se iluminan');
@@ -89,4 +89,22 @@ test('el estado del mapa distingue superadas, actual, alternativas y pendientes'
 test('las curvas del camino unen exactamente sus dos paradas',()=>{
   const {edges}=Map.graph();
   for(const e of edges){const d=Map.route(e.from,e.to);assert.ok(d.startsWith('M'+e.from.x+' '+e.from.y+' C'));assert.ok(d.endsWith(e.to.x+' '+e.to.y));}
+});
+
+test('el mapa recuerda las victorias del perfil tras repetir y distingue las rutas solo visitadas',()=>{
+  const Campaign=require('../campaign');
+  const records=new globalThis.Map();
+  const store={getItem:k=>records.get(k)??null,setItem:(k,v)=>records.set(k,v)};
+  const save=(name,data)=>store.setItem('cap-dollar.mission-'+name+'.v1',JSON.stringify(data));
+  save('three',{ending:false});
+  save('four',{road:{complete:true}});
+  save('two',{inside:true,king:{defeated:true}});
+  save('five',{sea:{complete:false}});
+  Campaign.write(store,{level:8});
+  assert.deepEqual(Campaign.completedMissions(store),[4]);
+  save('four',{road:{complete:false}});
+  save('two',{inside:false,king:{defeated:true}});
+  Campaign.markCompleted(store,8);
+  assert.deepEqual(Campaign.completedMissions(store),[2,4,8]);
+  assert.equal(Map.states(8,Map.graph().nodes,false,false,[2,4,8]).at(-1),'done');
 });

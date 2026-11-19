@@ -89,7 +89,7 @@
      c.strokeStyle='#23263d';c.lineWidth=6;c.beginPath();c.moveTo(x,pl.y+14);c.lineTo(x+9,pl.y+34);c.lineTo(x+24,pl.y+14);c.stroke();
     }c.fillStyle='#304858';c.fillRect(pl.x,pl.y,pl.w,16);c.fillStyle='#92f0e8';c.fillRect(pl.x,pl.y,pl.w,3);for(let i=0;i<pl.w;i+=26){c.fillStyle='#152335';c.fillRect(pl.x+i+5,pl.y+6,15,5);}}
    const beacons=[140,...[2500,4800,7300].filter(x=>x<ArcadeSpaceWorld.widths[s.floor]-500)];for(const x of beacons){if(x<s.camera.x-100||x>s.camera.x+1060)continue;ArcadeCheckpoints.draw(c,{stations:[{id:x,x,y:472,inside:false}],active:x<=s.checkpointX?x:null,visited:new Set(x<=s.checkpointX?[x]:[]),flash:0},false,s.time,{left:s.camera.x,right:s.camera.x+960,top:0,bottom:540});}
-   if(s.floor<2){for(let i=0;i<Math.floor(ArcadeSpaceWorld.widths[s.floor]/1000);i++){const x=850+i*950;if(s.taken.has(s.floor+'-'+i))continue;if(i%4===3||i%4===1)root.ArcadePickupRenderer.draw(c,{id:i,type:i%4===3?'star':'health',x,y:472,amount:3},s.time,p);else{for(const [j,slot]of [3,5,6].entries())root.ArcadePickupRenderer.draw(c,{type:'ammo',slot,x:x+(j-1)*50,y:472},s.time,p);root.ArcadePickupRenderer.fuel(c,{x:x+88,y:472});}}const end=ArcadeSpaceWorld.widths[s.floor];
+   if(s.floor<2){for(const item of ArcadeSpaceWorld.pickups(s))if(!s.taken.has(item.id)&&item.x>=s.camera.x-32&&item.x<=s.camera.x+992)root.ArcadePickupRenderer.draw(c,item,s.time,p);const end=ArcadeSpaceWorld.widths[s.floor];
     if(end-225<s.camera.x+960)airlock(c,end-155,472,s.travel>=0?Math.max(0,1-s.travel):.88);
    }
    if(s.floor>0&&s.camera.x<220)airlock(c,140,472,s.travel>=0?Math.min(1,s.travel-1):Math.max(0,1-Math.abs(p.x-140)/110));

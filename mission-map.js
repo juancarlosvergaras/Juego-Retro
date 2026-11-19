@@ -27,9 +27,9 @@
   function route(a,b){const mid=(a.x+b.x)/2;return'M'+a.x+' '+a.y+' C'+mid+' '+a.y+' '+mid+' '+b.y+' '+b.x+' '+b.y;}
   // done: ya superada · current: la misión de la campaña · choice: alternativa
   // de la misma bifurcación · open: disponible · soon: mundo aún por construir.
-  function states(level,nodes,specialCleared=false,chaseCleared=false){
+  function states(level,nodes,specialCleared=false,chaseCleared=false,completed=[]){
     const last=Math.max(...nodes.filter(n=>n.mission).map(n=>n.mission)),current=Math.max(1,Math.min(last,Math.floor(Number(level)||1))),here=nodes.find(n=>n.mission===current);
-    return nodes.map(n=>n.soon?'soon':n.special?((n.id==='assault'?chaseCleared:specialCleared)?'done':n.col===here.col?'choice':'open'):n.mission===current?'current':n.col===here.col?'choice':n.col<here.col?'done':'open');
+    return nodes.map(n=>n.soon?'soon':n.special?((n.id==='assault'?chaseCleared:specialCleared)?'done':n.col===here.col?'choice':'open'):completed.includes(n.mission)?'done':n.mission===current?'current':n.col===here.col?'choice':'open');
   }
   // Un tramo está recorrido cuando lleva a la misión actual o queda detrás de ella.
   function travelled(edge,list,nodes){const state=n=>list[nodes.indexOf(n)];return !edge.soon&&state(edge.from)==='done'&&['done','current','choice'].includes(state(edge.to));}
@@ -76,11 +76,11 @@
     function select(index,user){selected=index;buttons.forEach((n,i)=>{n.classList.toggle('selected',i===index);n.setAttribute('aria-pressed',String(i===index));});cards.forEach((card,i)=>{if(card)card.hidden=i!==index;});if(user)cards[index]?.scrollIntoView?.({block:'nearest',behavior:'smooth'});}
     const words={done:' · completada',current:' · misión actual',choice:' · ruta alternativa',soon:' · próximamente',open:''};
     function refresh(){
-      let level=1,specialCleared=false,chaseCleared=false;try{const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;level=root.ArcadeCampaign?.read(store)?.level||1;const profile=root.ArcadeProgression?.load(store);specialCleared=!!profile?.heroUnlocked;chaseCleared=!!profile?.owned.includes('cloak');}catch{}
-      current=states(level,nodes,specialCleared,chaseCleared);
+      let level=1,specialCleared=false,chaseCleared=false,completed=[];try{const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;level=root.ArcadeCampaign?.read(store)?.level||1;completed=root.ArcadeCampaign?.completedMissions(store)||[];const profile=root.ArcadeProgression?.load(store);specialCleared=!!profile?.heroUnlocked;chaseCleared=!!profile?.owned.includes('cloak');}catch{}
+      current=states(level,nodes,specialCleared,chaseCleared,completed);
       buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.setAttribute('aria-label',(nodes[i].soon||nodes[i].special?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+words[current[i]]);});
       roads.forEach((lit,i)=>lit.style.display=travelled(edges[i],current,nodes)?'':'none');
-      select(Math.max(0,current.indexOf('current')),false);
+      select(Math.max(0,nodes.findIndex(n=>n.mission===level)),false);
     }
     new MutationObserver(()=>{if(!page.hidden)refresh();}).observe(page,{attributes:true,attributeFilter:['hidden']});
     refresh();

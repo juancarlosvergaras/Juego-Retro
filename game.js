@@ -37,7 +37,7 @@
   let cleanBuilding,queuedAim=null,arrival=null,opening=null;
   const fireBuffer=ArcadeArsenal.createFireBuffer();
   let score=ArcadeScore.create(),challenges=ArcadeChallenges.create(platforms);
-  const victory=window.ArcadeVictory?.create({drawHelicopter:ArcadeExtraction.drawFlyby,onFinish(){sound.setRunning(false);
+  const victory=window.ArcadeVictory?.create({drawHelicopter:ArcadeExtraction.drawFlyby,onFinish(){ArcadeCampaign.markCompleted(saveStore,1);sound.setRunning(false);
     // All three missions close on the same debrief card.
     if(window.ArcadeMissionResults?.show){ui.overlay.hidden=true;ArcadeMissionResults.show({kicker:'MISIÓN 01 COMPLETADA',title:'LA OBRA',epilogue:story?.epilogue||'',
       stats:ArcadeMissionResults.rows(score,{enemies:encounter.enemies,seconds:challenges.elapsed,extra:[['Estrellas',challenges.stars.filter(s=>s.taken).length+' / '+challenges.stars.length],['Sin recibir daño',challenges.damaged?'No':'Sí']]}),

@@ -83,3 +83,25 @@ test('the Sovereign shows its attack under fire and spent hazards keep moving du
  assert.equal(s.boss.phase,'laserWarn');assert.equal(s.boss.facing,1);
  assert.ok(Space.laserSegment(s.boss,55,p.x).x>s.boss.x);assert.equal(S.pose({phase:'laser',age:1.15}).index,15);
 });
+
+test('el suministro dibujado entrega un solo premio y conserva su sorteo al cargar o reintentar',()=>{
+ for(const world of [Mall,Space]){
+  const s=world.create({started:true}), p=P.createPlayer(), e=encounter();
+  world.configure(s,p,e);
+  const items=world.pickups(s);
+  assert.equal(new Set(items.map(i=>i.x)).size,items.length);
+  assert.deepEqual(world.pickups(world.create(world.snapshot(s,p))),items);
+  assert.deepEqual(world.pickups(world.retry(s)),items);
+  const item=items.find(i=>i.type==='ammo'||i.type==='fuel');
+  p.x=item.x;p.y=item.y;p.fuel=0;
+  const before={...e.inventory.ammo};
+  const events=world.update(s,p,e,{},dt);
+  assert.equal(events.filter(ev=>ev.type==='pickup').length,1);
+  assert.ok(s.taken.has(item.id));
+  const changed=Object.keys(e.inventory.ammo).filter(slot=>e.inventory.ammo[slot]!==before[slot]).map(Number);
+  assert.deepEqual(changed,item.type==='ammo'?[item.slot]:[]);
+  if(item.type==='fuel')assert.equal(p.fuel,p.fuelMax);
+  assert.ok(world.create(world.snapshot(s,p)).taken.has(item.id));
+  assert.ok(!world.update(s,p,e,{},dt).some(ev=>ev.type==='pickup'));
+ }
+});

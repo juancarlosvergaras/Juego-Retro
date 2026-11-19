@@ -10,7 +10,8 @@
  Object.assign(p,{x:200,y:414,lane:414,form:'soldier',facing:1,grounded:true,jumps:0,jetpack:false,roadBoost:false,onMotorcycle:true});
  if(!fresh&&saved.road&&!saved.dead&&Number.isFinite(carry.hp))e.hp=Math.max(1,Math.min(e.maxHp,carry.hp));
  if(['wolf','zombie','robot','tank','fighter','hero'].includes(saved.form)&&(saved.form==='hero'&&p.heroUnlocked||saved.form==='tank'&&p.tankUnlocked||saved.form==='fighter'&&p.fighterUnlocked||saved.form==='wolf'||saved.form==='zombie'&&p.zombieUnlocked||saved.form==='robot'&&p.robotUnlocked))p.form=saved.form;
- p.formCooldown=Math.min(5,Math.max(0,Number(saved.formCooldown)||0));for(const [id,v]of Object.entries(carry.cooldowns||{}))if(Number.isFinite(v)&&v>0)powers.cooldowns[id]=v;
+ if(!fresh&&!saved.dead&&Number.isFinite(saved.fuel))p.fuel=Math.min(p.fuelMax,Math.max(0,saved.fuel));
+ p.formCooldown=Math.min(5,Math.max(0,Number(carry.formCooldown)||0));for(const [id,v]of Object.entries(carry.cooldowns||{}))if(Number.isFinite(v)&&v>0)powers.cooldowns[id]=v;
  let difficulty=ArcadeDifficulty.get(ArcadeDifficulty.load(store)),s=ArcadeRoadWar.create(saved.road||{},difficulty.health);if(saved.dead)s=ArcadeRoadWar.retry(s);s.shared=!!presentation;
  if(s.ending>=0){profile.tankUnlocked=true;p.tankUnlocked=true;ArcadeProgression.save(profile,store);}
  e.combatDamage=difficulty.damage;e.hitProtection=difficulty.grace;let score={total:carry.score||0},paused=true,started=false,loaded=false,loading=null,renderer,last=0,acc=0,age=0,noticeAge=0,notice='',mainMenu=null,leaving=false;const images={},keys=new Set(),queue=new Set(),pointers=new Set();
@@ -27,7 +28,7 @@
  function clear(){keys.clear();queue.clear();pointers.clear();}
  function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Moto fuera de combate':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La persecución queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
  // The mission closes on the same debrief card as the others; the old screen stays as a fallback.
- function finish(){paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
+ function finish(){ArcadeCampaign.markCompleted(store,4);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
   if(window.ArcadeMissionResults?.show){const t=ArcadeRoadWar.tally(s);ArcadeMissionResults.show({kicker:'MISIÓN 04 COMPLETADA',title:'FURIA EN LA CARRETERA',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Enemigos abatidos',t.fallen+' / '+t.total],['Tiempo',window.ArcadeMissionKit?ArcadeMissionKit.clock(t.seconds):Math.round(t.seconds)+' s'],['Estrellas',t.stars+' / '+t.starTotal],['Mini tanque','Conseguido']],next:{label:'Continuar · Misión 05',run:()=>$('victory-next').click()},routes:[{label:'Avanzar al centro comercial · Misión 06',run:()=>leaveForRoute(6)}],retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}
  play.onclick=()=>{if(!loaded)return;if(s.complete){finish();return;}
@@ -36,7 +37,7 @@
   if(e.dead){s=ArcadeRoadWar.retry(s);s.shared=!!presentation;presentation?.reset();e.dead=false;e.hp=e.maxHp;e.invincible=3;p.x=200;p.lane=414;p.y=414;p.jumps=0;p.transform=0;p.hurt=0;e.robotWait=null;powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];}
   started=true;paused=false;clear();menu.hidden=true;canvas.inert=false;audio.unlock();audio.setRunning(true);canvas.focus();save();};
  $('pause-two').onclick=()=>paused?play.click():pause();$('show-shortcuts').onclick=()=>{$('shortcuts').hidden=!$('shortcuts').hidden;};$('restart').onclick=()=>{save();leaving=true;location.assign('level-four.html?entry=select');};
- mainMenu=ArcadeMainMenu.create({mission:4,resumeAvailable:!!saved.road,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission:save,onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;e.combatDamage=next.damage;e.hitProtection=next.grace;return ArcadeDifficulty.save(id,store);}});
+ mainMenu=ArcadeMainMenu.create({mission:4,resumeAvailable:!!saved.road,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission(){save();leaving=true;},onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;e.combatDamage=next.damage;e.hitProtection=next.grace;return ArcadeDifficulty.save(id,store);}});
  function leaveForRoute(level){
   save();leaving=true;
   location.assign(ArcadeCampaign.enterRoute(level,store,p,e,score,powers));

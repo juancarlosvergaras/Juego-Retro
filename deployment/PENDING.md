@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T191334Z
+
+Los carros de Nueva York siguen los carriles de los seis cruces de Manhattan y Midtown. El impacto coincide con el paso del vehículo por el personaje. [Cambios en el tráfico de la misión 8](releases/20261119T191334Z.md)
+
 ## Publicado en Mac mini · 20261119T185243Z
 
 Los jefes y subjefes de la campaña y de Distrito Quimera se tiñen brevemente de rojo cuando pierden vida. [Detalles de la señal de impacto](releases/20261119T185243Z.md)

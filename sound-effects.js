@@ -1,7 +1,7 @@
 (function(root){
   'use strict';
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
-  const names=['knife','axe','pistol','shotgun','rifle','rocket','bow','crossbow','grenade','explosion','debris','whiteRoar','blackRoar','zombieRoar','wolfHurt','wolfDeath','claw','kick','scream','brake','door','pickup','heal','cryo','wave','drone','turret','orbital','shield','hurt','jump','land','step','grip','splash','plasma','bat','thunder','distant'];
+  const names=['knife','axe','pistol','shotgun','rifle','rocket','bow','crossbow','grenade','explosion','debris','whiteRoar','blackRoar','zombieRoar','wolfHurt','wolfDeath','claw','kick','scream','brake','carHorn','door','pickup','heal','cryo','wave','drone','turret','orbital','shield','hurt','jump','land','step','grip','splash','plasma','bat','thunder','distant'];
   // How much of each effect is sent to the shared room reverb.
   const space={pistol:.3,rifle:.28,shotgun:.4,rocket:.4,explosion:.65,orbital:.6,grenade:.2,whiteRoar:.45,blackRoar:.5,zombieRoar:.5,wolfDeath:.45,wolfHurt:.25,scream:.35,thunder:.8,distant:.9,wave:.4,land:.12,debris:.25,door:.2,plasma:.25,splash:.2,turret:.25,kick:.1,claw:.1,axe:.1};
   function create(options={}){
@@ -85,7 +85,8 @@
         const pitch=390+variant*85;
         layer({type:'sawtooth',freq:pitch,end:pitch*.72,duration:.7,gain:.19,filter:'bandpass',cut:1300+variant*170,q:1.1,vibrato:28,attack:.06});
         layer({type:'triangle',freq:pitch*1.02,end:pitch*.85,duration:.82,gain:.08,cut:2300,vibrato:21,attack:.07});noise(.3,.035,3000);
-      }else if(name==='brake'){layer({duration:.42,gain:.22,filter:'bandpass',cut:2100,q:3});tone(820,340,.35,.06,'triangle');}
+      }else if(name==='carHorn'){tone(392,392,.18,.13,'sawtooth');tone(494,494,.18,.10,'triangle');}
+      else if(name==='brake'){layer({duration:.42,gain:.22,filter:'bandpass',cut:2100,q:3});tone(820,340,.35,.06,'triangle');}
       else if(name==='door'){noise(.18,.16,1600);tone(130,55,.16,.2);noise(.055,.2,2700,.17);}
       else if(name==='pickup'||name==='heal'){for(let i=0;i<3;i++)tone([523,659,880][i],name==='heal'?1047:[523,659,880][i],.22,.11,'sine',i*.085);}
       else if(name==='cryo'){noise(.7,.2,6500);for(let i=0;i<4;i++)tone(1400+i*280,2600,.22,.065,'sine',i*.06);}

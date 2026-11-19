@@ -11,3 +11,54 @@ test('shared gun damages commander and giant; transition is protected',()=>{cons
 test('final defeat rewards once and saved ending resumes without resurrecting boss',()=>{const g=setup(2);g.s.boss.active=true;g.s.boss.stage=2;g.s.boss.hp=0;g.s.boss.targets=[100];g.e.explosions=[{x:100,y:472,life:.2}];const events=tick(g,.02);assert.equal(events.filter(v=>v.amount===15000).length,1);assert.equal(g.s.boss.targets.length,0);assert.equal(g.e.explosions.length,0);const s=M.create(M.snapshot(g.s,g.p));assert.equal(s.ending,0);assert.equal(s.boss.hp,0);const more=tick({...g,s},15.1);assert.equal(s.complete,true);assert.equal(more.filter(v=>v.type==='points').length,0);});
 test('new soldiers remain finite, respect ram reaction and wait when distant',()=>{const g=setup();const n=g.s.enemies.find(n=>n.kind==='cityAssault');g.p.x=50;for(let i=0;i<600;i++)N.update([n],g.p,1/60,g.s.geometry.platforms,g.e.bullets,()=>null);assert.equal(g.e.bullets.length,0);g.p.x=n.x-200;for(let i=0;i<180;i++)N.update([n],g.p,1/60,g.s.geometry.platforms,g.e.bullets,()=>null);assert.ok(g.e.bullets.length>0);assert.ok(Number.isFinite(n.x+n.y));n.ramHit={age:0,dir:1};n.vy=-150;n.grounded=false;N.update([n],g.p,1/60,g.s.geometry.platforms,g.e.bullets,()=>null);assert.ok(n.ramHit.age>0);});
 test('mission eight transfer retains earned forms and weapons',()=>{const data=new Map(),store={getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)};Campaign.transferEight(store,{form:'robot',robotUnlocked:true},{hp:2,inventory:{owned:[3,7],selected:7,ammo:{7:90}}},{total:200},{cooldowns:{}});assert.equal(Campaign.read(store).level,8);assert.equal(Campaign.read(store).inventory.selected,7);assert.equal(Campaign.read(store).robotUnlocked,true);});
+
+test('cars travel continuously between the horizon and foreground and collide only in the crosswalk',()=>{
+ for(const floor of [0,1])for(let i=0;i<M.crossings.length;i++)for(const pass of [2,3]){
+  const start=pass*9-i*2.3;
+  let last=null,seen=false;
+  for(let frame=0;frame<1080;frame++){
+   const car=M.trafficAt(start+frame/120,i,floor);
+   if(car.active){assert.ok(car.visible);assert.ok(Math.abs(car.y-M.FLOOR)<20);seen=true;}
+   if(last&&car.visible&&last.visible){
+    assert.ok(Math.abs(car.y-last.y)<4);assert.ok(Math.abs(car.x-last.x)<2);
+    assert.ok(car.outbound?car.y<=last.y+.001:car.y>=last.y-.001);
+   }
+   if(last&&car.visible!==last.visible){
+    const visible=car.visible?car:last;
+    assert.ok(visible.w<3||visible.y-visible.h>537);
+   }
+   last=car;
+  }
+  assert.ok(seen);
+ }
+});
+
+test('each car sounds one warning and can hit each grounded actor only once',()=>{
+ const g=setup(),{s,p,e}=g;
+ s.time=.6;s.trafficWait=0;p.x=M.crossings[0]-25;e.invincible=0;
+ const n=s.enemies[0];Object.assign(n,{x:p.x,y:M.FLOOR,hp:18});
+ let horns=0,hits=0;
+ for(let i=0;i<510;i++){
+  e.invincible=0;
+  const hp=e.hp,events=M.update(s,p,e,{},1/120);
+  horns+=events.filter(v=>v.type==='trafficHorn').length;
+  if(e.hp<hp){assert.ok(s.traffic[0].visible&&s.traffic[0].active);hits++;}
+ }
+ assert.equal(horns,1);assert.equal(hits,1);assert.equal(n.hp,16);
+ for(const [x,y] of [[M.crossings[0]+100,M.FLOOR],[M.crossings[0],M.FLOOR-90]]){
+  p.x=x;p.y=y;s.time=2.52;s.playerCarHit=null;e.invincible=0;
+  const hp=e.hp;tick(g,1);assert.equal(e.hp,hp);
+ }
+});
+
+test('resume keeps cars in place, and saving during a district change keeps its correct entrance',()=>{
+ const {s,p,e}=setup();s.time=12.18;
+ const saved=M.create(M.snapshot(s,p));M.configure(saved,p,e);
+ assert.deepEqual(saved.traffic[0],M.trafficAt(12.18,0));
+ assert.equal(M.create({started:true}).time,0);
+ p.x=5900;p.grounded=true;M.interact(s,p);assert.equal(M.interact(s,p),null);
+ tick({s,p,e},1);assert.equal(M.snapshot(s,p).floor,0);
+ tick({s,p,e},.6);const arrival=M.snapshot(s,p);
+ assert.equal(arrival.floor,1);assert.equal(arrival.x,140);assert.equal(s.camera.x,0);
+ tick({s,p,e},1.5);assert.equal(s.travel,-1);
+});

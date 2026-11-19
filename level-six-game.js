@@ -40,10 +40,14 @@
  function controls(){return ArcadeControls.decorate({left:keys.has('KeyA')||keys.has('ArrowLeft'),right:keys.has('KeyD')||keys.has('ArrowRight'),up:keys.has('KeyW')||keys.has('ArrowUp'),down:keys.has('KeyS')||keys.has('ArrowDown'),run:keys.has('ShiftLeft')||keys.has('ShiftRight'),jumpPressed:queue.has('jump'),hookPressed:queue.has('hook'),hookHeld:keys.has('KeyE'),jetpackPressed:queue.has('jet'),kick:p.form!=='robot'&&(queue.has('kick')||keys.has('KeyL')),power:queue.has('power')||keys.has('KeyG'),...ArcadeArsenal.triggerInput(keys,pointers.size>0,queue.has('fire'))});}
  function interact(){if(locked())return;const result=ArcadeMallWorld.interact(s,p);if(result==='arcade'){paused=true;clear();audio.setRunning(false);save();menu.hidden=true;canvas.inert=true;arcade.show();}else if(result==='escalator'){clear();e.bullets=[];p.rope=null;p.jetpack=false;p.burrow=null;save();}}
  arcade=ArcadeMallArcadeUI.create({store,onClose(){clear();paused=false;canvas.inert=false;audio.setRunning(true);canvas.focus();save();},onReward(amount){score.total+=amount;ArcadeProgression.credit(profile,amount);save();}});$('mall-interact').onclick=interact;
+ function gunshot(source,sound){
+  ArcadeMallWorld.hearShot(s,p,source);
+  audio.play(sound,ArcadeSoundEvents.spatial(source,p));
+ }
  function update(dt){ArcadeDeveloperMode.tick(p,e);const input=controls();ArcadeZombieForm.tick(p,dt);for(const k of ['transform','claw','kick','healGlow'])p[k]=Math.max(0,(p[k]||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
   if(queue.has('interact')){interact();queue.delete('interact');if(arcade.active)return;}
   if(s.intro>=4&&s.travel<0&&s.ending<0){const actual=p.transform>0?{}:input;p.aim=ArcadeArsenal.firingAim({...actual,aimUp:actual.aimUp||actual.up,aimDown:actual.aimDown||actual.down},p.facing);s.mode=ArcadePhysics.step(p,ArcadeArsenal.movementInput(p,actual),dt,s.geometry.platforms,{anchors:[],ladders:[]});p.crouching=!!s.mode.crouching;p.aimHeight=p.crouching?20:28;if(p.aim.x&&p.form!=='wolf'&&!p.rope)p.facing=Math.sign(p.aim.x);ArcadeSoldierAnimation.advanceWalk(p,dt);
-   const message=ArcadeMissionCombat.update(e,p,actual,dt,s.geometry.platforms,powers,profile,{left:s.camera.x,right:s.camera.x+960,top:0,bottom:540});if(message)notify(message);ArcadePhysics.updateIdle(p,actual,dt);
+   const message=ArcadeMissionCombat.update(e,p,actual,dt,s.geometry.platforms,powers,profile,{left:s.camera.x,right:s.camera.x+960,top:0,bottom:540},gunshot);if(message)notify(message);ArcadePhysics.updateIdle(p,actual,dt);
   }
   const events=ArcadeMallWorld.update(s,p,e,input,dt);for(const ev of events){if(ev.type==='points'){score.total+=ev.amount;ArcadeProgression.credit(profile,ev.amount);notify(ev.text+' · +'+ev.amount);save();}if(ev.type==='checkpoint'){powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];notify(ev.text);audio.play('pickup',{gain:.5});save();}if(ev.type==='pickup')notify(ev.text);if(ev.type==='ending'){audio.play('explosion',{gain:.5});save();}if(ev.type==='complete')finish();}
   queue.clear();if(e.dead){p.jetpack=false;pause();return;}age+=dt;if(age>2){age=0;save();}

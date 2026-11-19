@@ -21,9 +21,10 @@
   function hit(x,y,dx,dy,b){if(b.terrain)return E.segmentHit(x,y,dx,dy,{...b,h:b.thickness||7});let lo=0,hi=1;for(const [a,d,min,max] of [[x,dx,b.x,b.x+b.w],[y,dy,b.y,b.y+(b.thickness||7)]]){if(Math.abs(d)<1e-8){if(a<min||a>max)return null;continue;}const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)return null;}return lo;}
   function area(e,x,y,r,damage){N.area([...e.enemies,...(K.targetable(e.king)?[e.king]:[])],x,y,r,damage);const t=e.tank;if(t&&Math.hypot(x-Math.max(t.x-t.w/2,Math.min(t.x+t.w/2,x)),y-Math.max(t.y-t.h,Math.min(t.y,y)))<=r)T.damage(t,damage);}
   function melee(e,p,range,damage){N.melee(e.enemies,p,range,damage);if(K.targetable(e.king)){const b=K.box(e.king);if(Math.abs(e.king.x-p.x)<range+b.w/2&&(e.king.x-p.x)*p.facing>=-b.w/2&&p.y>b.y&&p.y-(p.h||46)<b.y+b.h)K.damage(e.king,damage);}const t=e.tank;if(t&&Math.abs(t.x-p.x)<range+t.w/2&&p.y>t.y-t.h&&p.y-(p.h||46)<t.y&&(t.x-p.x)*p.facing>=-t.w/2)T.damage(t,damage);}
-  function update(e,p,input,dt,platforms,powers,profile,view){
+  function update(e,p,input,dt,platforms,powers,profile,view,onShot){
     if(e.dead)return;
     E.applyFallDamage(e,p);if(e.dead)return;
+    const firstNewBullet=e.bullets.length,previousCast=p.castAim;
     T.update(e.tank,p,dt*(e.tank?.hp>0&&e.tank.sticky>0?.45:1),e.bullets,e.explosions,view);
     e.invincible=Math.max(0,e.invincible-dt);p.hurt=Math.max(0,(p.hurt||0)-dt);
     K.update(e.king,p,dt*(K.targetable(e.king)&&e.king.sticky>0?.45:1),(x,amount)=>E.hurtPlayer(e,p,x,false,amount),e.enemies,platforms);
@@ -40,6 +41,19 @@
     const message=V.update(powers,e,p,profile,input.power,dt,platforms,view);
     const noises=e.explosions.filter(b=>b.life>.35).map(b=>({x:b.x,y:b.y,radius:600}));if(e.flash>0)noises.push({x:p.x,y:p.y,radius:e.inventory.selected<=2?100:430});
     N.update(e.enemies,p,dt,platforms,e.bullets,E.segmentHit,noises,view);
+    // Report each discharge at its muzzle, before the first collision can remove it.
+    if(onShot){
+      if(p.form==='zombie'&&p.castAim&&p.castAim!==previousCast)onShot(Z.castOrigin(p),'plasma');
+      let previous;
+      for(let i=firstNewBullet;i<e.bullets.length;i++){
+        const b=e.bullets[i];
+        if(b.slot===7||b.slot===8||b.slot===9)continue;
+        if(previous&&b.x===previous.x&&b.y===previous.y&&b.slot===previous.slot)continue;
+        previous=b;
+        const sound=b.eyeRay?'plasma':b.slot===6?'rocket':b.slot===4?'shotgun':b.slot===3?'pistol':'rifle';
+        onShot(b,sound);
+      }
+    }
     for(const b of e.bullets){
       if(b.life<=0)continue;
       T.steer(b,dt);

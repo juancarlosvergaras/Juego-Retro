@@ -21,14 +21,15 @@
   const img=[images.atrium,images.gallery,images.food][s.floor];
   const tile=850,scale=tile/img.width,base=[.816,.85,.84][s.floor];
   const y=Math.round(ground-img.height*base*scale-10);
-  for(let x=-Math.round(s.camera.x*.77)%tile-tile;x<W;x+=tile){
+  for(let x=-Math.round(s.camera.x*root.ArcadeMallShoppers.parallax)%tile-tile;x<W;x+=tile){
    c.drawImage(img,x,y,tile,Math.ceil(img.height*scale));
   }
   // Carry the terrazzo down to the near edge when a panorama ends above it.
   const bottom=Math.floor(y+img.height*scale);
-  if(bottom<H)for(let x=-Math.round(s.camera.x*.77)%tile-tile;x<W;x+=tile){
+  if(bottom<H)for(let x=-Math.round(s.camera.x*root.ArcadeMallShoppers.parallax)%tile-tile;x<W;x+=tile){
    c.drawImage(img,0,img.height-10,img.width,10,x,bottom,tile,H-bottom);
   }
+  return {image:img,y};
  }
  function balcony(c,pl){
   const x=pl.x,y=pl.y,w=pl.w;

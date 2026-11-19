@@ -1,6 +1,7 @@
 (function(root){
  'use strict';
  const common=typeof module!=='undefined'&&module.exports,P=common?require('./physics'):root.ArcadePhysics,N=common?require('./enemies'):root.ArcadeEnemies,E=common?require('./encounter'):root.ArcadeEncounter;
+ const Shoppers=common?require('./mall-shoppers'):root.ArcadeMallShoppers;
  const FLOOR=472,widths=[5400,4800,4600,960],names=['Atrio · Planta 1','Galerías · Planta 2','Restaurantes · Planta 3','Azotea · El Coloso'],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),num=(v,d)=>Number.isFinite(v)?v:d;
  // All coordinates are in world space. The tread and both feet use the same profile.
  function escalator(floor) {
@@ -28,12 +29,13 @@
  }
  function geometry(floor){const w=widths[floor],platforms=[{id:0,x:0,y:FLOOR,w,kind:'ground',thickness:68}];if(floor<3)for(const [i,x]of [1850,2900,3850].entries())platforms.push({id:i+1,x,y:FLOOR-110-i%2*45,w:210,kind:'balcony',solid:false,thickness:14});return{platforms,anchors:[],ladders:[]};}
  function soldiers(floor,defeated,difficulty){if(floor===3)return[];return Array.from({length:11},(_,i)=>{const id='mall-'+floor+'-'+i,x=(floor===0?1480:520)+i*(floor===0?310:330),n=N.createSoldier({x,y:FLOOR,facing:-1,kind:i%4===2?'warden':i%4===3?'knife':i%4===1?'turret':'rifle'},id);n.shot=1.4+i*.2;if(n.kind==='warden'){n.hp=n.maxHp=6;}n.maxHp*=difficulty;n.hp=defeated.has(id)?0:n.maxHp;return n;});}
- function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,ridingTread:false,floorArrival:-1,intro:saved.started?4:0,travel:-1,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};return s;}
+ function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,ridingTread:false,floorArrival:-1,intro:saved.started?4:0,travel:-1,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};
+  s.departedShoppers=new Set(saved.departedShoppers||[]);s.shoppers=Shoppers.create(floor,s.departedShoppers);s.shoppingBags=[];return s;}
  function configure(s,p,e){Object.assign(P.WORLD,{top:0,width:widths[s.floor],height:540,ground:FLOOR});s.geometry=geometry(s.floor);Object.assign(p,{x:s.x,y:s.y,vx:0,vy:0,grounded:s.y===FLOOR,ground:s.y===FLOOR?s.geometry.platforms[0]:null,fallPeak:s.y,jumps:0,rope:null,ladder:null,jetpack:false,burrow:null,submersible:false,swimming:false,onMotorcycle:false,inSeaMission:false});e.enemies=s.enemies;e.bullets=[];e.explosions=[];e.debris=[];e.playerPools=[];e.invincible=2;}
  const emit=(s,type,data={})=>s.events.push({type,...data});
  function interact(s,p){if(s.floor===0&&Math.abs(p.x-s.arcadeX)<200&&p.grounded&&!p.burrow)return'arcade';if(canBoard(s,p)&&s.travel<0){const stair=escalator(s.floor);s.travel=0;s.travelX=p.x;s.boardX=stair.lower+(s.time+.8)*stair.speed%stair.pitch-stair.pitch;
     Object.assign(p,{ladder:null,rope:null,jetpack:false,heroFlight:false,crouching:false,sliding:false,landing:0,kick:0,claw:0,eyeFlash:0,fighterPose:0,cannonPose:0,zombiePose:0,hurt:0,grounded:true,idleTime:0});return'escalator';}return null;}
- function floorUp(s,p,e){s.floor++;s.floorArrival=s.time;s.checkpoint=s.floor;s.x=140;s.y=FLOOR;s.travel=-1;s.ridingTread=false;s.mode={};p.facing=1;s.enemies=soldiers(s.floor,s.awarded,s.difficulty);configure(s,p,e);emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});}
+ function floorUp(s,p,e){s.floor++;s.floorArrival=s.time;s.checkpoint=s.floor;s.x=140;s.y=FLOOR;s.travel=-1;s.ridingTread=false;s.mode={};p.facing=1;s.enemies=soldiers(s.floor,s.awarded,s.difficulty);s.shoppers=Shoppers.create(s.floor,s.departedShoppers);s.shoppingBags=[];configure(s,p,e);emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});}
  function bossUpdate(s,p,e,dt){if(p.cloak>0&&s.boss.hp>0)return;const b=s.boss;if(s.floor!==3||s.ending>=0)return;if(!b.active){if(p.x<270)return;b.active=true;b.age=0;b.phase='arrival';emit(s,'checkpoint',{text:'CHECK POINT · Azotea'});}
   if(b.hp<=0){s.ending=0;e.dead=false;e.hp=Math.max(1,e.hp);e.bullets=[];s.hazards=[];if(!s.awarded.has(b.id)){s.awarded.add(b.id);emit(s,'points',{amount:8500,text:'Coloso derrotado'});}emit(s,'ending');return;}
   b.hit=Math.max(0,b.hit-dt);b.frozen=Math.max(0,b.frozen-dt);if(b.frozen>0)return;b.age+=dt*(b.sticky>0?.65:1);const next=phase=>{b.phase=phase;b.age=0;};
@@ -58,6 +60,7 @@
  function update(s,p,e,input,dt){s.events=[];dt=clamp(dt,0,.05);s.time+=dt;for(const f of s.debris)f.age+=dt;s.debris=s.debris.filter(f=>f.age<1.2);
   if(s.ending>=0){s.ending+=dt;if(s.ending>=11&&!s.complete){s.complete=true;emit(s,'complete');}return s.events;}
   if(s.intro<4){s.intro=Math.min(4,s.intro+dt);return s.events;}
+  Shoppers.update(s,dt);
   if(s.travel>=0){s.travel+=dt;ride(s,p,dt);if(s.travel>=5)floorUp(s,p,e);return s.events;}
   if(s.floor<3&&p.grounded){const limit=escalator(s.floor).entry+38;if(p.x>limit){p.x=limit;p.vx=Math.min(0,p.vx);}}
   for(const n of s.enemies)if(n.hp<=0&&!s.awarded.has(n.id)){s.awarded.add(n.id);emit(s,'points',{amount:150,text:'Guardia neutralizado'});}
@@ -65,7 +68,8 @@
   if(s.floor===3&&s.boss.active){s.supplyAge+=dt;if(s.supplyAge>12){s.supplyAge=0;for(const slot of [3,5]){if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+30;}emit(s,'pickup',{text:'Reserva de emergencia · Munición'});}}
   return s.events;
  }
- function snapshot(s,p){return{floor:s.floor,x:s.travel>=0?widths[s.floor]-540:p.x,y:s.travel>=0?FLOOR:p.y,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
+ function hearShot(s,p,source){const camera=clamp(p.x-320,0,widths[s.floor]-960);Shoppers.hear(s,source,camera);}
+ function snapshot(s,p){return{floor:s.floor,departedShoppers:[...s.departedShoppers],x:s.travel>=0?widths[s.floor]-540:p.x,y:s.travel>=0?FLOOR:p.y,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
  function retry(s){return create({...snapshot(s,{x:140,y:FLOOR}),floor:s.checkpoint,x:140,y:FLOOR,ending:false,complete:false,started:true},s.difficulty);}
- const api={create,configure,update,interact,snapshot,retry,geometry,escalator,treadY,canBoard,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
+ const api={create,configure,update,interact,snapshot,retry,geometry,escalator,treadY,canBoard,hearShot,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
 })(typeof window!=='undefined'?window:globalThis);

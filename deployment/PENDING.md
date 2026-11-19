@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T124331Z
+
+Los compradores del centro comercial reaccionan a los disparos y dejan caer sus compras al refugiarse. [Registro de la publicación](releases/20261119T124331Z.md)
+
 ## Publicado en Mac mini · 20261119T122538Z
 
 La misión seis incorpora los tres ambientes del centro, escaleras sincronizadas, las máquinas arcade y el Coloso exterior. [Registro de la publicación](releases/20261119T122538Z.md)

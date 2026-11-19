@@ -1,5 +1,6 @@
 (function(root){'use strict';const paths={
    shoppers:'assets/sprites/compradores-centro.webp',
+   atriumUpper:'assets/worlds/mission-06/atrio-alto.webp',galleryUpper:'assets/worlds/mission-06/galeria-alta.webp',foodUpper:'assets/worlds/mission-06/restaurantes-altos.webp',
    rifleSteps:'assets/sprites/quimera-pasos-rifle.webp',knifeSteps:'assets/sprites/quimera-pasos-knife.webp',
    wardenSteps:'assets/sprites/quimera-pasos-warden.webp',fighterSteps:'assets/sprites/quimera-pasos-fighter.webp',
    rifleActions:'assets/sprites/quimera-rifle.png',knifeActions:'assets/sprites/quimera-knife.png',wardenActions:'assets/sprites/quimera-warden.png',"expansion":"assets/sprites/enemigos-expansion-v1.png","giantEffects":"assets/sprites/coloso-impactos-v1.png","zombieCast":"assets/sprites/zombi-disparo-direcciones-v1.png","jetMk2":"assets/sprites/jetpack-mk2-v1.png","zombieRun":"assets/sprites/zombi-carrera-v2.png","shock":"assets/sprites/electrocucion-v1.png","checkpointPc":"assets/sprites/checkpoint-pc-v1.png","wolfJump":"assets/sprites/lobo-salto-carrera-v1.png","formTransition":"assets/sprites/transformaciones-jugador-v3.png","zombieIdle":"assets/sprites/zombi-soldado-reposo-v1.png","zombieSoldier":"assets/sprites/zombi-soldado-v1.png","zombieSoldierExtra":"assets/sprites/zombi-soldado-extra-v1.png","zombiePlayer":"assets/sprites/zombi-electrico-v1.png","zombieExtra":"assets/sprites/zombi-electrico-extra-v1.png","wolfActions":"assets/sprites/lobo-reposo-patadas-v2.png","wolfCombos":"assets/sprites/lobo-combos-v1.png","wolfRam":"assets/sprites/lobo-cabezazo-v1.png","ramHit":"assets/sprites/enemigos-embestida-v1.png","wolfWalk":"assets/sprites/lobo-caminata-v2.png","crouch":"assets/sprites/soldado-agachado-pasos-v1.png","turret":"assets/sprites/enemigo-torreta-v1.png","knife":"assets/sprites/enemigo-cuchillo-v1.png","impact":"assets/sprites/explosion-impacto-v1.png","wolfSprint":"assets/sprites/lobo-carrera-cuatro-patas-v1.png","enemy":"assets/sprites/soldado-enemigo-v1.png","melee":"assets/sprites/soldado-cuchillo-hacha-v1.png","kicks":"assets/sprites/lobo-patadas-v1.png","powerSheet":"assets/sprites/poderes-v1.png","orbitalSheet":"assets/sprites/orbital-superrayo-v1.png","soldier":"assets/sprites/soldado-v2.png","climb":"assets/sprites/soldado-escalada-v2.png","walk":"assets/sprites/soldado-pasos-v3.png","slide":"assets/sprites/soldado-deslizamiento-v1.png","wolf":"assets/sprites/soldado-lobo-v1.png","wolfClimb":"assets/sprites/lobo-escalada-v1.png","transformation":"assets/sprites/soldado-transformacion-v2.png","atrium":"assets/worlds/mission-06/atrio.webp","gallery":"assets/worlds/mission-06/galeria.webp","food":"assets/worlds/mission-06/restaurantes.webp","roof":"assets/worlds/mission-06/ciudad.webp","roofDeck":"assets/worlds/mission-06/piso-azotea.webp","giant":"assets/sprites/coloso-exterior.webp","mallProps":"assets/sprites/centro-comercial-objetos-v1.png"};function create(images){let ctx,player,stats,mode,state;const props=ArcadeAdvancedForms.atlas(images.mallProps,4,3,{y:[0,.378,.661,1],x:{0:[0,.25,.5,.708,1]}}),art=root.ArcadeMallStageArt,giantEffects=ArcadeAdvancedForms.atlas(images.giantEffects,4,2,{y:[0,.62,1]});
@@ -42,12 +43,15 @@
     }
   }
 
-  function prop(c,index,x,y,width){const f=props[index],k=width/f[2];c.drawImage(images.mallProps,...f,Math.round(x-width/2),Math.round(y-f[3]*k),Math.round(width),Math.round(f[3]*k));}
+  function prop(c,index,x,base,height){
+   const f=props[index],width=Math.round(height*f[2]/f[3]);
+   c.drawImage(images.mallProps,...f,Math.round(x-width/2),base-height,width,height);
+  }
   function title(c,small,big,detail){c.fillStyle='#081b29eb';c.fillRect(0,0,960,66);c.fillRect(0,458,960,82);c.textAlign='center';c.fillStyle='#ffc96c';c.font='bold 15px monospace';c.fillText(small,480,39);c.fillStyle='#ebf7ed';c.font='bold 25px monospace';c.fillText(big,480,491);c.fillStyle='#b8d5d6';c.font='12px monospace';c.fillText(detail,480,520);}
   function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;s.camera.x=Math.max(0,Math.min(ArcadeMallWorld.widths[s.floor]-960,p.x-320));s.camera.y=0;
    const panorama=art.background(c,s,images);
    root.ArcadeMallShoppers.draw(c,s,images.shoppers,panorama);
-   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);prop(c,11,51,472,60);}
+   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);prop(c,11,51,472,56);}
    c.save();c.translate(-Math.round(s.camera.x),0);
    if(s.floor<3){
     for(const pl of s.geometry.platforms)if(pl.kind==='balcony')art.balcony(c,pl);
@@ -56,7 +60,7 @@
      const landingY=ArcadeMallWorld.FLOOR-stair.rise;
      c.fillStyle='#303d43';c.fillRect(stair.upper,landingY+3,ArcadeMallWorld.widths[s.floor]-stair.upper,12);
      c.fillStyle='#998d72';c.fillRect(stair.upper,landingY,ArcadeMallWorld.widths[s.floor]-stair.upper,3);
-     prop(c,s.travel>3.2?11:10,stair.exit+16,landingY,61);
+     prop(c,s.travel>3.2?11:10,stair.exit+16,landingY,56);
      art.stairs(c,s,false);
      const sx=stair.lower+135,sy=ArcadeMallWorld.FLOOR-stair.rise-55;
      c.fillStyle='#182c34';c.fillRect(sx,sy,137,22);
@@ -65,18 +69,19 @@
      c.fillText(s.floor===2?'AZOTEA  ↗':'PLANTA '+(s.floor+2)+'  ↗',sx+10,sy+15);
     }
    }
-   prop(c,9,170,472,40);
+   prop(c,9,170,472,38);
    if(s.floor===0){
-    c.fillStyle='#182629';c.fillRect(861,334,248,137);
-    for(let y=341;y<435;y+=7){c.fillStyle=y%2?'#25373a':'#2a373a';c.fillRect(867,y,236,2);}
-    for(const x of [861,1102]){c.fillStyle='#3c4342';c.fillRect(x,334,7,137);c.fillStyle='#99866d';c.fillRect(x+1,334,2,137);}
-    c.fillStyle='#726b51';c.fillRect(861,334,248,4);
-    c.fillStyle='#55605a';c.fillRect(863,464,244,7);
-    prop(c,3,985,371,117);
-    for(let i=0;i<3;i++)prop(c,i,920+i*65,472,38);
+    const x=s.arcadeX,base=ArcadeMallWorld.FLOOR,left=x-85,top=base-88;
+    c.fillStyle='#182629';c.fillRect(left,top,170,88);
+    for(let y=top+4;y<base-6;y+=5){c.fillStyle=y%2?'#25373a':'#2a373a';c.fillRect(left+4,y,162,1);}
+    for(const post of [left,left+165]){c.fillStyle='#3c4342';c.fillRect(post,top,5,88);c.fillStyle='#99866d';c.fillRect(post+1,top,1,88);}
+    c.fillStyle='#726b51';c.fillRect(left,top,170,3);
+    c.fillStyle='#55605a';c.fillRect(left+2,base-5,166,5);
+    prop(c,3,x,base-62,41);
+    for(let i=0;i<3;i++)prop(c,i,x+(i-1)*47,base,44);
    }
    if(s.floor<3)for(const [id,x,type]of [['kit',400,'health'],['ammo',1410,'ammo'],['star',1980,'star'],['fuel',ArcadeMallWorld.widths[s.floor]-650,'fuel']])if(!s.taken.has(s.floor+'-'+id)){if(type==='ammo'){for(const [i,slot]of [3,5,6].entries())root.ArcadePickupRenderer.draw(c,{type,slot,x:x+(i-1)*50,y:472},s.time,p);}else root.ArcadePickupRenderer.draw(c,{id,type,x,y:472,amount:3},s.time,p);}
-   for(const n of s.enemies){if(n.x<s.camera.x-100||n.x>s.camera.x+1060||n.hp<=0&&n.death<=0)continue;let row=n.hp<=0?3:n.hit>0?3:n.flash>0?3:Math.abs(n.vx)>10?1:0,frame=n.hp<=0?3:n.hit>0?2:n.flash>0?0:Math.floor((n.anim||0)*8)%4;if(ArcadeEnemySpecialists.drawRam(c,n,images.ramHit))continue;if(!art.guard(c,n,images,s.time)&&!ArcadeEnemySpecialists.draw(c,n,images)){const f=ENEMY_FRAMES[row][frame],k=.21;c.save();c.translate(n.x,n.y);c.scale(n.facing||-1,1);if(n.hp<=0)c.globalAlpha=Math.min(1,n.death*2);c.drawImage(images.enemy,...f.slice(0,4),-f[2]*k/2,-f[3]*k,f[2]*k,f[3]*k);c.restore();}if(n.hp>0){c.fillStyle='#111e27';c.fillRect(n.x-20,n.y-67,40,5);c.fillStyle='#e09a72';c.fillRect(n.x-19,n.y-66,38*n.hp/n.maxHp,3);}}
+   for(const n of s.enemies){if(n.x<s.camera.x-100||n.x>s.camera.x+1060||n.hp<=0&&n.death<=0)continue;let row=n.hp<=0?3:n.hit>0?3:n.flash>0?3:Math.abs(n.vx)>10?1:0,frame=n.hp<=0?3:n.hit>0?2:n.flash>0?0:Math.floor((n.anim||0)*8)%4;if(ArcadeEnemySpecialists.drawRam(c,n,images.ramHit))continue;if(!art.guard(c,n,images,s.time)&&!ArcadeEnemySpecialists.draw(c,n,images)){const f=ENEMY_FRAMES[row][frame],k=.21;c.save();c.translate(n.x,n.y);c.scale(n.facing||-1,1);if(n.hp<=0)c.globalAlpha=Math.min(1,n.death*2);c.drawImage(images.enemy,...f.slice(0,4),-f[2]*k/2,-f[3]*k,f[2]*k,f[3]*k);c.restore();}if(n.hp>0){const barY=n.y-Math.max(n.h||46,n.kind==='warden'?57:46)-7;c.fillStyle='#111e27';c.fillRect(n.x-17,barY,34,4);c.fillStyle='#e09a72';c.fillRect(n.x-16,barY+1,32*n.hp/n.maxHp,2);}}
    if(s.ending>=7&&p.form==='fighter')ArcadeAdvancedForms.draw(c,{...p,victoryAge:s.ending-7});
    else if(s.ridingTread&&p.form==='tank'){
     // The tread spans several steps; its front and rear follow the incline through both landings.

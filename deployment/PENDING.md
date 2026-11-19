@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T125636Z
+
+Las puertas, vitrinas, máquinas y escaleras de las tres plantas están ajustadas a la estatura del soldado. [Registro e ilustraciones](releases/20261119T125636Z.md)
+
 ## Publicado en Mac mini · 20261119T124331Z
 
 Los compradores del centro comercial reaccionan a los disparos y dejan caer sus compras al refugiarse. [Registro de la publicación](releases/20261119T124331Z.md)

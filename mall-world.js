@@ -6,7 +6,7 @@
  // All coordinates are in world space. The tread and both feet use the same profile.
  function escalator(floor) {
   const lower=widths[floor]-410;
-  return {lower,upper:lower+300,rise:146,entry:lower-68,exit:lower+356,pitch:30,speed:93};
+  return {lower,upper:lower+300,rise:146,entry:lower-68,exit:lower+356,pitch:12,speed:93};
  }
  function treadY(stair,x) {
   return FLOOR-stair.rise*clamp((x-stair.lower)/(stair.upper-stair.lower),0,1);

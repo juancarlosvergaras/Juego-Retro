@@ -1,29 +1,30 @@
 (function(root){
  'use strict';
- // Shop positions use the same scrolling plane as the illustrated storefronts.
- const parallax=.77, tile=850;
- const shops=[
-  {floorY:465,threshold:459,height:42,doorWidth:46,doorHeight:96,doors:[163,429,696],visitors:[[0,349,0,1],[2,622,1,-1],[4,248,0,-1]]},
-  {floorY:465,threshold:462,height:40,doorWidth:48,doorHeight:103,doors:[204,520,797],visitors:[[0,668,1,-1],[2,356,0,1],[3,693,1,1]]},
-  {floorY:384,threshold:366,height:36,doorWidth:48,doorHeight:84,doors:[-248,247,602,1097],visitors:[[0,420,0,1],[1,741,1,-1],[3,122,0,1]]}
+ const interior=typeof module!=='undefined'&&module.exports?require('./mall-interior'):root.ArcadeMallInterior;
+ const {parallax}=interior;
+ // Bay numbers spread sightings along each route independently of the shop scale.
+ const visits=[
+  [[0,341,0,1],[5,422,1,-1],[8,232,0,-1]],
+  [[1,464,1,-1],[5,258,0,1],[8,461,1,1]],
+  [[0,283,0,1],[3,501,1,-1],[7,91,0,1]]
  ];
  const tossTime=.66,releaseTime=tossTime/2;
  function create(floor,departed){
-  const shop=shops[floor];
-  if(!shop)return [];
-  return shop.visitors.map(([bay,offset,look,face],i)=>({
-   id:floor+'-'+i,x:bay*tile+offset,y:shop.floorY,ground:shop.floorY,height:shop.height,
-   left:bay*tile+shop.doors.filter(x=>x<offset).at(-1),
-   right:bay*tile+shop.doors.find(x=>x>offset),
-   look,face,phase:'browse',age:i*.37,pace:136+i*9,lag:.06+i*.045
-  })).filter(v=>!departed.has(v.id));
+  const layout=interior.storefront(floor);
+  if(!layout)return [];
+  return visits[floor].map(([bay,offset,look,face],i)=>{
+   const x=bay*layout.tile+offset*layout.scale;
+   return {id:floor+'-'+i,x,y:layout.ground,ground:layout.ground,height:layout.height,
+    exits:interior.exits(layout,bay,x),threshold:layout.threshold,look,face,
+    phase:'browse',age:i*.37,pace:136+i*9,lag:.06+i*.045};
+  }).filter(v=>!departed.has(v.id));
  }
  function hear(s,origin,camera){
   const sourceX=origin.x-camera*(1-parallax);
   for(const v of s.shoppers){
    if(v.phase!=='browse'||Math.hypot(v.x-sourceX,v.y-origin.y)>455)continue;
    v.lastBrowse=frame(v);v.phase='startle';v.age=0;v.escape=sourceX<v.x?1:-1;
-   v.door=v.escape>0?v.right:v.left;
+   v.exit=v.escape>0?v.exits.right:v.exits.left;
    s.departedShoppers.add(v.id);
   }
  }
@@ -72,9 +73,9 @@
     }
     if(v.age>=v.lag+tossTime){v.phase='run';v.face=v.escape;v.age=0;v.distance=0;}
    }else if(v.phase==='run'){
-    const remaining=Math.abs(v.door-v.x),step=Math.min(remaining,v.pace*dt);
+    const remaining=Math.abs(v.exit.x-v.x),step=Math.min(remaining,v.pace*dt);
     v.distance+=step;v.x+=step*v.face;
-    v.y=v.ground-(v.ground-shops[s.floor].threshold)*Math.max(0,1-Math.abs(v.door-v.x)/28);
+    v.y=v.ground-(v.ground-v.threshold)*Math.max(0,1-Math.abs(v.exit.x-v.x)/28);
     if(step>=remaining){v.phase='enter';v.age=0;}
    }else if(v.phase==='enter'){
     v.distance+=v.pace*.25*dt;
@@ -93,14 +94,15 @@
  }
  // Use the painted door panels themselves as they slide aside or roll up.
  function drawDoors(c,s,offset,panorama){
-  const shop=shops[s.floor];if(!shop)return;
+  if(!panorama)return;
   for(const v of s.shoppers){
-   if(v.phase!=='run'&&v.phase!=='enter'||v.door<offset-40||v.door>offset+1000)continue;
+   if(v.phase!=='run'&&v.phase!=='enter'||v.exit.x<offset-40||v.exit.x>offset+1000)continue;
    const entering=v.phase==='enter';
-   const open=entering?Math.min(1,(.55-v.age)/.22):Math.min(1,Math.max(0,(48-Math.abs(v.door-v.x))/37));
+   const open=entering?Math.min(1,(.55-v.age)/.22):Math.min(1,Math.max(0,(48-Math.abs(v.exit.x-v.x))/37));
    if(open<=0)continue;
-   const w=shop.doorWidth,h=shop.doorHeight,x=v.door-w/2,y=shop.threshold-h;
-   const image=panorama.image,ratio=image.width/tile,sx=((x%tile+tile)%tile)*ratio,sy=(y-panorama.y)*ratio;
+   const {width:w,height:h,center,sourceWidth,sourceTop}=v.exit,x=v.exit.x-w/2,y=v.threshold-h;
+   const image=panorama.image,ratio=image.width/panorama.layout.tile;
+   const px=image.width/interior.referenceWidth,sx=(center-sourceWidth/2)*px,sy=sourceTop*px;
    c.fillStyle='#242529';c.fillRect(x,y,w,h);
    // A dim slice of the shop interior remains visible through the opening.
    c.save();c.globalAlpha=.32;c.drawImage(image,sx-33*ratio,sy,w*ratio,h*ratio,x,y,w,h);c.restore();

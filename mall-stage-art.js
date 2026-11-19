@@ -12,24 +12,56 @@
   for(const p of points.slice(1))c.lineTo(...p);
   c.stroke();
  }
+ // Build small, filtered strips once; scrolling only translates already sampled pixels.
+ const interiors=new WeakMap();
+ function strip(width,height){
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext('2d');ctx.imageSmoothingQuality='high';return ctx;
+ }
+ function band(ctx,img,top,bottom,y,height,width=ctx.canvas.width){
+  const k=img.width/root.ArcadeMallInterior.referenceWidth;
+  ctx.drawImage(img,0,top*k,img.width,(bottom-top)*k,0,y,width,height);
+ }
+ function interiorArt(images,floor){
+  let built=interiors.get(images);
+  if(!built){built=[];interiors.set(images,built);}
+  if(built[floor])return built[floor];
+  const layout=root.ArcadeMallInterior.storefront(floor),{tile,scale,sill,threshold,top}=layout;
+  const image=[images.atrium,images.gallery,images.food][floor];
+  const front=strip(tile,H-top);
+  band(front,image,layout.cornice,sill,0,threshold-top);
+  // Keep the first terrazzo tiles in scale with the doorway. Deeper rows
+  // occupy more vertical space as they approach the front of the screen.
+  const depth=H-threshold,sourceDepth=384-sill,natural=sourceDepth*scale;
+  const extra=depth-natural;
+  function floorRow(y){return 2*y/(natural+Math.sqrt(natural*natural+4*extra*y));}
+  for(let y=0;y<depth;y++){
+   const start=floorRow(y),end=floorRow(y+1);
+   band(front,image,sill+start*sourceDepth,sill+end*sourceDepth,threshold-top+y,1);
+  }
+  const distant=[images.atriumUpper,images.galleryUpper,images.foodUpper][floor];
+  const back=strip(Math.round(distant.width*top/distant.height),top);
+  back.drawImage(distant,0,0,back.canvas.width,top);
+  return built[floor]={image,layout,front:front.canvas,back:back.canvas};
+ }
+ function repeat(c,img,scroll,y,mirror=false){
+  const offset=Math.round(scroll),first=Math.floor(offset/img.width);
+  for(let i=first,x=i*img.width-offset;x<W;i++,x+=img.width){
+   if(mirror&&i%2){
+    c.save();c.translate(x+img.width,y);c.scale(-1,1);c.drawImage(img,0,0);c.restore();
+   }else c.drawImage(img,x,y);
+  }
+ }
  function background(c,s,images){
   if(s.floor===3){
    const img=images.roof,k=W/img.width;
    c.drawImage(img,0,Math.round(edge-img.height*k*.82),W,img.height*k);
    return;
   }
-  const img=[images.atrium,images.gallery,images.food][s.floor];
-  const tile=850,scale=tile/img.width,base=[.816,.85,.84][s.floor];
-  const y=Math.round(ground-img.height*base*scale-10);
-  for(let x=-Math.round(s.camera.x*root.ArcadeMallShoppers.parallax)%tile-tile;x<W;x+=tile){
-   c.drawImage(img,x,y,tile,Math.ceil(img.height*scale));
-  }
-  // Carry the terrazzo down to the near edge when a panorama ends above it.
-  const bottom=Math.floor(y+img.height*scale);
-  if(bottom<H)for(let x=-Math.round(s.camera.x*root.ArcadeMallShoppers.parallax)%tile-tile;x<W;x+=tile){
-   c.drawImage(img,0,img.height-10,img.width,10,x,bottom,tile,H-bottom);
-  }
-  return {image:img,y};
+  const art=interiorArt(images,s.floor),x=s.camera.x;
+  repeat(c,art.back,x*.72,0,true);
+  repeat(c,art.front,x*root.ArcadeMallInterior.parallax,art.layout.top);
+  return art;
  }
  function balcony(c,pl){
   const x=pl.x,y=pl.y,w=pl.w;
@@ -57,22 +89,22 @@
   c.fillStyle='#3b4546';c.fillRect(upper-6,top+9,exit-upper+13,ground-top-9);
   c.fillStyle='#243038';c.fillRect(upper+8,top+24,exit-upper-12,ground-top-24);
   for(let y=top+28;y<ground-7;y+=9){c.fillStyle='#4a5654';c.fillRect(upper+14,y,exit-upper-26,2);c.fillStyle='#18252b';c.fillRect(upper+14,y+2,exit-upper-26,1);}
-  polygon(c,'#34454a',[...offset(-7,-19),...offset(0,4).reverse()]);
-  polygon(c,'#658b91bb',[...offset(-7,-33),...offset(-7,-16).reverse()]);
-  line(c,'#b2c7bb',1,offset(-7,-32));line(c,'#879a8a',2,offset(-7,-15));
-  for(let x=lower+10;x<upper;x+=38){const y=world.treadY(st,x);line(c,'#b4d4ca70',2,[[x-7,y-29],[x-12,y-15]]);}
-  line(c,'#212c32',6,offset(-7,-35));line(c,'#a6b5ac',2,offset(-7,-37));
+  polygon(c,'#34454a',[...offset(-5,-15),...offset(0,4).reverse()]);
+  polygon(c,'#658b91bb',[...offset(-5,-25),...offset(-5,-12).reverse()]);
+  line(c,'#b2c7bb',1,offset(-5,-25));line(c,'#879a8a',2,offset(-5,-12));
+  for(let x=lower+10;x<upper;x+=38){const y=world.treadY(st,x);line(c,'#b4d4ca70',2,[[x-5,y-24],[x-9,y-12]]);}
+  line(c,'#212c32',4,offset(-5,-27));line(c,'#a6b5ac',1,offset(-5,-29));
   for(let x=entry+14;x<exit;x+=48){
-   const y=world.treadY(st,x);line(c,'#98a8a0',2,[[x-7,y-34],[x-7,y-15]]);
+   const y=world.treadY(st,x);line(c,'#98a8a0',2,[[x-5,y-26],[x-5,y-12]]);
   }
   const pitch=st.pitch,phase=(s.time*st.speed)%pitch;
   for(let x=lower+phase-120;x<exit;x+=pitch){
    if(x<entry)continue;
    const y=Math.round(world.treadY(st,x)),ix=Math.round(x);
-   c.fillStyle='#253035';c.fillRect(ix-pitch/2,y,pitch,14);
+   c.fillStyle='#253035';c.fillRect(ix-pitch/2,y,pitch,7);
    c.fillStyle='#919a91';c.fillRect(ix-pitch/2,y-1,pitch,2);
    c.fillStyle='#d8ae53';c.fillRect(ix-pitch/2,y-1,2,2);
-   for(let j=2-pitch/2;j<pitch/2;j+=3){c.fillStyle='#617174';c.fillRect(ix+j,y+2,1,7);}
+   for(let j=2-pitch/2;j<pitch/2;j+=3){c.fillStyle='#617174';c.fillRect(ix+j,y+2,1,4);}
   }
   c.fillStyle='#233336';c.fillRect(entry-12,ground-3,35,5);c.fillRect(exit-6,top-3,30,5);
   c.fillStyle='#daaf53';c.fillRect(entry-12,ground-3,35,2);c.fillRect(exit-6,top-3,30,2);

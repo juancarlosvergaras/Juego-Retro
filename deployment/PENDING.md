@@ -1,8 +1,8 @@
 # Estado de publicación
 
-## Candidata lista para publicar · 20261119T194338Z
+## Publicado en Mac mini · 20261119T194338Z
 
-Revisión de las ocho misiones y los dos especiales. La candidata incluye correcciones de progreso, suministros y reintentos. [Cambios, pruebas y paquete para la Mac mini](releases/20261119T194338Z.md)
+La actualización de las ocho misiones y los dos especiales corrige el progreso del mapa, los suministros y los reintentos. [Cambios y pruebas de la versión publicada](releases/20261119T194338Z.md)
 
 ## Publicado en Mac mini · 20261119T192807Z
 

@@ -12,3 +12,32 @@ test('mission six transfer retains loadout and forms',()=>{const data=new Map(),
 test('original maze has reachable circuits, winning and collision defeat',()=>{const s=A.create('maze'),seen=new Set(['1,1']),queue=[[1,1]];while(queue.length){const [x,y]=queue.shift();for(const [dx,dy]of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy,key=nx+','+ny;if(A.maze[ny]?.[nx]==='.'&&!seen.has(key)){seen.add(key);queue.push([nx,ny]);}}}assert.ok([...s.dots].every(x=>seen.has(x)));s.dots=new Set(['2,1']);A.update(s,{right:true},.016);assert.ok(s.won);const t=A.create('maze');t.lives=1;t.safe=0;t.enemyWait=10;t.moveWait=10;t.sentries=[{x:1,y:1}];A.update(t,{},.016);assert.equal(t.over,true);assert.equal(t.won,false);});
 test('pinball launching, bumper scoring, independent flippers and draining three balls',()=>{const s=A.create('pinball');A.update(s,{jumpPressed:true},.01);assert.ok(s.ball.vy<0);s.ball={x:150,y:180,vx:0,vy:-100};A.update(s,{},.01);assert.ok(s.score>=100);s.ball={x:175,y:449,vx:0,vy:100};A.update(s,{left:true},.01);assert.ok(s.ball.vy<0);assert.equal(s.right,false);s.lives=1;s.ball={x:240,y:536,vx:0,vy:150};A.update(s,{},.01);assert.ok(s.over);});
 test('racer steering, collision invulnerability and finish line',()=>{const s=A.create('race');A.update(s,{left:true,up:true},.02);assert.ok(s.x<240);s.cars=[{x:s.x,y:430}];A.update(s,{},.01);assert.equal(s.lives,2);s.cars=[{x:s.x,y:430}];A.update(s,{},.01);assert.equal(s.lives,2);s.distance=8999;A.update(s,{up:true},.03);assert.ok(s.won);});
+
+test('each skin stays on the same moving tread on all three escalators',()=>{
+ for(const form of ['soldier','wolf','zombie','robot','tank','fighter','hero']){
+  for(const floor of [0,1,2]){
+   const {s,p,e}=setup(floor),st=M.escalator(floor);
+   Object.assign(p,{form,x:st.entry,jetpack:true,heroFlight:true,landing:.2,claw:.2});
+   s.time=1.37;assert.equal(M.interact(s,p),'escalator');
+   let count=0;
+   while(s.floor===floor){
+    M.update(s,p,e,{},1/120);
+    if(!s.ridingTread)continue;
+    const pitchPhase=(p.x-st.lower-s.time*st.speed)/st.pitch;
+    assert.ok(Math.abs(pitchPhase-Math.round(pitchPhase))<1e-7);
+    assert.ok(Math.abs(p.y-M.treadY(st,p.x))<1e-7);
+    assert.ok(!p.jetpack&&!p.heroFlight&&p.grounded&&p.form===form);count++;
+   }
+   assert.ok(count>400);assert.equal(s.checkpoint,floor+1);
+  }
+ }
+});
+test('the rocks leave the rooftop giant and land at the warning marks',()=>{
+ const {s,p,e}=setup(3);p.x=240;e.invincible=999;
+ Object.assign(s.boss,{active:true,phase:'rocksWarn',age:1.5,targets:[240,430]});
+ M.update(s,p,e,{},1/120);
+ assert.equal(s.hazards.length,2);
+ assert.ok(s.hazards.every(h=>h.y<185&&Math.abs(h.x-s.boss.x)<60));
+ for(let i=0;i<200&&!s.debris.length;i++)M.update(s,p,e,{},1/120);
+ assert.equal(s.debris.length,2);assert.ok(s.debris.every((d,i)=>Math.abs(d.x-[240,430][i])<5));
+});

@@ -21,6 +21,61 @@
       "id": "effects",
       "path": "assets/sprites/coloso-impactos-v1.png",
       "prompt": "Transparent RGBA pixel art effects sprite atlas for an original giant gray mutant boss in 1990s military arcade platform game. EXACT grid 4 columns 2 rows equal cells. 1536x768 wide. Top row FOUR consecutive animation frames of an ENORMOUS GRAY CLOSED FIST smashing vertically down viewed from front slight side. Fist attached to muscular FOREARM that extends straight UP to upper edge of each cell, so renderer can clip upper arm offscreen; NO torso no head. Frame1 fist raised, frame2 knuckles descending, frame3 ground impact with broken stone chips, frame4 fist lifting with dusty pixel debris. Same scale and x center. Massive knuckles crisp individually shaded rock-gray skin, dark pixel contours, torn rust vest cuff at upper arm. Bottom row four separately isolated irregular broken concrete slabs/rocks rotating through flight frames, realistic angular silhouettes, small rebar details, clearly pixel art matching giant's fist. Transparent background, no floor, no shadows outside sprite, no text no grid lines, no glowing vector outlines, crisp pixels not blurry."
+    },
+    {
+      "id": "atrium",
+      "path": "assets/worlds/mission-06/atrio.webp",
+      "prompt": "Wide 3:2 landscape background plate for a side-scrolling 1990s premium neo-geo military arcade game. A single coherent street-level view across the interior of a deserted downtown shopping mall, with cinematic dusk blue light through a tall glass atrium, one warm amber strip-lit upper gallery high above, teal iron crossbraces, three different distinctive ground floor shops (left records, center boutique, right café). Precise chunky hand-pixelled shaded environmental art, confident readable silhouettes, selective windows and subtle neon, clear midground and quiet foreground. True side-on camera looking squarely at shops; level verticals, level horizontal ground baseline. Bottom edge of doors and shops at exactly 88% of image height; door clear heights about 25% of image height. Smooth long uninterrupted horizontal walkway across entire bottom. One upper story only. No people, no game objects, no escalator, no lettering, no HUD. Left and right edges terminate at matching steel columns for horizontal side scrolling. No repeated collage, no outlines around the image. Harmonize with provided small old mall atlas, draw ONLY the new interior of the mall as one continuous landscape, not Atlas rows."
+    },
+    {
+      "id": "gallery",
+      "path": "assets/worlds/mission-06/galeria.webp",
+      "prompt": "An abandoned 1990s enclosed shopping mall UPPER RETAIL GALLERY. Side-on environment plate for a hand-pixelled 16-bit neo-geo military adventure. Three distinct small shops, garments, cinema posters WITHOUT letters, display windows, mauve and petrol blue metal frames, checker terrazzo. One tall clerestory with soft violet sunset reflected in glass; few large shapes. Orthographic side view, all store thresholds aligned across bottom at 87% height. Three shop doors each about 23% of image height. Visible grounded horizontal promenade, naturally lit. Single coherent landscape image, left-right scrolling, no inserted scene strips, lettering, staircases, game actors, stands in foreground or sprites; top is quiet with muted metalwork. 3:2 wide image. Same visual language as reference but MAKE A SINGLE NEW SCENE."
+    },
+    {
+      "id": "food",
+      "path": "assets/worlds/mission-06/restaurantes.webp",
+      "prompt": "One single landscape background for the upper-floor FOOD COURT of a shuttered mall. Hand-pixelled cinematic 1990s 16-bit action arcade game. Side-on shop counters, distinct stainless counter kitchen with striped awning, warm red tile, amber cafe windows with hanging lamps, a quiet skylight in the high ceiling. Three-quarter detail but level side-scroller street elevation; no vanishing corridor. Thresholds of stores line up at 87% of height, store counter about 10% of image height, door heights about 23%. Empty uninterrupted walkway across bottom, warm accents against forest teal shadows. No people, text or lettering, no props in foreground, no stairs, no games UI. Wide 3:2 single uninterrupted scene, NOT multiple atlas strips. Consistent scale with provided old game art."
+    },
+    {
+      "id": "roof",
+      "path": "assets/worlds/mission-06/ciudad.webp",
+      "prompt": "Single wide continuous 16-bit pixel art city skyline environmental backplate for a neo-geo rooftop boss fight at dusk, seen from the fifth-story shopping mall. Match the blue-violet and coral sunset skyline in the bottom of the reference only. Space for an enormous boss to rise in front of the distant blocks. No character, no rooftop beneath camera, no foreground parapet or railing, no text, no mosaic atlas; rooftop ledge and playable floor are drawn separately. Dense terraced medium-distance city silhouettes, amber windows, antennae, red aircraft lamps, sweeping clouds in indigo sky. Eye level around 55% down the image. Front-on side scrolling game camera. Wide 3:2 single pixel-art panorama, strong clustered pixel shading, warm highlights. Both lower corners dark for legible play."
+    },
+    {
+      "id": "coloso-rest",
+      "path": "assets/sprites/coloso-exterior.webp",
+      "row": 0,
+      "frames": 8,
+      "prompt": "Transparent-background game asset, literal RGBA with empty gutters. Eight-frame idle loop for the exact charcoal gray stone giant with orange eyes and brown straps from the reference. Keep near fist on the viewer's LEFT. Face looking slightly toward the left, not to the right. Lay eight cels in an even 4-column, 2-row grid, each independent sprite shows torso and bent muscular arms from bald head to belt. Amber iris, chiseled brow, thick pixel outlines like reference. Player is small and below to our left. Slow, subtle breathing in eight distinct frames: shoulders gradually lift then settle, fingers curl and release. Keep belt and face centered in each cell and plenty of empty transparent padding completely surrounding each silhouette. ZERO white studio backdrop, cast shadows, any contact shadows, backdrop texture, floor, numbers or typography. Pixel art only. Same body design and tones across all 8 cels."
+    },
+    {
+      "id": "coloso-slam",
+      "path": "assets/sprites/coloso-exterior.webp",
+      "row": 1,
+      "frames": 8,
+      "prompt": "Use reference solely for character identity. Make a premium hand-pixelled 1990s arcade boss sprite sheet with eight clearly different sequential animation cels. El Coloso is a colossal muscular gray rock-skinned bruiser, bald furrowed head, glowing amber eyes, ragged brown leather harness with heavy belt. Waist up only. Exact 4 columns by 2 rows on transparent canvas, invisible equal-size cells, separated by transparent gutters, entire silhouette inside each cell. Same waist center, same scale, same oblique frontal angle looking to the lower LEFT (player is on his left), same neutral overhead light, dark keylines, head and hands readable at 160px height. No text, no frames, no floor, no shadow plane, no duplicate limbs, no mirroring or disconnected hands. Each cell standalone complete coherent body with two shoulders, connected arms, two hands. Numbering below is instruction only. Eight cels in row-major order; left to right top row then bottom row. Punch the roof with near hand (on viewer left). 1 neutral clenched fists, 2 draws elbow toward ribs, 3 lifts fist level with brow, 4 coils with fist overhead, 5 drives elbow down, 6 strongest impact: near closed fist low by belt in front of torso, shoulders lean forward, 7 bearing weight recovering elbow, 8 returns to neutral. Do not draw impact lines, rocks or motion trails."
+    },
+    {
+      "id": "coloso-sweep",
+      "path": "assets/sprites/coloso-exterior.webp",
+      "row": 2,
+      "frames": 8,
+      "prompt": "Use reference solely for character identity. Make a premium hand-pixelled 1990s arcade boss sprite sheet with eight clearly different sequential animation cels. El Coloso is a colossal muscular gray rock-skinned bruiser, bald furrowed head, glowing amber eyes, ragged brown leather harness with heavy belt. Waist up only. Exact 4 columns by 2 rows on transparent canvas, invisible equal-size cells, separated by transparent gutters, entire silhouette inside each cell. Same waist center, same scale, same oblique frontal angle looking to the lower LEFT (player is on his left), same neutral overhead light, dark keylines, head and hands readable at 160px height. No text, no frames, no floor, no shadow plane, no duplicate limbs, no mirroring or disconnected hands. Each cell standalone complete coherent body with two shoulders, connected arms, two hands. Numbering below is instruction only. Eight cels in row-major order; left to right top row then bottom row. A low sweeping backhand. 1 upright with both hands by waist, 2 turns shoulders toward viewer right, 3 pulls bent near arm across chest to viewer right, 4 winds up with near hand fully right, 5 powerful low horizontal swing right to left, 6 near arm fully extended horizontally toward far viewer left, 7 elbow bends after sweep, 8 torso and fist settle near belt. No debris, streaks, multiple images or detached wrists."
+    },
+    {
+      "id": "coloso-toss",
+      "path": "assets/sprites/coloso-exterior.webp",
+      "row": 3,
+      "frames": 8,
+      "prompt": "Make a literal transparent PNG sprite atlas like reference A: same character looking left. Transparent black empty spaces, full alpha outside silhouette. Edit reference B into premium original pixel art with exactly its eight slab-lifting, throwing and following-through cels in row major order, 4 x 2. Preserve the animation and make the first neutral pose proportions, waist belt scale and head identity match A. A and B are sprite sheets of the same giant. Absolutely no gray or white backdrop, no shadow beneath, no floor, no falling crumbs detached from hand. Carefully space the 8 poses. The slab is held by both hands in first five frames and is released by frame six. Upper body only."
+    },
+    {
+      "id": "coloso-fall",
+      "path": "assets/sprites/coloso-exterior.webp",
+      "row": 4,
+      "frames": 8,
+      "prompt": "Use reference solely for character identity. Make a premium hand-pixelled 1990s arcade boss sprite sheet with eight clearly different sequential animation cels. El Coloso is a colossal muscular gray rock-skinned bruiser, bald furrowed head, glowing amber eyes, ragged brown leather harness with heavy belt. Waist up only. Exact 4 columns by 2 rows on transparent canvas, invisible equal-size cells, separated by transparent gutters, entire silhouette inside each cell. Same waist center, same scale, same oblique frontal angle looking to the lower LEFT (player is on his left), same neutral overhead light, dark keylines, head and hands readable at 160px height. No text, no frames, no floor, no shadow plane, no duplicate limbs, no mirroring or disconnected hands. Each cell standalone complete coherent body with two shoulders, connected arms, two hands. Numbering below is instruction only. Eight cels in row-major order; left to right top row then bottom row. Defeat and fall behind the roof, beginning from neutral. 1 upright, 2 recoil head and shoulder, 3 one empty hand clutches harness, 4 shoulders sway back, 5 mouth opens as head tilts, 6 pitch the massive torso diagonally back, 7 body crumples lower with head below shoulder line, 8 collapsed shoulders and bowed head. Still show the complete upper body to belt and both arms in each cell. All 8 frames intentionally distinct, no lettering."
     }
   ]
 }

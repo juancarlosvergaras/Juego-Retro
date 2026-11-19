@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261119T122538Z
+
+La misión seis incorpora los tres ambientes del centro, escaleras sincronizadas, las máquinas arcade y el Coloso exterior. [Registro de la publicación](releases/20261119T122538Z.md)
+
 ## Publicado en Mac mini · 20261119T040910Z
 
 La versión activa incorpora los controles multitáctiles y la pantalla completa en las diez misiones. El dominio sirve el juego desde el Mac mini. [Registro de publicación móvil](releases/20261119T040910Z.md)

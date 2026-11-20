@@ -4,7 +4,7 @@
   // central y baja); en cada bifurcación basta un mundo para seguir adelante,
   // así que el jugador puede saltarse los otros. Reutiliza las tarjetas del
   // menú: iniciar una misión funciona igual que antes.
-  const lanes=[{id:'sky',name:'RUTA ALTA · CIELO Y ESPACIO',y:18},{id:'land',name:'RUTA CENTRAL · TIERRA',y:50},{id:'sea',name:'RUTA BAJA · MAR Y BASES',y:82}];
+  const lanes=[{id:'sky',name:'RUTA ALTA · CIELO Y ESPACIO',short:'CIELO',y:18},{id:'land',name:'RUTA CENTRAL · TIERRA',short:'TIERRA',y:50},{id:'sea',name:'RUTA BAJA · MAR Y PUERTO',short:'MAR',y:82}];
   const COLUMNS=6;
   const upcoming={};
   const plan=[
@@ -53,11 +53,11 @@
     const doc=root.document,page=doc.querySelector('[data-menu-page="levels"]'),list=page?.querySelector('.level-choices');if(!list)return null;
     const source=[...list.children],{nodes,edges,forks}=graph();
     const map=doc.createElement('div');map.className='mission-map';map.setAttribute('role','group');map.setAttribute('aria-label','Mapa de misiones con bifurcaciones');
-    for(const lane of lanes){const band=doc.createElement('div');band.className='map-lane lane-'+lane.id;band.style.top=lane.y+'%';band.innerHTML='<span></span>';band.firstChild.textContent=lane.name;map.append(band);}
+    for(const lane of lanes){const band=doc.createElement('div');band.className='map-lane lane-'+lane.id;band.style.top=lane.y+'%';band.style.setProperty('--y',lane.y+'%');band.dataset.short=lane.short;band.innerHTML='<span></span>';band.firstChild.textContent=lane.name;map.append(band);}
     const ns='http://www.w3.org/2000/svg',svg=doc.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 100 100');svg.setAttribute('preserveAspectRatio','none');svg.setAttribute('aria-hidden','true');
     const roads=edges.map(edge=>{const base=doc.createElementNS(ns,'path'),lit=doc.createElementNS(ns,'path'),d=route(edge.from,edge.to);base.setAttribute('class','map-road'+(edge.soon?' soon':''));lit.setAttribute('class','map-road-done');base.setAttribute('d',d);lit.setAttribute('d',d);svg.append(base);return lit;});
     roads.forEach(lit=>svg.append(lit));map.append(svg);
-    for(const fork of forks){const sign=doc.createElement('div');sign.className='map-fork';sign.style.left=fork.x+'%';sign.innerHTML='<i aria-hidden="true">◆</i><span>BIFURCACIÓN</span><small>elige una ruta</small>';map.append(sign);}
+    for(const fork of forks){const sign=doc.createElement('div');sign.className='map-fork';sign.style.left=fork.x+'%';sign.style.setProperty('--x',fork.x+'%');sign.innerHTML='<i aria-hidden="true">◆</i><span>BIFURCACIÓN</span><small>elige una ruta</small>';map.append(sign);}
     const cards=nodes.map(node=>{
       if(node.id==='assault'){
         const card=doc.createElement('a');card.className='secondary mission-card';card.href='fuga.html';card.innerHTML='<img src="assets/thumbs/especial-fuga.webp" alt="Carretera costera al atardecer"><div><small>ESPECIAL 02 · PERSECUCIÓN</small><strong>Fuga del Sol</strong><span>Persigue al coupé negro por la costa y cruza su escolta antes del peaje.</span><em>Premio · Invisibilidad</em></div>';return card;
@@ -71,18 +71,24 @@
       const u=upcoming[node.id],card=doc.createElement('div');card.className='secondary mission-card map-soon-card';card.innerHTML='<div class="map-soon-art" aria-hidden="true">?</div><div><small></small><strong></strong><span></span><em></em></div>';
       card.querySelector('small').textContent=u.label;card.querySelector('strong').textContent=u.name;card.querySelector('span').textContent=u.text;card.querySelector('em').textContent=u.tags;return card;});
     const detail=doc.createElement('div');detail.className='map-detail';
-    const hint=doc.createElement('p');hint.className='menu-tip map-hint';hint.textContent='En cada bifurcación basta completar un mundo para seguir: puedes saltarte los demás. ← → avanzan por el camino; ↑ ↓ cambian de ruta.';
+    const hint=doc.createElement('p');hint.className='menu-tip map-hint';hint.innerHTML='<span>En cada bifurcación basta completar un mundo para seguir: puedes saltarte los demás.</span> <span class="map-keys">Las flechas recorren el mapa.</span>';
+    // Resumen de progreso junto al título y leyenda de estados bajo el mapa.
+    const summary=doc.createElement('p');summary.className='map-summary';summary.setAttribute('role','status');
+    const legend=doc.createElement('ul');legend.className='map-legend';legend.setAttribute('aria-label','Leyenda del mapa');legend.innerHTML='<li class="done">Completada</li><li class="current">Misión actual</li><li class="choice">Ruta alternativa</li><li class="locked">Bloqueada</li>';
+    const foot=doc.createElement('div');foot.className='map-foot';foot.append(legend,hint);
+    // En teléfonos en vertical el mapa se dibuja de arriba abajo: las flechas siguen lo que se ve.
+    const upright=root.matchMedia?.('(max-width:720px) and (orientation:portrait)');
     const buttons=nodes.map((node,i)=>{
       const button=doc.createElement('button'),card=cards[i],img=card?.querySelector('img'),title=card?.querySelector('strong')?.textContent||'Misión '+node.mission;
-      button.type='button';button.className='map-node lane-'+node.lane;button.style.left=node.x+'%';button.style.top=node.y+'%';
+      button.type='button';button.className='map-node lane-'+node.lane;button.style.left=node.x+'%';button.style.top=node.y+'%';button.style.setProperty('--x',node.x+'%');button.style.setProperty('--y',node.y+'%');
       button.innerHTML='<span class="map-thumb"></span><b></b><span class="map-name"></span>';
       if(img)button.querySelector('.map-thumb').style.backgroundImage='url("'+img.getAttribute('src')+'")';
       button.querySelector('b').textContent=node.soon?'?':node.special?'★':String(node.mission);button.querySelector('.map-name').textContent=title;
       button.onclick=()=>select(i,true);
       button.addEventListener('keydown',e=>{
-        let next=-1;
-        if(e.key==='ArrowRight'||e.key==='ArrowLeft'){const col=node.col+(e.key==='ArrowRight'?1:-1),options=nodes.filter(n=>n.col===col);if(options.length)next=nodes.indexOf(options.find(n=>n.lane===node.lane)||options.find(n=>n.lane==='land')||options[0]);}
-        else if(e.key==='ArrowUp'||e.key==='ArrowDown'){const column=nodes.filter(n=>n.col===node.col).sort((a,b)=>a.y-b.y),at=column.indexOf(node)+(e.key==='ArrowDown'?1:-1);if(column[at])next=nodes.indexOf(column[at]);}
+        let next=-1;const turned=!!upright?.matches,along=turned?['ArrowDown','ArrowUp']:['ArrowRight','ArrowLeft'],across=turned?['ArrowRight','ArrowLeft']:['ArrowDown','ArrowUp'];
+        if(along.includes(e.key)){const col=node.col+(e.key===along[0]?1:-1),options=nodes.filter(n=>n.col===col);if(options.length)next=nodes.indexOf(options.find(n=>n.lane===node.lane)||options.find(n=>n.lane==='land')||options[0]);}
+        else if(across.includes(e.key)){const column=nodes.filter(n=>n.col===node.col).sort((a,b)=>a.y-b.y),at=column.indexOf(node)+(e.key===across[0]?1:-1);if(column[at])next=nodes.indexOf(column[at]);}
         else return;
         e.preventDefault();e.stopPropagation();if(next>=0){select(next,true);buttons[next].focus({preventScroll:true});}});
       map.append(button);return button;});
@@ -93,7 +99,7 @@
       card.addEventListener('click',e=>{if(card.getAttribute('aria-disabled')==='true'){e.preventDefault();e.stopImmediatePropagation();}},true);
       return note;});
     // Every card stays in the document so the menu's own click handlers keep working.
-    detail.append(...cards.filter(Boolean));list.before(map,hint,detail);list.hidden=true;
+    detail.append(...cards.filter(Boolean));list.before(summary,map,foot,detail);list.hidden=true;
     let selected=0,current=[];
     function select(index,user){selected=index;buttons.forEach((n,i)=>{n.classList.toggle('selected',i===index);n.setAttribute('aria-pressed',String(i===index));});cards.forEach((card,i)=>{if(card)card.hidden=i!==index;});if(user)cards[index]?.scrollIntoView?.({block:'nearest',behavior:'smooth'});}
     const words={done:' · completada',current:' · misión actual',choice:' · ruta alternativa',soon:' · próximamente',open:''};
@@ -110,6 +116,8 @@
         else{card.removeAttribute('aria-disabled');if(card.dataset.lockedHref){card.setAttribute('href',card.dataset.lockedHref);delete card.dataset.lockedHref;}}
       });
       roads.forEach((lit,i)=>lit.style.display=travelled(edges[i],current,nodes)?'':'none');
+      const cleared=nodes.filter((n,i)=>n.mission&&current[i]==='done').length,extras=nodes.filter((n,i)=>n.special&&current[i]==='done').length;
+      summary.innerHTML='<b>'+cleared+' / '+nodes.filter(n=>n.mission).length+'</b> misiones · <b>'+extras+' / '+nodes.filter(n=>n.special).length+'</b> especiales';
       select(Math.max(0,nodes.findIndex(n=>n.mission===level)),false);
     }
     new MutationObserver(()=>{if(!page.hidden)refresh();}).observe(page,{attributes:true,attributeFilter:['hidden']});

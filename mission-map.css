@@ -1,33 +1,50 @@
-/* Mapa de misiones: tres rutas paralelas unidas por bifurcaciones. */
-.main-menu .menu-content:has([data-menu-page="levels"]:not([hidden])){width:min(1080px,100%)}
-.mission-map{position:relative;width:100%;aspect-ratio:1000/470;min-height:330px;margin:16px 0 6px;border:1px solid #3d5062;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#141f38 0,#1b2a44 31%,#262f36 36%,#2c3329 64%,#12303e 69%,#0c2230 100%)}
+/* Mapa de misiones: tres rutas paralelas unidas por bifurcaciones.
+   La pantalla de misiones ocupa toda la ventana: mapa a la izquierda y ficha de
+   la misión a la derecha. En pantallas medianas la ficha baja; en teléfonos en
+   vertical el mapa se gira y se recorre de arriba abajo. */
+.main-menu:has([data-menu-page="levels"]:not([hidden])){place-items:stretch;padding:clamp(8px,1.4vw,22px)}
+.main-menu .menu-content:has([data-menu-page="levels"]:not([hidden])){position:relative;box-sizing:border-box;display:flex;flex-direction:column;width:100%;max-width:1880px;min-height:100%;margin:0 auto;padding:clamp(14px,1.8vw,28px) clamp(14px,2.2vw,38px)}
+.menu-content:has([data-menu-page="levels"]:not([hidden])) .menu-signature{display:none}
+.menu-content:has([data-menu-page="levels"]:not([hidden])) .menu-back{position:absolute;top:clamp(12px,1.7vw,26px);right:clamp(14px,2.2vw,38px);margin:0;padding:8px 14px;border:1px solid #536271;border-radius:4px;background:#0b1725b0;font-size:13px}
+.menu-content:has([data-menu-page="levels"]:not([hidden])) .menu-back:hover{border-color:#ffe294}
+[data-menu-page="levels"]:not([hidden]){flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,27vw,460px);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"title summary" "map detail" "foot detail";gap:clamp(8px,1vw,14px) clamp(12px,1.6vw,26px)}
+[data-menu-page="levels"]>h2{grid-area:title;margin:0;font-size:clamp(22px,2vw,32px);line-height:1.2}
+.map-summary{grid-area:summary;align-self:center;margin:0 118px 0 0;font-size:12px;letter-spacing:.06em;color:#9fb4c4;white-space:nowrap}
+.map-summary b{color:#ffd98a;font-size:14px}
+
+.mission-map{grid-area:map;container-type:size;position:relative;width:100%;height:100%;min-height:clamp(300px,54vh,1100px);margin:0;border:1px solid #3d5062;border-radius:12px;overflow:hidden;background:radial-gradient(120% 90% at 50% 50%,transparent 55%,#060d14b0 100%),linear-gradient(180deg,#141f38 0,#1b2a44 31%,#262f36 36%,#2c3329 64%,#12303e 69%,#0c2230 100%);box-shadow:inset 0 0 0 1px #ffffff08,0 14px 40px #0006}
 .map-lane{position:absolute;left:0;right:0;height:30%;transform:translateY(-50%);pointer-events:none;border-top:1px dashed #ffffff14;border-bottom:1px dashed #ffffff14}
 .map-lane.lane-sky{background:radial-gradient(circle at 12% 30%,#ffffff26 0 1px,transparent 2px),radial-gradient(circle at 37% 62%,#ffffff1f 0 1px,transparent 2px),radial-gradient(circle at 68% 24%,#ffffff26 0 1px,transparent 2px),radial-gradient(circle at 88% 70%,#ffffff1a 0 1px,transparent 2px)}
 .map-lane.lane-land{background:repeating-linear-gradient(90deg,#ffffff07 0 2px,transparent 2px 46px)}
 .map-lane.lane-sea{background:repeating-linear-gradient(175deg,#7fd6e61a 0 2px,transparent 2px 16px)}
-.map-lane span{position:absolute;left:10px;top:6px;font-size:9px;letter-spacing:3px;color:#9fb4c4}
+.map-lane span{position:absolute;left:12px;top:7px;font-size:9px;font-size:clamp(9px,.85cqw,12px);letter-spacing:3px;color:#9fb4c4}
 .mission-map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .map-road,.map-road-done{fill:none;stroke-linecap:round;vector-effect:non-scaling-stroke}
-.map-road{stroke:#0a121acc;stroke-width:8}
+.map-road{stroke:#0a121acc;stroke-width:9}
 .map-road.soon{stroke:#0a121a99;stroke-width:5;stroke-dasharray:3 9}
 .map-road-done{stroke:#f7b64c;stroke-width:4;stroke-dasharray:2 9}
-.map-fork{position:absolute;top:50%;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:1px;padding:5px 8px;border:1px solid #d9a94e88;border-radius:5px;background:#0d1620e6;pointer-events:none;z-index:1}
+.map-fork{position:absolute;top:50%;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:1px;padding:5px 9px;border:1px solid #d9a94e88;border-radius:5px;background:#0d1620e6;pointer-events:none;z-index:1}
 .map-fork i{font-style:normal;font-size:11px;color:#f7b64c;line-height:1}
-.map-fork span{font-size:8px;letter-spacing:2px;color:#ffd98a}
-.map-fork small{font-size:8px;color:#9fb4c4;white-space:nowrap}
-.map-node{position:absolute;z-index:2;transform:translate(-50%,-50%);width:74px;padding:0;border:0;background:none;color:#e8eef2;cursor:pointer;font:inherit;display:grid;justify-items:center;gap:4px}
-.map-thumb{width:58px;height:58px;border-radius:50%;border:3px solid #55687a;background:#18242f center/cover;image-rendering:pixelated;box-shadow:0 4px 12px #000a;transition:transform .15s,border-color .15s}
-.map-node b{position:absolute;top:-4px;left:4px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:#101a24;border:2px solid #55687a;color:#dfe8ec}
-.map-name{max-width:110px;padding:2px 7px;border-radius:3px;background:#0b141ccc;font-size:10px;line-height:1.3;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.map-fork span{font-size:8px;font-size:clamp(8px,.72cqw,11px);letter-spacing:2px;color:#ffd98a}
+.map-fork small{font-size:8px;font-size:clamp(8px,.7cqw,10px);color:#9fb4c4;white-space:nowrap}
+/* Con el mapa estrecho la señal de bifurcación se reduce para no tapar las paradas vecinas. */
+@container (max-width:1000px){.map-fork small{display:none}.map-fork{padding:4px 7px}.map-fork span{letter-spacing:1px}}
+@container (max-width:760px){.map-fork span{display:none}.map-fork{padding:4px 6px;border-radius:50%}}
+/* El tamaño de cada parada sigue al del mapa (unidades de contenedor). */
+.map-node{--node:58px;--node:clamp(44px,min(7.4cqw,17cqh),112px);position:absolute;z-index:2;transform:translate(-50%,-50%);width:calc(var(--node) + 18px);padding:0;border:0;background:none;color:#e8eef2;cursor:pointer;font:inherit;display:grid;justify-items:center;gap:calc(var(--node)*.08)}
+.map-thumb{width:var(--node);height:var(--node);border-radius:50%;border:3px solid #55687a;background:#18242f center/cover;image-rendering:pixelated;box-shadow:0 4px 12px #000a;transition:transform .15s,border-color .15s}
+.map-node b{position:absolute;top:calc(var(--node)*-.07);left:calc(var(--node)*.04);width:calc(var(--node)*.38);height:calc(var(--node)*.38);min-width:18px;min-height:18px;border-radius:50%;display:grid;place-items:center;font-size:clamp(9px,calc(var(--node)*.19),17px);background:#101a24;border:2px solid #55687a;color:#dfe8ec}
+.map-name{width:max-content;max-width:calc(var(--node)*2.15);max-width:min(calc(var(--node)*2.15),15cqw);padding:2px 8px;border-radius:3px;background:#0b141ccc;font-size:clamp(10px,calc(var(--node)*.185),15px);line-height:1.25;text-align:center;text-wrap:balance}
 .map-node:hover .map-thumb,.map-node:focus-visible .map-thumb{transform:scale(1.08);border-color:#ffe294}
 .map-node:focus-visible{outline:none}
 .map-node.done .map-thumb{border-color:#8fe3cf}
 .map-node.done b{background:#1f4a4a;border-color:#8fe3cf;font-size:0}
-.map-node.done b::after{content:'✓';font-size:12px;color:#dffaf3}
+.map-node.done b::after{content:'✓';font-size:clamp(11px,calc(var(--node)*.2),18px);color:#dffaf3}
 .map-node.current .map-thumb{border-color:#f7b64c;animation:map-pulse 1.6s ease-in-out infinite}
 .map-node.choice .map-thumb{border-color:#f7b64c;border-style:dashed}
 .map-node.choice b{border-color:#f7b64c;color:#ffd98a}
 .map-node.current b{background:#f7b64c;border-color:#ffe294;color:#1a1408}
+.map-node.selected{z-index:3}
 .map-node.selected .map-thumb{transform:scale(1.14);border-color:#ffe294;box-shadow:0 0 0 4px #ffe29433,0 6px 16px #000c}
 .map-node.selected .map-name{background:#f7b64c;color:#1a1408;font-weight:700}
 .map-node.soon .map-thumb{border-style:dashed;border-color:#d9b16a;background:repeating-linear-gradient(135deg,#1c2430 0 7px,#232d3b 7px 14px)}
@@ -38,22 +55,89 @@
 .map-detail .map-soon-card{cursor:default;border-style:dashed}
 .map-detail .map-soon-card>div::after{content:'En construcción';background:#2a3442;color:#e6cf9c}
 @keyframes map-pulse{50%{box-shadow:0 0 0 9px #f7b64c22,0 4px 12px #000a}}
-.map-hint{margin:0 0 10px}
-.map-detail .mission-card{display:grid;grid-template-columns:210px 1fr;width:100%;padding:0;overflow:hidden;text-align:left;text-decoration:none;gap:0}
+
+.map-foot{grid-area:foot;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;min-width:0}
+.map-hint{margin:0;flex:1 1 320px}
+.map-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font-size:11px;color:#b9c7d1}
+.map-legend li{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.map-legend li::before{content:'';width:11px;height:11px;border-radius:50%;border:2px solid #55687a;background:#18242f}
+.map-legend .done::before{border-color:#8fe3cf;background:#1f4a4a}
+.map-legend .current::before{border-color:#ffe294;background:#f7b64c}
+.map-legend .choice::before{border-color:#f7b64c;border-style:dashed}
+.map-legend .locked::before{border-color:#3e4b58;background:#0d151d}
+
+/* Ficha de la misión elegida: columna lateral con la ilustración arriba. */
+.map-detail{grid-area:detail;display:flex;flex-direction:column;min-width:0;min-height:0}
+.map-detail .mission-card{flex:1;display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr;width:100%;padding:0;overflow:hidden;text-align:left;text-decoration:none;gap:0;border-radius:12px}
 .map-detail .mission-card[hidden]{display:none}
-.map-detail .mission-card>img{width:210px;min-height:150px;max-height:190px}
-.map-detail .mission-card>div{display:flex;flex-direction:column;gap:8px;padding:16px 18px}
-.map-detail .mission-card strong{font-size:22px}
-.map-detail .mission-card span{font-size:12px;line-height:1.6;color:#c0cdd0}
-.map-detail .mission-card em{font-size:12px;font-style:normal;color:#afd4b4}
+.map-detail .mission-card>img{width:100%;height:auto;aspect-ratio:4/3;min-height:0;max-height:44vh;object-fit:cover;border-right:0;border-bottom:1px solid #52616b}
+.map-detail .mission-card>div{display:flex;flex-direction:column;gap:clamp(8px,.8vw,12px);padding:clamp(14px,1.4vw,24px)}
+.map-detail .mission-card strong{font-size:clamp(20px,1.75vw,30px);line-height:1.15}
+.map-detail .mission-card span{font-size:clamp(12px,.95vw,15px);line-height:1.6;color:#c0cdd0}
+.map-detail .mission-card em{font-size:clamp(11px,.85vw,13px);font-style:normal;color:#afd4b4}
 .map-detail .mission-card small{color:#dfb76a;letter-spacing:.2em}
-.map-detail .mission-card>div::after{content:'Jugar esta misión  ➜';align-self:flex-start;margin-top:4px;padding:7px 14px;border-radius:4px;background:#f7b64c;color:#1a1408;font-size:12px;font-weight:700}
-@media (max-width:720px){
-  .mission-map{aspect-ratio:auto;height:340px}
-  .map-node{width:52px}.map-thumb{width:40px;height:40px;border-width:2px}.map-node b{width:17px;height:17px;font-size:9px;top:-5px;left:0}
-  .map-name{display:none}.map-fork small{display:none}.map-fork{padding:3px 5px}.map-node.selected .map-name{display:block;position:absolute;top:100%;margin-top:3px}
-  .map-detail .mission-card{grid-template-columns:96px 1fr}.map-detail .mission-card>img,.map-soon-art{width:96px}.map-soon-art{font-size:36px}
+.map-detail .mission-card>div::after{content:'Jugar esta misión  ➜';align-self:stretch;margin-top:auto;padding:12px 14px;border-radius:5px;background:#f7b64c;color:#1a1408;font-size:clamp(13px,1vw,16px);font-weight:700;text-align:center}
+.map-detail a.mission-card:hover>div::after,.map-detail button.mission-card:hover>div::after{background:#ffd98a}
+
+/* Pantallas medianas: la ficha pasa debajo del mapa, en horizontal. */
+@media (max-width:1099px){
+  [data-menu-page="levels"]:not([hidden]){flex:none;min-height:auto;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto;grid-template-areas:"title" "map" "foot" "detail"}
+  .map-detail{min-height:auto}.map-detail .mission-card{flex:none}
+  .map-summary{grid-area:title;justify-self:end}
+  .mission-map{height:clamp(300px,54vh,640px);min-height:0}
+  .map-detail .mission-card{grid-template-columns:clamp(120px,28vw,260px) 1fr;grid-template-rows:auto}
+  .map-detail .mission-card>img{height:100%;aspect-ratio:auto;max-height:230px;border-bottom:0;border-right:1px solid #52616b}
+  .map-detail .mission-card>div::after{align-self:flex-start;margin-top:4px;padding:9px 16px}
 }
+/* Ventanas bajas y anchas (portátiles pequeños, teléfonos en horizontal): mapa y ficha lado a lado, todo a la vista. */
+@media (max-height:560px) and (min-width:640px){
+  .main-menu .menu-content:has([data-menu-page="levels"]:not([hidden])){padding:10px 14px}
+  [data-menu-page="levels"]:not([hidden]){flex:1;min-height:0;grid-template-columns:minmax(0,1fr) clamp(220px,30vw,320px);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"title summary" "map detail";gap:6px 12px}
+  .map-detail{min-height:0}.map-detail .mission-card{flex:1}
+  [data-menu-page="levels"]>h2{font-size:18px}
+  .map-summary{grid-area:title;justify-self:end;margin:0}
+  .map-foot{display:none}
+  .map-lane span{display:none}
+  .map-lane::before{content:attr(data-short);position:absolute;left:10px;top:4px;font-size:8px;letter-spacing:3px;color:#9fb4c4}
+  .mission-map{height:100%;aspect-ratio:auto;min-height:230px;max-height:none}
+  .map-detail .mission-card{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .map-detail .mission-card>img{height:auto;aspect-ratio:21/9;max-height:26vh;border-right:0;border-bottom:1px solid #52616b}
+  .map-detail .mission-card>div{padding:10px 12px;gap:5px}
+  .map-detail .mission-card strong{font-size:17px}.map-detail .mission-card span{font-size:11px;line-height:1.45}.map-detail .mission-card em{display:none}
+  .map-detail .mission-card>div::after{align-self:stretch;margin-top:auto;padding:8px}
+  .menu-content:has([data-menu-page="levels"]:not([hidden])) .menu-back{top:8px;right:14px;padding:5px 10px;font-size:12px}
+}
+/* Teléfonos en vertical: el mapa se gira. El recorrido baja por la pantalla y las tres rutas son columnas. */
+@media (max-width:720px) and (orientation:portrait){
+  .main-menu:has([data-menu-page="levels"]:not([hidden])){padding:0}
+  .main-menu .menu-content:has([data-menu-page="levels"]:not([hidden])){padding:12px 12px 0;border-left:0}
+  [data-menu-page="levels"]:not([hidden]){gap:6px 8px;grid-template-areas:"title" "summary" "map" "foot" "detail";grid-template-rows:auto auto auto auto auto}
+  [data-menu-page="levels"]>h2{font-size:22px}
+  .map-summary{grid-area:summary;justify-self:start;font-size:11px;margin:0}
+  .menu-content:has([data-menu-page="levels"]:not([hidden])) .menu-back{top:10px;right:12px;padding:6px 10px;font-size:12px}
+  .mission-map{aspect-ratio:auto;height:clamp(600px,172vw,840px);max-height:none;min-height:0}
+  /* Los ejes se intercambian; el recorrido se comprime un poco para dejar sitio a los rótulos de arriba y de abajo. */
+  .mission-map svg{inset:auto;left:0;top:0;width:100cqh;height:100cqw;transform-origin:0 0;transform:translateY(3cqh) matrix(0,.9,1,0,0,0)}
+  .map-node{--node:clamp(44px,min(15.5cqw,8.2cqh),78px);left:var(--y)!important;top:calc(var(--x)*.9 + 3%)!important}
+  .map-name{max-width:28cqw}
+  .map-fork{left:50%!important;top:calc(var(--x)*.9 + 3%);padding:3px 7px}.map-fork small{display:none}
+  .map-lane{top:0!important;left:var(--y);right:auto;width:30%;height:100%;transform:translateX(-50%);border:0;border-left:1px dashed #ffffff14;border-right:1px dashed #ffffff14}
+  .map-lane span{display:none}
+  .map-lane::before{content:attr(data-short);position:absolute;left:0;right:0;top:7px;text-align:center;font-size:9px;letter-spacing:3px;color:#9fb4c4}
+  .map-keys{display:none}
+  .map-foot{gap:6px 12px}.map-legend{font-size:10px;gap:4px 10px}
+  /* La ficha queda fija abajo para tener siempre a mano la misión elegida y su botón. */
+  .map-detail{position:sticky;bottom:0;z-index:6;margin:0 -12px;padding:8px 12px max(10px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#0b131b00,#0b131bf2 22%)}
+  .map-detail .mission-card{grid-template-columns:92px 1fr;grid-template-rows:auto;border-radius:10px;box-shadow:0 -6px 24px #000a}
+  .map-detail .mission-card>img{height:100%;aspect-ratio:auto;max-height:150px;border-bottom:0;border-right:1px solid #52616b}
+  .map-detail .mission-card>div{padding:10px 12px;gap:4px}
+  .map-detail .mission-card strong{font-size:17px}.map-detail .mission-card span{font-size:11px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .map-detail .mission-card em{display:none}.map-detail .mission-card small{font-size:9px}
+  .map-detail .mission-card>div::after{align-self:stretch;margin-top:4px;padding:8px}
+  .map-detail .mission-card .map-lock-note{font-size:11px}
+  .map-soon-art{width:92px;font-size:36px}
+}
+@media (pointer:coarse){.map-keys{display:none}}
 @media (prefers-reduced-motion:reduce){.map-node.current .map-thumb{animation:none}.map-thumb{transition:none}}
 /* Mundo bloqueado: atenuado y con candado; su tarjeta explica qué completar y no inicia nada. */
 .map-node.locked .map-thumb{border-color:#3e4b58;border-style:solid;filter:grayscale(1) brightness(.5)}

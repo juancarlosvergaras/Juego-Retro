@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261120T030831Z
+
+Menú único para portada y pausa, puntería unificada, historia y música en las ocho misiones, balance revisado, mapa con progreso y paquete de 95 MB con caché inmutable. [Cambios, verificación y pendientes](releases/20261120T030831Z.md)
+
 ## Publicado en Mac mini · 20261119T194338Z
 
 La actualización de las ocho misiones y los dos especiales corrige el progreso del mapa, los suministros y los reintentos. [Cambios y pruebas de la versión publicada](releases/20261119T194338Z.md)

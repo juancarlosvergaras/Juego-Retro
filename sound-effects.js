@@ -11,6 +11,12 @@
     if(storage===undefined)try{storage=root.localStorage;}catch{}
     try{const saved=JSON.parse(storage?.getItem('obra10-audio')||'null');if(saved){volume=clamp(Number(saved.volume)||0,0,1);muted=!!saved.muted;}}catch{}
     function save(){try{storage?.setItem('obra10-audio',JSON.stringify({volume,muted}));}catch{}}
+    // Optional music (music.js): it shares this context and follows unlock, pause
+    // and mute, but keeps its own gain and volume. It never passes through
+    // `master`, which is the effects volume.
+    let music=options.music;
+    if(music===undefined)try{music=root.ArcadeMusic?.create({storage})||null;}catch{music=null;}
+    music?.setMuted(muted);
     function setup(){
       if(master)return;
       master=context.createGain();gate=context.createGain();compressor=context.createDynamicsCompressor();
@@ -29,7 +35,7 @@
     }
     function target(param,value,time=.02){param.cancelScheduledValues(context.currentTime);param.setTargetAtTime(value,context.currentTime,time);}
     async function unlock(){
-      try{if(!context){const Audio=root.AudioContext||root.webkitAudioContext;if(!Audio)return false;context=new Audio();}setup();if(context.state==='suspended')await context.resume();unlocked=context.state==='running';return unlocked;}catch{return false;}
+      try{if(!context){const Audio=root.AudioContext||root.webkitAudioContext;if(!Audio)return false;context=new Audio();}setup();if(context.state==='suspended')await context.resume();unlocked=context.state==='running';if(unlocked)music?.attach(context,noiseBuffer);return unlocked;}catch{return false;}
     }
     function output(gain,pan,room=0){const g=context.createGain(),p=context.createStereoPanner();g.gain.value=gain;p.pan.value=clamp(pan,-1,1);g.connect(p);p.connect(gate);let s=null;if(room>0&&send){s=context.createGain();s.gain.value=room;p.connect(s);s.connect(send);}return{g,p,s};}
     // No two shots are identical: a little pitch and level drift keeps bursts alive.
@@ -118,12 +124,12 @@
       }
       target(item.g.gain,clamp(gain,0,1));target(item.p.pan,clamp(pan,-1,1));target(item.osc.frequency,(name==='jeep'?47:name==='helicopter'?36:65)*speed,.08);
     }
-    function setRunning(value){if(running===value)return;running=value;if(gate)target(gate.gain,value?1:0,.01);if(!value){for(const name of [...loops.keys()])stopLoop(name);for(const v of voices)v.stop();}}
+    function setRunning(value){music?.setRunning(value);if(running===value)return;running=value;if(gate)target(gate.gain,value?1:0,.01);if(!value){for(const name of [...loops.keys()])stopLoop(name);for(const v of voices)v.stop();}}
     function setVolume(value){volume=clamp(Number(value)||0,0,1);if(master)target(master.gain,muted?0:volume);save();}
-    function setMuted(value){muted=!!value;if(master)target(master.gain,muted?0:volume);if(muted)for(const name of [...loops.keys()])stopLoop(name);save();}
+    function setMuted(value){muted=!!value;music?.setMuted(muted);if(master)target(master.gain,muted?0:volume);if(muted)for(const name of [...loops.keys()])stopLoop(name);save();}
     function status(){return{unlocked,muted,volume,running,voices:voices.size,loops:loops.size,supported:!!(context||root.AudioContext||root.webkitAudioContext)};}
-    if(context)setup();
-    return{unlock,play,loop,setRunning,setVolume,setMuted,status};
+    if(context){setup();music?.attach(context,noiseBuffer);}
+    return{unlock,play,loop,setRunning,setVolume,setMuted,status,music};
   }
   const api={create,names};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeAudio=api;
 })(typeof window!=='undefined'?window:globalThis);

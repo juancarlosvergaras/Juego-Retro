@@ -14,7 +14,10 @@ test('city adds fifteen soldiers on streets and building platforms while preserv
  alive.forEach((n,i)=>{assert.ok(Math.abs(n.x-positions[i][0])<.01);assert.ok(Math.abs(n.y-positions[i][1])<.01);assert.ok(n.grounded);});
 });
 test('mission two applies landing damage once, ignores armor, and preserves wolf immunity',()=>{
- for(const form of ['soldier','wolf']){const f=fixture();Object.assign(f.p,{form,fallDamage:2,shield:10});f.e.invincible=1;f.tick();assert.equal(f.e.hp,form==='wolf'?8:6);assert.equal(f.p.shield,10);assert.equal(f.p.fallDamage,0);f.tick();assert.equal(f.e.hp,form==='wolf'?8:6);}
+ for(const form of ['soldier','wolf']){const f=fixture();Object.assign(f.p,{form,fallDamage:2,shield:10});f.tick();assert.equal(f.e.hp,form==='wolf'?8:6);assert.equal(f.p.shield,10);assert.equal(f.p.fallDamage,0);f.tick();assert.equal(f.e.hp,form==='wolf'?8:6);}
+ // La protección al reaparecer (3 s) también perdona la caída, y la dificultad no la agrava.
+ const safe=fixture();safe.p.fallDamage=2;safe.e.invincible=3;safe.tick();assert.equal(safe.e.hp,8);assert.equal(safe.p.fallDamage,0);
+ const hard=fixture();hard.p.fallDamage=2;hard.e.combatDamage=2;hard.tick();assert.equal(hard.e.hp,6);
  const f=fixture();f.e.hp=1;f.p.fallDamage=2;f.profile.owned=['heal'];f.profile.equipped='heal';f.tick({power:true,fire:true});assert.equal(f.e.hp,0);assert.equal(f.e.dead,true);assert.equal(f.e.bullets.length,0);
 });
 test('guns, missiles and arrows damage enemies and platforms stop shots first',()=>{

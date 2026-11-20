@@ -3,6 +3,8 @@
 const N=typeof module!=='undefined'&&module.exports?require('./enemies.js'):root.ArcadeEnemies;
 const F=typeof module!=='undefined'&&module.exports?require('./final-boss.js'):root.ArcadeFinalBoss;
 const C=typeof module!=='undefined'&&module.exports?require('./progression.js'):root.ArcadeProgression;
+// El daño del rayo orbital se declara en el catálogo, junto al texto que lo anuncia.
+const ORBITAL_DAMAGE=C.catalog.find(c=>c.id==='orbital').damage;
 function create(){return{cooldowns:{},beams:[],shake:0,drones:[],turrets:[],marks:[],effects:[],flame:0,quiet:0,age:0,shieldFlash:0,lastShield:null};}
 function targets(e){return [...e.enemies.filter(n=>n.hp>0),...(e.boss.active&&e.boss.hp>0?[e.boss]:[]),...(e.finalBoss.active&&e.finalBoss.hp>0?[e.finalBoss]:[]),...(e.tank?.active&&e.tank.hp>0?[e.tank]:[]),...(e.king?.active&&e.king.hp>0&&!['descend','roar'].includes(e.king.phase)?[e.king]:[])];}
 function nearest(e,x,y,range=600){return targets(e).filter(n=>Math.hypot(n.x-x,n.y-30-y)<range).sort((a,b)=>Math.hypot(a.x-x,a.y-30-y)-Math.hypot(b.x-x,b.y-30-y))[0];}
@@ -39,7 +41,7 @@ function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top
    const box=n===e.finalBoss?F.box(n):n===e.tank||n===e.king?{x:n.x-n.w/2,y:n.y-n.h,w:n.w,h:n.h}:{x:n.x-(n===e.boss?30:14),y:n.y-(n===e.boss?75:46),w:n===e.boss?60:28,h:n===e.boss?75:46};
    if(n.hp<=0||beam.hits.has(n)||left>=right||box.x+box.w<=left||box.x>=right||box.y+box.h<=view.top||box.y>=view.bottom)continue;
    beam.hits.add(n);
-   damage(e,n,24*(p.damageBonus||1));
+   damage(e,n,ORBITAL_DAMAGE*(p.damageBonus||1));
   }
  }
  s.beams=s.beams.filter(b=>b.age<2);

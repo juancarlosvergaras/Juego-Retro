@@ -3,7 +3,7 @@ const P=require('../physics'),N=require('../enemies'),C=require('../mission-comb
 function fixture(mission=2){const p=Object.assign(P.createPlayer(),{x:300,y:620,form:'wolf',h:64,grounded:true,facing:1,vx:280,sprinting:true}),e=mission===2?C.create(A.createInventory()):E.createEncounter();e.enemies=[];e.boss.hp=0;e.finalBoss.hp=0;const floor=[{x:0,y:620,w:729,kind:'ground',thickness:36}],powers=V.create(),profile=U.fresh();return{p,e,floor,tick(input,dt=1/120){P.step(p,input,dt,floor);if(mission===2)C.update(e,p,input,dt,floor,powers,profile);else E.updateEncounter(e,p,input,dt,floor);}};}
 test('running wolf charges through overlapping soldiers and zombies once per target in both missions',()=>{
  for(const mission of [1,2])for(const key of ['fire','kick']){const f=fixture(mission);f.e.enemies=['rifle','turret','knife','zombie'].map((kind,i)=>Object.assign(kind==='zombie'?Z.create()[0]:N.createSoldier({kind},i),{x:350+i*4,y:620,hp:8,maxHp:8,phase:'active',frozen:5}));
- for(let i=0;i<46;i++)f.tick({right:true,run:true,[key]:true});assert.ok(f.p.x>450);assert.ok(f.e.enemies.every(n=>n.hp===5));assert.ok(f.e.enemies.every(n=>n.ramHit));assert.equal(f.e.hp,mission===2?8:5);
+ for(let i=0;i<46;i++)f.tick({right:true,run:true,[key]:true});assert.ok(f.p.x>450);assert.ok(f.e.enemies.every(n=>n.hp===5));assert.ok(f.e.enemies.every(n=>n.ramHit));assert.equal(f.e.hp,mission===2?8:6);
  assert.ok(!f.p.ram);assert.equal(f.p.claw,0);
  }
 });

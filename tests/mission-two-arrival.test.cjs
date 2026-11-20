@@ -134,7 +134,7 @@ test('shared main menu pauses and resumes mission two without losing its loadout
 });
 test('mission two settings preserve boss damage and show the shared health bar only near the tank',async()=>{
  const g=await game();g.tick(7);const tank=g.state.combat.tank;tank.hp=tank.maxHp/2;
- g.menu.onDifficulty('fuerte');assert.equal(g.data.get('cap-dollar.difficulty.v1'),'fuerte');assert.equal(g.state.combat.combatDamage,2);assert.equal(tank.hp/tank.maxHp,.5);
+ g.menu.onDifficulty('fuerte');assert.equal(g.data.get('cap-dollar.difficulty.v1'),'fuerte');assert.equal(g.state.combat.combatDamage,1.5);assert.equal(tank.hp/tank.maxHp,.5);
  assert.equal(g.element('boss-hud').hidden,true);
  Object.assign(g.state.player,{x:3500,y:620,grounded:true});g.tick(.1);assert.equal(g.element('boss-hud').hidden,false);assert.equal(g.element('boss-title').textContent,'SUBJEFE · TANQUE DE ASEDIO');
  Object.assign(g.state.player,{x:500,y:620});g.tick(.1);assert.equal(g.element('boss-hud').hidden,true);

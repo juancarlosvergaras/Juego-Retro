@@ -25,6 +25,8 @@
     ctx.fillStyle='#17232d';ctx.fillRect(x-19,y,38,6);ctx.fillStyle=n.hit>0?'#fff0ad':'#e77b60';ctx.fillRect(x-18,y+1,Math.round(36*n.hp/n.maxHp),4);
     ctx.fillStyle='#17232d';for(let i=1;i<n.maxHp&&n.maxHp<=6;i++)ctx.fillRect(x-18+Math.round(i*36/n.maxHp),y+1,1,4);
     if(n.alert){ctx.fillStyle=n.awareness==='sight'?'#ff9b70':'#ffe5a0';ctx.font='bold 10px monospace';ctx.fillText(n.awareness==='sight'?'!':'?',x-3,y-5);}
+    // Aviso de disparo sobre el soldado ya dibujado; la torreta pinta el suyo en enemy-specialists.js.
+    if(n.kind!=='turret')(typeof module!=='undefined'&&module.exports?require('./enemy-specialists.js'):root.ArcadeEnemySpecialists)?.aimFlash?.(ctx,n);
   }
   // Cada aviso de jefe ocurre una vez por partida.
   function once(staged,presentation){return(id,kind,...text)=>{if(!presentation||staged[id])return false;staged[id]=true;presentation[kind](...text);return true;};}

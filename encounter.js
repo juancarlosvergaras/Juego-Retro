@@ -6,7 +6,9 @@
   const Physics=typeof module!=='undefined'&&module.exports?require('./physics.js'):root.ArcadePhysics;
   const Medkits=typeof module!=='undefined'&&module.exports?require('./medkits.js'):root.ArcadeMedkits;
   const Impact=typeof module!=='undefined'&&module.exports?require('./impact-effects.js'):root.ArcadeImpact;
-  function createEncounter({pickups}={}){return{medkits:Medkits.create(),finalBoss:Final.create(),finalWon:false,enemies:Enemies.create(),inventory:Arsenal.createInventory(),pickups:pickups??Arsenal.createPickups(),boss:{x:550,y:235,hp:18,maxHp:18,t:0,shot:1.4,active:false},hp:5,maxHp:5,invincible:0,cooldown:0,flash:0,bullets:[],explosions:[],won:false,dead:false};}
+  // Vida con la que empieza el soldado antes de vencer al Capataz (progression.js suma las mejoras).
+  const START_HP=6;
+  function createEncounter({pickups}={}){return{medkits:Medkits.create(),finalBoss:Final.create(),finalWon:false,enemies:Enemies.create(),inventory:Arsenal.createInventory(),pickups:pickups??Arsenal.createPickups(),boss:{x:550,y:235,hp:18,maxHp:18,t:0,shot:1.4,active:false},hp:START_HP,maxHp:START_HP,invincible:0,cooldown:0,flash:0,bullets:[],explosions:[],won:false,dead:false};}
   function chip(e,x,y,surface,power=1){
     e.debris??=[];const metal=surface.kind==='scaffold'||surface.kind==='ledge';
     for(let i=0;i<Math.min(14,4+power*2);i++){const angle=Math.random()*Math.PI*2,speed=25+Math.random()*65*power;e.debris.push({x,y,vx:Math.cos(angle)*speed,vy:-25-Math.abs(Math.sin(angle)*speed),size:metal?2+Math.random()*2:2+Math.random()*4,life:1.3+Math.random()*.7,bounces:0,color:metal?(i%2?'#ba9560':'#747c7c'):(i%2?'#aaa598':'#676963')});}
@@ -42,17 +44,19 @@
     }
     g.life=Math.max(0,g.life-dt);if(g.life<1e-9)g.life=0;
   }
-  function hurtPlayer(e,p,sourceX,projectile=false,amount=1){
+  // scaled=false: daño que el jugador se causa a sí mismo; la dificultad no lo multiplica.
+  function hurtPlayer(e,p,sourceX,projectile=false,amount=1,scaled=true){
     if(e.developerInvulnerable||e.invincible||e.dead||p.burrow||(projectile&&p.cloak>0))return false;
     if(projectile&&p.shield>0){p.shield--;p.shieldFlash=.2;return false;}
-    amount*=(e.combatDamage||1)*(p.form==='zombie'?.5:1);
+    amount*=(scaled?e.combatDamage||1:1)*(p.form==='zombie'?.5:1);
     e.damageTaken=(e.damageTaken||0)+amount;e.hp=Math.max(0,e.hp-amount);if(e.hp===0)e.dead=true;e.invincible=e.hitProtection||1.2;p.hurt=.32;p.hitDirection=p.x<sourceX?-1:1;p.vx=p.hitDirection*210;
     p.hitX=p.x;p.hitY=p.y-(p.form==='wolf'?35:25);p.claw=0;p.kick=0;
     return true;
   }
   function applyFallDamage(e,p){
     const damage=p.fallDamage||0;p.fallDamage=0;
-    if(e.developerInvulnerable||damage<=0||p.form==='wolf'||p.form==='zombie'||e.dead||p.burrow)return false;
+    // La caída no escala con la dificultad, pero respeta la protección tras un golpe o al reaparecer.
+    if(e.developerInvulnerable||e.invincible>0||damage<=0||p.form==='wolf'||p.form==='zombie'||e.dead||p.burrow)return false;
     e.hp=Math.max(0,e.hp-damage);e.damageTaken=(e.damageTaken||0)+damage;e.invincible=1.2;
     p.hurt=.32;p.hitDirection=0;p.vx=0;p.hitX=p.x;p.hitY=p.y-25;p.claw=0;p.kick=0;
     if(e.hp===0)e.dead=true;
@@ -68,14 +72,16 @@
     return enter;
   }
   function stepMissile(m,dt,platforms,boss,enemies=[],finalBoss=null){
-    const dx=m.vx*dt,dy=m.vy*dt;let hit=null;
+    const dx=m.vx*dt,dy=m.vy*dt;let hit=null,struck=null;
     const boxes=platforms.map(s=>({x:s.x,y:s.y,w:s.w,h:s.thickness||12}));
     boxes.push({x:-20,y:-10000,w:20,h:30000},{x:729,y:-10000,w:20,h:30000});
-    if(boss.hp>0)boxes.push({x:boss.x-30,y:boss.y-75,w:60,h:75});
-    if(finalBoss&&finalBoss.active&&finalBoss.hp>0)boxes.push(Final.box(finalBoss));
-    for(const n of enemies)if(n.hp>0)boxes.push({x:n.x-14,y:n.y-46,w:28,h:46});
-    for(const box of boxes){const t=segmentHit(m.x,m.y,dx,dy,box);if(t!==null&&(hit===null||t<hit))hit=t;}
+    if(boss.hp>0)boxes.push({x:boss.x-30,y:boss.y-75,w:60,h:75,target:boss});
+    if(finalBoss&&finalBoss.active&&finalBoss.hp>0)boxes.push({...Final.box(finalBoss),target:finalBoss});
+    for(const n of enemies)if(n.hp>0)boxes.push({x:n.x-14,y:n.y-46,w:28,h:46,target:n});
+    for(const box of boxes){const t=segmentHit(m.x,m.y,dx,dy,box);if(t!==null&&(hit===null||t<hit)){hit=t;struck=box.target||null;}}
     m.x+=dx*(hit===null?1:hit);m.y+=dy*(hit===null?1:hit);m.life=hit===null?m.life-dt:0;
+    // Quién recibió el misil de lleno (null si chocó con el escenario).
+    m.struck=struck;
     return hit!==null;
   }
   function transformWolf(e,p){if(e.dead)return;
@@ -177,7 +183,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
         e.lastAim={...(p.aim||{x:p.facing,y:0})};e.flash=.14;e.bullets.push(...shot.bullets);
       }
     }
-    const noises=e.explosions.filter(b=>b.life>.35).map(b=>({x:b.x,y:b.y,radius:600}));if(e.flash>0)noises.push({x:p.x,y:p.y,radius:e.inventory.selected<=2?100:430});
+    const noises=e.explosions.filter(b=>b.life>.35).map(b=>({x:b.x,y:b.y,radius:600}));if(e.flash>0)noises.push({x:p.x,y:p.y,radius:Arsenal.noiseRadius(e.inventory.selected)});
     Enemies.update(e.enemies,p,dt,platforms,e.bullets,segmentHit,noises);
     Final.update(e,p,dt*(e.finalBoss.hp>0&&e.finalBoss.sticky>0?.45:1),hurtPlayer,platforms);
     b.flash=Math.max(0,(b.flash||0)-dt);
@@ -216,16 +222,20 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
       if(bullet.life<=0)continue;
       if(bullet.slot===6&&!bullet.enemy){
         if(stepMissile(bullet,dt,platforms,b,e.enemies,e.finalBoss)){
-          const radius=95;Enemies.area(e.enemies,bullet.x,bullet.y,radius,bullet.damage);Final.area(e.finalBoss,bullet.x,bullet.y,radius,bullet.damage);e.explosions.push(Impact.create(bullet.x,bullet.y,radius,bullet.slot===6?'rocket':'grenade'));
+          // Misil: el blanco alcanzado de lleno recibe el impacto; los demás, la onda expansiva (igual que en mission-combat.js).
+          const radius=95,direct=bullet.struck||null,impact=Arsenal.impactDamage(bullet);
+          Enemies.area(e.enemies.filter(n=>n!==direct),bullet.x,bullet.y,radius,bullet.damage);
+          if(direct===e.finalBoss)Final.damage(e.finalBoss,impact);else{if(direct&&direct!==b)Enemies.damage(direct,impact);Final.area(e.finalBoss,bullet.x,bullet.y,radius,bullet.damage);}
+          e.explosions.push(Impact.create(bullet.x,bullet.y,radius,bullet.slot===6?'rocket':'grenade'));
           const nx=Math.max(b.x-30,Math.min(b.x+30,bullet.x)),ny=Math.max(b.y-75,Math.min(b.y,bullet.y));
-          if(b.hp>0&&Math.hypot(bullet.x-nx,bullet.y-ny)<=radius){hitForeman(b,bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
+          if(b.hp>0&&(direct===b||Math.hypot(bullet.x-nx,bullet.y-ny)<=radius)){hitForeman(b,direct===b?impact:bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
         }
         continue;
       }
       if(bullet.slot===9&&!bullet.enemy){
         stepGrenade(bullet,dt,platforms);
         if(bullet.life===0){
-          const selfDistance=Math.hypot(bullet.x-p.x,bullet.y-Math.max(p.y-(p.h||46),Math.min(p.y,bullet.y)));if(selfDistance<85)hurtPlayer(e,p,bullet.x,false,selfDistance<45?2:1);
+          const selfDistance=Math.hypot(bullet.x-p.x,bullet.y-Math.max(p.y-(p.h||46),Math.min(p.y,bullet.y)));if(selfDistance<85)hurtPlayer(e,p,bullet.x,false,selfDistance<45?2:1,false);
           const radius=85;Enemies.area(e.enemies,bullet.x,bullet.y,radius,bullet.damage);Final.area(e.finalBoss,bullet.x,bullet.y,radius,bullet.damage);e.explosions.push(Impact.create(bullet.x,bullet.y,radius,bullet.slot===6?'rocket':'grenade'));
           const nearX=Math.max(b.x-30,Math.min(b.x+30,bullet.x)),nearY=Math.max(b.y-75,Math.min(b.y,bullet.y));
           if(b.hp>0&&Math.hypot(bullet.x-nearX,bullet.y-nearY)<=radius){hitForeman(b,bullet.damage);if(!b.hp){transformWolf(e,p);return;}}
@@ -246,5 +256,21 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
     if(b.active&&!e.invincible&&Math.abs(p.x-b.x)<36&&Math.abs(p.y-b.y)<55){hurtPlayer(e,p,b.x);}
     e.bullets=e.bullets.filter(b=>b.life>0);if(e.hp<=0)e.dead=true;
   }
-  const api={drawEnvironment,chip,updateDebris,createEncounter,updateEncounter,transformWolf,toggleForm,stepGrenade,transformationFrame,hurtPlayer,applyFallDamage,segmentHit,stepMissile};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEncounter=api;
+  // Respuesta al daño, común a las ocho misiones. lost() devuelve la vida perdida
+  // desde la lectura anterior; un encuentro nuevo o un cambio de vida máxima
+  // (reaparecer, reiniciar, transformarse) nunca cuenta como golpe.
+  function createHitFeedback(){
+    let owner=null,hp=0,maxHp=0,timer=null;
+    function lost(e){const drop=owner===e&&maxHp===e.maxHp&&e.hp<hp?hp-e.hp:0;owner=e;hp=e.hp;maxHp=e.maxHp;return drop;}
+    // Sacudida breve del lienzo y destello del marcador de salud (clases de mission-map.css).
+    function update(e,canvas,meter){
+      const drop=lost(e);if(!drop)return 0;
+      const marks=[[canvas,'hit-shake'],[meter,'hit-flash']].filter(([node])=>node?.classList);
+      for(const [node,name] of marks){node.classList.remove(name);void node.offsetWidth;node.classList.add(name);}
+      if(typeof root.setTimeout==='function'){if(timer)root.clearTimeout(timer);timer=root.setTimeout(()=>{timer=null;for(const [node,name] of marks)node.classList.remove(name);},400);timer?.unref?.();}
+      return drop;
+    }
+    return{lost,update};
+  }
+  const api={START_HP,createHitFeedback,drawEnvironment,chip,updateDebris,createEncounter,updateEncounter,transformWolf,toggleForm,stepGrenade,transformationFrame,hurtPlayer,applyFallDamage,segmentHit,stepMissile};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEncounter=api;
 })(typeof window!=='undefined'?window:globalThis);

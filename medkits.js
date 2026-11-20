@@ -7,11 +7,17 @@
     kits.push({id:3,type:'full',x:106,y:P.WORLD.roof,taken:false,hidden:true});
     return kits;
   }
+  // Un botiquín rojo devuelve lo que quita un golpe en la dificultad en curso
+  // (1 en Novato y Normal, 2 en Difícil y Extremo), para que siga valiendo la pena.
+  function redHeal(e){return Math.max(1,Math.ceil(e?.combatDamage||1));}
+  // Cifra de la etiqueta "+N VIDA" de draw(), que no recibe el encuentro: la última que calculó collect().
+  let labelHeal=1;
   function collect(e,p,kits=e.medkits){
+    const heal=labelHeal=redHeal(e);
     if(e.dead||e.hp>=e.maxHp)return null;
     for(const kit of kits){
       if(kit.taken||Math.abs(p.x-kit.x)>19||Math.abs(p.y-kit.y)>21)continue;
-      const before=e.hp;e.hp=kit.type==='full'?e.maxHp:Math.min(e.maxHp,e.hp+1);kit.taken=true;p.healGlow=.7;
+      const before=e.hp;e.hp=kit.type==='full'?e.maxHp:Math.min(e.maxHp,e.hp+heal);kit.taken=true;p.healGlow=.7;
       return{amount:e.hp-before,full:kit.type==='full'};
     }
     return null;
@@ -35,9 +41,9 @@
         ctx.fillStyle='#3e3024';ctx.fillRect(x-2,y-15,2,15);
       }
       const near=!!p&&Math.abs(p.x-x)<42&&Math.abs(p.y-y)<30;
-      if(near){ctx.font='bold 8px monospace';ctx.textAlign='center';const label=full?'VIDA 100%':'+'+(kit.amount||1)+' VIDA';ctx.fillStyle='#101820df';ctx.fillRect(x-30,y-32,60,11);ctx.fillStyle=full?'#d4ff8a':'#ffd1cb';ctx.fillText(label,x,y-24);}
+      if(near){ctx.font='bold 8px monospace';ctx.textAlign='center';const label=full?'VIDA 100%':'+'+(kit.amount||(kit.type==='red'?labelHeal:1))+' VIDA';ctx.fillStyle='#101820df';ctx.fillRect(x-30,y-32,60,11);ctx.fillStyle=full?'#d4ff8a':'#ffd1cb';ctx.fillText(label,x,y-24);}
       ctx.restore();
     }
   }
-  const api={create,collect,draw};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMedkits=api;
+  const api={create,collect,draw,redHeal};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMedkits=api;
 })(typeof window!=='undefined'?window:globalThis);

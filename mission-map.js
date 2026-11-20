@@ -31,6 +31,22 @@
     const last=Math.max(...nodes.filter(n=>n.mission).map(n=>n.mission)),current=Math.max(1,Math.min(last,Math.floor(Number(level)||1))),here=nodes.find(n=>n.mission===current);
     return nodes.map(n=>n.soon?'soon':n.special?((n.id==='assault'?chaseCleared:specialCleared)?'done':n.col===here.col?'choice':'open'):completed.includes(n.mission)?'done':n.mission===current?'current':n.col===here.col?'choice':'open');
   }
+  // Bloqueo. Un mundo está abierto si es la misión 1, si ya se completó, si se
+  // completó alguno de los que llevan a él (links) o si es la misión que marca
+  // la campaña guardada. El modo desarrollador lo abre todo. Devuelve, en el
+  // orden de nodes, true para cada mundo bloqueado.
+  function locks(level,nodes,specialCleared=false,chaseCleared=false,completed=[],developer=false){
+    const list=states(level,nodes,specialCleared,chaseCleared,completed),done=new Set(nodes.filter((n,i)=>list[i]==='done').map(n=>n.id));
+    return nodes.map((n,i)=>!(developer||n.mission===1||['done','current','soon'].includes(list[i])||links.some(([from,to])=>to===n.id&&done.has(from))));
+  }
+  // Qué hay que completar para abrir un mundo, en una frase para su tarjeta.
+  function requirement(id,nodes){
+    const before=links.filter(([,to])=>to===id).map(([from])=>nodes.find(n=>n.id===from)).filter(Boolean);
+    const missions=before.filter(n=>n.mission).map(n=>n.mission),specials=before.filter(n=>n.special).length;
+    const numbers=missions.length>1?missions.slice(0,-1).join(', ')+' o '+missions.at(-1):String(missions[0]);
+    const parts=[...(missions.length?[(missions.length>1?'una de las misiones ':'la misión ')+numbers]:[]),...(specials?[specials>1?'un mundo especial':'el mundo especial']:[])];
+    return parts.length?'Completa '+parts.join(' o ')+' para abrir este mundo.':'';
+  }
   // Un tramo está recorrido cuando lleva a la misión actual o queda detrás de ella.
   function travelled(edge,list,nodes){const state=n=>list[nodes.indexOf(n)];return !edge.soon&&state(edge.from)==='done'&&['done','current','choice'].includes(state(edge.to));}
   function mount(){
@@ -70,6 +86,12 @@
         else return;
         e.preventDefault();e.stopPropagation();if(next>=0){select(next,true);buttons[next].focus({preventScroll:true});}});
       map.append(button);return button;});
+    // Cada tarjeta lleva su aviso de bloqueo; mientras está bloqueada, ni el enlace navega ni el botón inicia la misión.
+    const notes=cards.map((card,i)=>{
+      if(!card||nodes[i].soon)return null;
+      const note=doc.createElement('span');note.className='map-lock-note';note.hidden=true;note.textContent='🔒 Bloqueada · '+requirement(nodes[i].id,nodes);(card.querySelector('div')||card).append(note);
+      card.addEventListener('click',e=>{if(card.getAttribute('aria-disabled')==='true'){e.preventDefault();e.stopImmediatePropagation();}},true);
+      return note;});
     // Every card stays in the document so the menu's own click handlers keep working.
     detail.append(...cards.filter(Boolean));list.before(map,hint,detail);list.hidden=true;
     let selected=0,current=[];
@@ -78,7 +100,15 @@
     function refresh(){
       let level=1,specialCleared=false,chaseCleared=false,completed=[];try{const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;level=root.ArcadeCampaign?.read(store)?.level||1;completed=root.ArcadeCampaign?.completedMissions(store)||[];const profile=root.ArcadeProgression?.load(store);specialCleared=!!profile?.heroUnlocked;chaseCleared=!!profile?.owned.includes('cloak');}catch{}
       current=states(level,nodes,specialCleared,chaseCleared,completed);
-      buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.setAttribute('aria-label',(nodes[i].soon||nodes[i].special?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+words[current[i]]);});
+      let developer=false;try{developer=!!root.ArcadeDeveloperMode?.active?.();}catch{}
+      const locked=locks(level,nodes,specialCleared,chaseCleared,completed,developer);
+      buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.classList.toggle('locked',locked[i]);n.setAttribute('aria-label',(nodes[i].soon||nodes[i].special?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+(locked[i]?' · bloqueada. '+requirement(nodes[i].id,nodes):words[current[i]]));});
+      cards.forEach((card,i)=>{
+        if(!card||!notes[i])return;card.classList.toggle('map-locked',locked[i]);notes[i].hidden=!locked[i];
+        // Sin href un enlace ni navega ni entra en el recorrido de teclado o mando del menú; se devuelve al desbloquear.
+        if(locked[i]){card.setAttribute('aria-disabled','true');if(card.hasAttribute('href')){card.dataset.lockedHref=card.getAttribute('href');card.removeAttribute('href');}}
+        else{card.removeAttribute('aria-disabled');if(card.dataset.lockedHref){card.setAttribute('href',card.dataset.lockedHref);delete card.dataset.lockedHref;}}
+      });
       roads.forEach((lit,i)=>lit.style.display=travelled(edges[i],current,nodes)?'':'none');
       select(Math.max(0,nodes.findIndex(n=>n.mission===level)),false);
     }
@@ -86,6 +116,6 @@
     refresh();
     return{refresh,select,get selected(){return selected;},get states(){return current;}};
   }
-  const api={lanes,upcoming,graph,route,states,travelled};
+  const api={lanes,upcoming,graph,route,states,locks,requirement,travelled};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionMap={...api,...(mount()||{})};
 })(typeof window!=='undefined'?window:globalThis);

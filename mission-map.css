@@ -55,3 +55,24 @@
   .map-detail .mission-card{grid-template-columns:96px 1fr}.map-detail .mission-card>img,.map-soon-art{width:96px}.map-soon-art{font-size:36px}
 }
 @media (prefers-reduced-motion:reduce){.map-node.current .map-thumb{animation:none}.map-thumb{transition:none}}
+/* Mundo bloqueado: atenuado y con candado; su tarjeta explica qué completar y no inicia nada. */
+.map-node.locked .map-thumb{border-color:#3e4b58;border-style:solid;filter:grayscale(1) brightness(.5)}
+.map-node.locked b{background:#101a24;border-color:#55687a;font-size:0}
+.map-node.locked b::after{content:'🔒';font-size:10px}
+.map-node.locked .map-name{color:#8d9aa5}
+.map-node.locked.selected .map-thumb{border-color:#9fb4c4;box-shadow:0 0 0 4px #9fb4c433,0 6px 16px #000c}
+.map-node.locked.selected .map-name{background:#3a4654;color:#e8eef2}
+.map-detail .mission-card.map-locked{cursor:not-allowed}
+.map-detail .mission-card.map-locked>img{filter:grayscale(1) brightness(.55)}
+.map-detail .mission-card.map-locked>div::after{content:'🔒  Bloqueada';background:#2a3442;color:#c9d3da}
+.map-detail .mission-card .map-lock-note{color:#ffd98a;font-size:12px;line-height:1.5}
+.map-detail .mission-card .map-lock-note[hidden]{display:none}
+/* Golpe recibido (misiones 1–8): sacudida breve del lienzo y destello del marcador de salud.
+   La sacudida usa translate, que no pisa ningún transform que ya tenga el lienzo. */
+canvas.hit-shake{animation:hit-shake .15s linear}
+@keyframes hit-shake{0%,100%{translate:0 0}20%{translate:-4px 2px}40%{translate:4px -2px}60%{translate:-3px 1px}80%{translate:2px -1px}}
+.hit-flash .life-track{animation:hit-flash-track .35s ease-out}
+.hit-flash>strong{animation:hit-flash-text .35s ease-out}
+@keyframes hit-flash-track{0%{border-color:#ff8a7a;box-shadow:0 0 0 2px #ff5a4a,0 0 12px #ff3b3bcc}100%{box-shadow:0 0 0 0 #ff5a4a00}}
+@keyframes hit-flash-text{0%{color:#fff;text-shadow:0 0 8px #ff3b3b}}
+@media (prefers-reduced-motion:reduce){canvas.hit-shake{animation:none}}

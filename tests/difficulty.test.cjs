@@ -1,14 +1,26 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const D=require('../difficulty.js'),E=require('../encounter.js'),P=require('../physics.js'),F=require('../final-boss.js');
 test('four difficulties progressively scale combat while preserving player health',()=>{
-  assert.deepEqual(D.levels.map(l=>l.name),['Novato','Normal','Fuerte','Extrema']);
+  assert.deepEqual(D.levels.map(l=>l.name),['Novato','Normal','Difícil','Extremo']);
+  // Los ids viven en las partidas guardadas: cambiar el nombre visible no los toca.
+  assert.deepEqual(D.levels.map(l=>l.id),['novato','normal','fuerte','extrema']);
   let previous=0;
   for(const level of D.levels){const e=E.createEncounter(),p=P.createPlayer();D.apply(e,level.id);
     assert.ok(e.boss.maxHp>previous);previous=e.boss.maxHp;
-    assert.equal(e.maxHp,5);assert.equal(e.hp,5);
-    E.hurtPlayer(e,p,p.x+40,true);assert.equal(e.hp,5-level.damage);assert.equal(e.invincible,level.grace);
+    assert.equal(e.maxHp,6);assert.equal(e.hp,6);
+    E.hurtPlayer(e,p,p.x+40,true);assert.equal(e.hp,6-level.damage);assert.equal(e.invincible,level.grace);
     e.invincible=0;p.shield=1;const hp=e.hp;E.hurtPlayer(e,p,p.x+40,true);assert.equal(e.hp,hp);assert.equal(p.shield,0);
   }
+});
+test('the opening is survivable on every difficulty and the descriptions stay true',()=>{
+  assert.deepEqual(D.levels.map(l=>l.damage),[1,1,1.5,2]);
+  // Golpes que aguanta el soldado recién llegado (antes: 5, 5, 3 y 2).
+  assert.deepEqual(D.levels.map(l=>Math.ceil(E.START_HP/l.damage)),[6,6,4,3]);
+  assert.match(D.get('fuerte').text,/50 % más dañinos/);assert.match(D.get('extrema').text,/daño doble/);
+  assert.doesNotMatch(D.levels.map(l=>l.text).join(' '),/triple|el doble de daño/);
+  // El texto de puntos coincide con el multiplicador que aplica la economía.
+  assert.deepEqual(D.levels.map(l=>l.points),[.75,1,1.25,1.5]);
+  for(const l of D.levels){const percent=Math.round(Math.abs(l.points-1)*100);if(percent)assert.ok(l.text.includes(percent+' % '+(l.points>1?'más':'menos')+' de puntos'),l.name);else assert.doesNotMatch(l.text,/puntos/);}
 });
 test('normal retains the original enemy health and damage',()=>{
   const e=E.createEncounter();D.apply(e,'normal');assert.equal(e.enemies[0].hp,3);assert.equal(e.boss.hp,18);assert.equal(e.finalBoss.hp,32);assert.equal(e.combatDamage,1);
@@ -28,7 +40,7 @@ test('final boss mutation and subsequent difficulty changes retain the chosen sc
 test('difficulty persists, validates stored values and tolerates unavailable storage',()=>{
   const map=new Map(),store={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};
   assert.equal(D.load(store),'normal');assert.equal(D.save('fuerte',store),true);assert.equal(D.load(store),'fuerte');
-  const e=E.createEncounter();D.apply(e,D.load(store));assert.equal(e.combatDamage,2);
+  const e=E.createEncounter();D.apply(e,D.load(store));assert.equal(e.combatDamage,1.5);
   const bad={getItem(){return 'unknown';},setItem(){throw Error('blocked');}};assert.equal(D.load(bad),'normal');assert.equal(D.save('novato',bad),false);
   assert.equal(D.load({getItem(){throw Error('blocked');}}),'normal');
 });

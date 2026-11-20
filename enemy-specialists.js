@@ -23,6 +23,17 @@
     if(n.kind==='zombie'&&n.variant===1)c.filter='hue-rotate(22deg) saturate(.8)';if(n.kind==='zombie'&&n.variant===2)c.filter='hue-rotate(-18deg) brightness(.92)';
     c.drawImage(image,...f,-f[2]*scale/2,(f[1]-ramBases[row])*scale,f[2]*scale,f[3]*scale);c.restore();return true;
   }
+  // Aviso de disparo: un destello en la boca del arma que crece durante los
+  // últimos instantes antes del tiro (ArcadeEnemies.aimWarning). Coordenadas de mundo.
+  function aimFlash(ctx,n){
+    const Enemies=typeof module!=='undefined'&&module.exports?require('./enemies.js'):root.ArcadeEnemies,level=Enemies?.aimWarning?.(n)||0;
+    if(!(level>0))return false;
+    const tip=n.kind==='turret'&&n.turretAim?n.turretAim:{x:n.x+(n.facing||1)*20,y:n.y-28},x=Math.round(tip.x),y=Math.round(tip.y),r=2+Math.round(level*4);
+    ctx.save();ctx.globalAlpha=.5+.5*level;
+    ctx.fillStyle='#ff5a4a';ctx.fillRect(x-r,y-1,r*2,2);ctx.fillRect(x-1,y-r,2,r*2);
+    ctx.fillStyle='#fff0ad';ctx.fillRect(x-2,y-2,4,4);
+    ctx.restore();return true;
+  }
   function draw(ctx,n,images){
     if(root.ArcadeExpansionEnemies?.draw(ctx,n,images.expansion))return true;
     if(n.kind!=='turret'&&n.kind!=='knife')return false;
@@ -35,7 +46,10 @@
     if(aiming){ctx.save();ctx.beginPath();ctx.rect(-100,-150,230,180);ctx.rect(8.33,-35,62,15);ctx.clip('evenodd');}
     ctx.drawImage(image,f[0],f[1],f[2],f[3],(f[0]-f[4])*scale,(f[1]-f[5])*scale,f[2]*scale,f[3]*scale);
     if(aiming){ctx.restore();ctx.translate(15.64,-28.22);ctx.rotate(n.turretAim.angle);ctx.drawImage(image,175,239,209,71,-43*.17,-35*.17,209*.17,71*.17);if(n.flash>0){ctx.fillStyle='#ff3344';ctx.fillRect(28,-2,8,4);ctx.fillStyle='#fff0d4';ctx.fillRect(28,-1,5,2);}}
-    ctx.restore();return true;
+    ctx.restore();
+    // La torreta se dibuja aquí en todas las misiones: su aviso también.
+    if(n.kind==='turret')aimFlash(ctx,n);
+    return true;
   }
-  const api={draw,frame,drawRam};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEnemySpecialists=api;
+  const api={draw,frame,drawRam,aimFlash};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEnemySpecialists=api;
 })(typeof window!=='undefined'?window:globalThis);

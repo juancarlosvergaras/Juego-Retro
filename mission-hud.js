@@ -3,6 +3,7 @@
 function create({player,encounter,profile,powers,canvas,score,audio,onSelect,onPower,onCycle,onPersist}){
  const ui=Object.fromEntries(['weapon-slots','weapon-name','ammo-count','ammo-unit','jumps','health','health-fill'].map(id=>[id,document.getElementById(id)]));
  const wheel=document.getElementById('power-wheel');let wheelKey='',blocked=true;
+ const hitFeedback=root.ArcadeEncounter?.createHitFeedback?.();
  const sound=document.getElementById('sound-toggle'),volume=document.getElementById('sound-volume');
  function soundUI(){const s=audio.status();sound.disabled=!s.supported;sound.textContent=s.muted||!s.volume?'♫ Silencio':'♫ Sonido';sound.setAttribute('aria-pressed',String(!s.muted&&s.volume>0));volume.value=Math.round(s.volume*100);document.getElementById('sound-level').textContent=volume.value+'%';}
  sound.onclick=async()=>{await audio.unlock();audio.setMuted(!audio.status().muted);soundUI();};
@@ -30,7 +31,9 @@ function create({player,encounter,profile,powers,canvas,score,audio,onSelect,onP
   }
   let shopFlash=null;
   function drawShop(){
-    document.getElementById('shop-balance').textContent=profile.wallet.toLocaleString('es-CO')+' puntos disponibles';
+    // Si la misión no paga el 100 % (repetida o por dificultad), la tienda lo dice junto al saldo.
+    const rewardNote=ArcadeProgression.rewardNote?.()||'';
+    document.getElementById('shop-balance').textContent=profile.wallet.toLocaleString('es-CO')+' puntos disponibles'+(rewardNote?' · '+rewardNote:'');
     document.getElementById('score-value').textContent=profile.wallet.toLocaleString('es-CO');
     // Missions that load the illustrated shop share mission one's tabs, cards and armoury.
     if(root.ArcadeShopUI&&root.ArcadeArmory){const say=text=>{document.getElementById('shop-message').textContent=text;};
@@ -64,7 +67,9 @@ function create({player,encounter,profile,powers,canvas,score,audio,onSelect,onP
   if(player.form==='tank'){ui['weapon-name'].textContent=player.submersible?'MINI SUBMARINO · TORPEDO':'MINI TANQUE · SÚPER CAÑÓN';ui['ammo-unit'].textContent='RECARGA AUTOMÁTICA';}if(player.form==='fighter'){ui['weapon-name'].textContent='LUCHADOR · COMBO J / PATADA L';ui['ammo-unit'].textContent='CUERPO A CUERPO';}
   for(const button of ui['weapon-slots'].children){const slot=Number(button.dataset.slot),owned=inv.owned.includes(slot);button.disabled=blocked||unarmed||!owned;button.classList.toggle('locked',!owned);button.classList.toggle('selected',!unarmed&&slot===inv.selected);button.setAttribute('aria-pressed',String(!unarmed&&slot===inv.selected));const ammo=owned?(ArcadeArsenal.weapons[slot].ammo===null?'∞':String(inv.ammo[slot]||0)):'—';button.querySelector('.slot-ammo').textContent=ammo;button.setAttribute('aria-label',slot+' · '+ArcadeArsenal.weapons[slot].name+(owned?' · '+ammo+' disponibles':' · Sin recoger'));}
   ui.jumps.textContent=Array.from({length:player.maxJumps||2},(_,i)=>i<player.jumps?'○':'●').join(' ');ui.jumps.setAttribute('aria-label',(Math.max(0,player.maxJumps-player.jumps))+' de '+player.maxJumps+' saltos disponibles');
-  ui.health.textContent=encounter.hp+' / '+encounter.maxHp;ui['health-fill'].style.width=(100*encounter.hp/encounter.maxHp)+'%';ui['health-fill'].parentElement.setAttribute('aria-valuenow',encounter.hp);ui['health-fill'].parentElement.setAttribute('aria-valuemax',encounter.maxHp);
+  ui.health.textContent=String(encounter.hp).replace('.',',')+' / '+encounter.maxHp;ui['health-fill'].style.width=(100*encounter.hp/encounter.maxHp)+'%';ui['health-fill'].parentElement.setAttribute('aria-valuenow',encounter.hp);ui['health-fill'].parentElement.setAttribute('aria-valuemax',encounter.maxHp);
+  // Golpe recibido: sacudida breve del lienzo y destello del marcador de salud.
+  hitFeedback?.update(encounter,canvas,ui.health.parentElement);
   document.getElementById('fuel-value').textContent=unarmed||player.form==='robot'?'JETPACK · SOLO SOLDADO':(player.jetpackMk2?'MK II ×2 · ':'GASOLINA · ')+Math.round(player.fuel/player.fuelMax*100)+'%';document.getElementById('fuel-meter').value=player.fuel/player.fuelMax*100;
   drawPowerWheel();for(const b of wheel.querySelectorAll('button'))b.disabled=blocked;
   const c=ArcadeProgression.catalog.find(c=>c.id===profile.equipped),wait=powers.cooldowns[profile.equipped]||0;document.getElementById('power-status').textContent=(c?'G · '+c.name+(wait?' · '+Math.ceil(wait)+' s':' · LISTO'):'G · Sin poder equipado')+' | ESC: tienda · Escudo '+(player.shield||0)+'/10';

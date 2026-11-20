@@ -9,6 +9,7 @@
   const presentation=window.ArcadeBossPresentation?.create(canvas.parentElement,canvas);
   const ids=['jumps','message','state','overlay','overlay-title','overlay-text','resume','pause','health','hook-status','health-fill','boss-hud','boss-fill','boss-value','weapon-name','ammo-count','ammo-unit','weapon-slots','pause-options','show-shortcuts','shortcuts'];
   const ui=Object.fromEntries(ids.map(id=>[id,document.getElementById(id)]));
+  const hitFeedback=ArcadeEncounter.createHitFeedback();
   document.querySelector('.game-toolbar').after(ui['boss-hud']);
   const sound=ArcadeAudio.create(),soundEvents=ArcadeSoundEvents.create(sound);
   const soundToggle=document.createElement('button');soundToggle.id='sound-toggle';soundToggle.type='button';
@@ -81,7 +82,7 @@
   }
   let shopFlash=null;
   function drawShop(){
-    document.getElementById('shop-balance').textContent=profile.wallet.toLocaleString('es-CO')+' puntos disponibles';
+    const rewardNote=ArcadeProgression.rewardNote();document.getElementById('shop-balance').textContent=profile.wallet.toLocaleString('es-CO')+' puntos disponibles'+(rewardNote?' · '+rewardNote:'');
     document.getElementById('score-value').textContent=profile.wallet.toLocaleString('es-CO');
     const say=text=>{document.getElementById('shop-message').textContent=text;};
     ArcadeShopUI.render(document.getElementById('shop-list'),{profile,inventory:encounter.inventory,catalog:ArcadeProgression.catalog,flash:shopFlash,
@@ -128,7 +129,9 @@
     // Held controls must be refreshed even on repeat or after a HUD button had focus.
     if(!paused&&!encounter.dead&&!encounter.extraction&&movementKeys.includes(code))keys.add(code);
     if(e.repeat)return;
-    if(code==='KeyP'||code==='Escape'){e.preventDefault();togglePause();return;}if(code==='KeyR'&&loaded&&!encounter.extraction){respawn();return;}
+    if(code==='KeyP'||code==='Escape'){e.preventDefault();togglePause();return;}if(code==='KeyR'&&loaded&&!encounter.extraction){
+      // Volver al checkpoint por voluntad propia no cura: solo quien ha caído reaparece con la vida completa.
+      const kept=encounter.dead?0:encounter.hp;respawn();if(kept>0&&kept<encounter.maxHp){encounter.hp=kept;notify('De vuelta al checkpoint. Conservas la salud que tenías.');}return;}
     if(opening&&!paused&&(code==='Space'||code==='Enter')){opening.age=99;return;}
     if(paused||encounter.dead||encounter.extraction||arrival?.active)return;if(code==='BracketRight'||code==='BracketLeft'){const inv=encounter.inventory,list=inv.owned.slice().sort((a,b)=>a-b);chooseWeapon(list[(list.indexOf(inv.selected)+(code==='BracketRight'?1:-1)+list.length)%list.length]);return;}if(code==='KeyT'){changeForm();return;}if(/^(Digit|Numpad)[1-9]$/.test(code)){chooseWeapon(Number(code.slice(-1)));return;}if(code==='KeyH'||code==='KeyB'){cyclePower();return;}keys.add(code);if(code==='KeyG')useFront();if(code==='KeyF')jetpackQueued=true;if(code==='Space')jumpQueued=true;if(code==='KeyE')hookQueued=true;if((code==='KeyW'||code==='ArrowUp')&&player.rope)climbQueued=true;if(ArcadeArsenal.fireKeys.includes(code)){fireQueued=true;fireBuffer.press(encounter.inventory.selected);queuedAim=ArcadeArsenal.aimDirection(window.ArcadeControls?.decorate(input())||input(),player.facing);}if(code==='KeyL'){if(player.form==='robot'){ArcadeRobotForm.cycle(encounter.inventory);persist();}else kickQueued=true;}
   });
@@ -181,7 +184,7 @@
     if(player.y>WORLD.height+50){respawn();return;}
     for(const tank of fuelTanks)if(!tank.taken&&player.form!=='wolf'&&player.fuel<fuelMax&&Math.abs(player.x-tank.x)<25&&Math.abs(player.y-tank.y)<28){tank.taken=true;player.fuel=fuelMax;notify('Gasolina repuesta · Depósito lleno');}
     const collected=ArcadeArsenal.collect(encounter.inventory,encounter.pickups,player);if(collected.length)notify(collected.join(', ')+' recogida');
-    player.healGlow=Math.max(0,(player.healGlow||0)-dt);const healed=ArcadeMedkits.collect(encounter,player);if(healed)notify(healed.full?'Botiquín fluorescente · Vida al 100%':'Botiquín rojo · +1 de vida');
+    player.healGlow=Math.max(0,(player.healGlow||0)-dt);const healed=ArcadeMedkits.collect(encounter,player);if(healed)notify(healed.full?'Botiquín fluorescente · Vida al 100%':'Botiquín rojo · +'+healed.amount+' de vida');
     const wasFinalActive=encounter.finalBoss.active,wasFinalStage=encounter.finalBoss.stage,wasFinalWon=encounter.finalWon,wasActive=encounter.boss.active,wasDefeated=encounter.won;
     updateCamera(camera,player,{width:canvas.width,height:canvas.height},dt);
     const powerMessage=ArcadePowers.update(powers,encounter,player,profile,powerQueued||controls.power||keys.has('KeyG')||touch.has('power'),dt,platforms,{left:camera.x,right:camera.x+canvas.width,top:camera.y,bottom:camera.y+canvas.height});powerQueued=false;if(powerMessage)notify(powerMessage);if(encounter.boss.hp<=0&&!encounter.won)transformWolf(encounter,player);
@@ -344,8 +347,10 @@
     if(player.form==='hero'){ui['weapon-name'].textContent='CENTELLA · RAYOS OCULARES';ui['ammo-unit'].textContent='F · VUELO LIBRE';}
     if(player.form==='tank'){ui['weapon-name'].textContent='MINI TANQUE · SÚPER CAÑÓN';ui['ammo-unit'].textContent='RECARGA AUTOMÁTICA';}if(player.form==='fighter'){ui['weapon-name'].textContent='LUCHADOR · COMBO J / PATADA L';ui['ammo-unit'].textContent='CUERPO A CUERPO';}
     for(const button of ui['weapon-slots'].children){const slot=Number(button.dataset.slot),owned=inv.owned.includes(slot);button.disabled=paused||encounter.dead||!!arrival?.active||player.transform>0||unarmed||!owned;button.classList.toggle('locked',!owned);button.classList.toggle('selected',!unarmed&&slot===inv.selected);button.setAttribute('aria-pressed',String(!unarmed&&slot===inv.selected));const ammo=owned?(ArcadeArsenal.weapons[slot].ammo===null?'∞':String(inv.ammo[slot]||0)):'—';button.querySelector('.slot-ammo').textContent=ammo;button.setAttribute('aria-label',slot+' · '+ArcadeArsenal.weapons[slot].name+(owned?' · '+ammo+' disponibles':' · Sin recoger')+(unarmed?' · Vuelve a soldado con T':''));button.title=owned?(ArcadeArsenal.weapons[slot].ammo===null?'No necesita munición':(inv.ammo[slot]||0)+' restantes'):'Sin recoger';}
-    ui.jumps.textContent=Array.from({length:player.maxJumps||2},(_,i)=>i<player.jumps?'○':'●').join(' ');ui.health.textContent=encounter.hp+' / '+encounter.maxHp;ui['health-fill'].style.width=(100*encounter.hp/encounter.maxHp)+'%';
+    ui.jumps.textContent=Array.from({length:player.maxJumps||2},(_,i)=>i<player.jumps?'○':'●').join(' ');ui.health.textContent=String(encounter.hp).replace('.',',')+' / '+encounter.maxHp;ui['health-fill'].style.width=(100*encounter.hp/encounter.maxHp)+'%';
     ui['health-fill'].parentElement.setAttribute('aria-valuenow',encounter.hp);ui['health-fill'].parentElement.setAttribute('aria-valuemax',encounter.maxHp);
+    // Golpe recibido: sacudida breve del lienzo y destello del marcador de salud.
+    hitFeedback.update(encounter,canvas,ui.health.parentElement);
     canvas.parentElement.classList.toggle('final-arena',encounter.won&&player.y<=ArcadeFinalBoss.ARENA.y+25);
     const hudBoss=encounter.won?encounter.finalBoss:encounter.boss;document.querySelector('.game-card').classList.toggle('boss-battle',!!hudBoss.active&&hudBoss.hp>0);ui['boss-hud'].hidden=!hudBoss.active||hudBoss.hp<=0;ui['boss-fill'].style.width=(100*hudBoss.hp/hudBoss.maxHp)+'%';document.getElementById('boss-title').textContent=encounter.won?(hudBoss.stage===2?'LOBO ZOMBI · FASE 2':'LOBO NEGRO · FASE 1'):'EL CAPATAZ · LOBO BLANCO';ui['boss-value'].textContent=Math.ceil(hudBoss.hp)+' / '+hudBoss.maxHp;ui['boss-fill'].parentElement.setAttribute('aria-valuenow',hudBoss.hp);ui['boss-fill'].parentElement.setAttribute('aria-valuemax',hudBoss.maxHp);
     document.getElementById('challenge-status').textContent=ArcadeChallenges.status(challenges);document.getElementById('fuel-value').textContent=(player.form||'soldier')!=='soldier'?'JETPACK · SOLO SOLDADO':(player.jetpackMk2?'MK II ×2 · ':'GASOLINA · ')+Math.round(player.fuel/fuelMax*100)+'%';document.getElementById('fuel-meter').value=player.fuel/fuelMax*100;

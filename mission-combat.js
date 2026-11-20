@@ -19,7 +19,13 @@
     return spawns.map((spawn,id)=>{const kind=spawn.kind||([7,14,18].includes(id)?'turret':[5,8,10,16].includes(id)?'knife':'rifle');const n=N.createSoldier({...spawn,kind},id);if(defeated.includes(id))n.hp=0;return n;});
   }
   function hit(x,y,dx,dy,b){if(b.terrain)return E.segmentHit(x,y,dx,dy,{...b,h:b.thickness||7});let lo=0,hi=1;for(const [a,d,min,max] of [[x,dx,b.x,b.x+b.w],[y,dy,b.y,b.y+(b.thickness||7)]]){if(Math.abs(d)<1e-8){if(a<min||a>max)return null;continue;}const t1=(min-a)/d,t2=(max-a)/d;lo=Math.max(lo,Math.min(t1,t2));hi=Math.min(hi,Math.max(t1,t2));if(lo>hi)return null;}return lo;}
-  function area(e,x,y,r,damage){N.area([...e.enemies,...(K.targetable(e.king)?[e.king]:[])],x,y,r,damage);const t=e.tank;if(t&&Math.hypot(x-Math.max(t.x-t.w/2,Math.min(t.x+t.w/2,x)),y-Math.max(t.y-t.h,Math.min(t.y,y)))<=r)T.damage(t,damage);}
+  function strike(e,target,damage){if(target===e.tank)T.damage(target,damage);else if(target===e.king)K.damage(target,damage);else N.damage(target,damage);}
+  // direct: blanco que recibió el misil de lleno. Se lleva `impact` en lugar de la onda expansiva (misma regla que encounter.js).
+  function area(e,x,y,r,damage,direct=null,impact=damage){
+    N.area([...e.enemies,...(K.targetable(e.king)?[e.king]:[])].filter(n=>n!==direct),x,y,r,damage);
+    const t=e.tank;if(t&&t!==direct&&Math.hypot(x-Math.max(t.x-t.w/2,Math.min(t.x+t.w/2,x)),y-Math.max(t.y-t.h,Math.min(t.y,y)))<=r)T.damage(t,damage);
+    if(direct)strike(e,direct,impact);
+  }
   function melee(e,p,range,damage){N.melee(e.enemies,p,range,damage);if(K.targetable(e.king)){const b=K.box(e.king);if(Math.abs(e.king.x-p.x)<range+b.w/2&&(e.king.x-p.x)*p.facing>=-b.w/2&&p.y>b.y&&p.y-(p.h||46)<b.y+b.h)K.damage(e.king,damage);}const t=e.tank;if(t&&Math.abs(t.x-p.x)<range+t.w/2&&p.y>t.y-t.h&&p.y-(p.h||46)<t.y&&(t.x-p.x)*p.facing>=-t.w/2)T.damage(t,damage);}
   function update(e,p,input,dt,platforms,powers,profile,view,onShot){
     if(e.dead)return;
@@ -39,7 +45,7 @@
       const shot=p.form==='robot'?A.fireRobot(e,p):A.fire(e.inventory,p);if(shot){e.cooldown=shot.weapon.rate/(p.rateBonus||1);e.weaponAction={slot:e.inventory.selected,age:0,duration:e.cooldown};if(shot.weapon.range)e.weaponAction.melee={range:shot.weapon.range,damage:shot.weapon.damage*(p.damageBonus||1)};e.flash=.14;const shotId=e.shotSerial=(e.shotSerial||0)+1;for(const b of shot.bullets)b.carShot=shotId;e.bullets.push(...shot.bullets);}
     }
     const message=V.update(powers,e,p,profile,input.power,dt,platforms,view);
-    const noises=e.explosions.filter(b=>b.life>.35).map(b=>({x:b.x,y:b.y,radius:600}));if(e.flash>0)noises.push({x:p.x,y:p.y,radius:e.inventory.selected<=2?100:430});
+    const noises=e.explosions.filter(b=>b.life>.35).map(b=>({x:b.x,y:b.y,radius:600}));if(e.flash>0)noises.push({x:p.x,y:p.y,radius:A.noiseRadius(e.inventory.selected)});
     N.update(e.enemies,p,dt,platforms,e.bullets,E.segmentHit,noises,view);
     // Report each discharge at its muzzle, before the first collision can remove it.
     if(onShot){
@@ -65,13 +71,15 @@
         b.x+=dx*(contact??1);b.y+=dy*(contact??1);b.life=contact===null?b.life-dt:0;
         if(contactPlatform?.kind==='wreck'&&!b.enemy)e.damageCar?.(contactPlatform.car,b.carShot);
         if(target===p){if(A.reflect(p,b))continue;if(!b.tankShell&&!b.tankMissile)E.hurtPlayer(e,p,b.x-b.vx*.05,true,b.damage||1);}
-        else if(target&&b.slot!==6){if(target===e.tank)T.damage(target,b.damage||1);else if(target===e.king)K.damage(target,b.damage||1);else N.damage(target,b.damage||1);}
+        else if(target&&b.slot!==6)strike(e,target,b.damage||1);
+        else if(target)b.struck=target;
         else if(contact!==null&&b.slot!==6&&!b.zombiePlasma)E.chip(e,b.x,b.y,{kind:'deck'});
       }
       if(b.zombiePlasma){b.age+=dt;if(b.life<=0)e.explosions.push(Impact.create(b.x,b.y,24,'plasma'));}
       if(b.life<=0&&!b.enemy&&(b.slot===6||b.slot===9)){
-        const radius=b.slot===6?95:85;Cars.blast(e.cars,b.x,b.y,radius,b.carShot);area(e,b.x,b.y,radius,b.damage||4);e.explosions.push(Impact.create(b.x,b.y,radius,b.slot===6?'rocket':'grenade'));
-        if(b.slot===9){const d=Math.hypot(b.x-p.x,b.y-Math.max(p.y-(p.h||46),Math.min(p.y,b.y)));if(d<85)E.hurtPlayer(e,p,b.x,false,d<45?2:1);}
+        const radius=b.slot===6?95:85;Cars.blast(e.cars,b.x,b.y,radius,b.carShot);area(e,b.x,b.y,radius,b.damage||4,b.struck||null,A.impactDamage(b));e.explosions.push(Impact.create(b.x,b.y,radius,b.slot===6?'rocket':'grenade'));
+        // La granada propia hiere igual en todas las dificultades.
+        if(b.slot===9){const d=Math.hypot(b.x-p.x,b.y-Math.max(p.y-(p.h||46),Math.min(p.y,b.y)));if(d<85)E.hurtPlayer(e,p,b.x,false,d<45?2:1,false);}
       }
       if(b.life<=0&&(b.tankShell||b.tankMissile||b.tankGrenade)){const radius=b.tankGrenade?85:b.tankShell?65:55;e.explosions.push(Impact.create(b.x,b.y,radius,b.tankGrenade?'grenade':'rocket'));const distance=Math.hypot(b.x-Math.max(p.x-12,Math.min(p.x+12,b.x)),b.y-Math.max(p.y-(p.h||46),Math.min(p.y,b.y)));if(distance<radius)E.hurtPlayer(e,p,b.x-b.vx*.05,true,b.damage);}
     }

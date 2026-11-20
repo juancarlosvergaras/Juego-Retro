@@ -33,5 +33,5 @@ test('purchased powers use real cooldowns and a drone without a target does not 
  Combat.update(e,p,{power:true},.01,[],powers,profile);assert.equal(powers.cooldowns.wave,10);assert.equal(powers.effects[0].kind,'wave');
  Combat.update(e,p,{power:true},.01,[],powers,profile);assert.equal(powers.effects.length,1);assert.ok(powers.cooldowns.wave<10);
  profile.equipped='drone';assert.match(Combat.update(e,p,{power:true},.01,[],powers,profile),/No hay enemigos/);assert.equal(powers.cooldowns.drone,undefined);
- profile.equipped='orbital';Combat.update(e,p,{power:true},.01,[],powers,profile);assert.equal(powers.beams.length,1);assert.equal(powers.cooldowns.orbital,120);
+ profile.equipped='orbital';Combat.update(e,p,{power:true},.01,[],powers,profile);assert.equal(powers.beams.length,1);assert.equal(powers.cooldowns.orbital,90);
 });

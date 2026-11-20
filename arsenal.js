@@ -1,17 +1,23 @@
 (function(root){
   'use strict';
   const turn=(typeof module!=='undefined'&&module.exports?require('./physics'):root.ArcadePhysics).jumpTurn;
+  // noise: radio en el que el disparo alerta a los enemigos (sin dato, GUN_NOISE).
+  // impact: daño al blanco que recibe el misil de lleno; damage es su onda expansiva.
+  const GUN_NOISE=430,QUIET_NOISE=100;
   const weapons=[null,
-    {name:'Cuchillo',ammo:null,damage:2,range:48,rate:.32,row:0},
-    {name:'Hacha',ammo:null,damage:3,range:68,rate:.55,row:1},
+    {name:'Cuchillo',ammo:null,damage:2,range:48,rate:.32,row:0,noise:QUIET_NOISE},
+    {name:'Hacha',ammo:null,damage:4,range:68,rate:.5,row:1,noise:QUIET_NOISE},
     {name:'Pistola',ammo:36,damage:1,speed:510,rate:.24,row:3},
     {name:'Escopeta',ammo:16,damage:1,speed:420,rate:.7,pellets:5,life:.55,row:2},
     {name:'AK',ammo:90,damage:1,speed:600,rate:.11,row:4},
-    {name:'Lanzamisiles',ammo:6,damage:5,speed:300,rate:1,row:5},
-    {name:'Arco',ammo:20,damage:2,speed:420,rate:.6,bow:3},
-    {name:'Ballesta',ammo:15,damage:3,speed:540,rate:.85,bow:4},
+    {name:'Lanzamisiles',ammo:6,damage:5,impact:15,speed:300,rate:1,row:5},
+    {name:'Arco',ammo:20,damage:2,speed:420,rate:.6,bow:3,noise:QUIET_NOISE},
+    {name:'Ballesta',ammo:15,damage:3,speed:540,rate:.85,bow:4,noise:220},
     {name:'Granadas',ammo:8,damage:4,speed:260,rate:.9,gravity:420,life:3}
   ];
+  function noiseRadius(slot){return weapons[slot]?.noise??GUN_NOISE;}
+  // El proyectil conserva en damage las mejoras del jugador: el impacto directo guarda la misma proporción.
+  function impactDamage(bullet){const w=weapons[bullet?.slot],base=bullet?.damage||w?.damage||1;return w?.impact?base*w.impact/w.damage:base;}
   function createInventory(){return{selected:3,owned:[1,3],ammo:{3:36}};}
   function createPickups(options={}){
     const common=typeof module!=='undefined'&&module.exports;
@@ -135,6 +141,6 @@
     if(!shots.length)return null;
     return{weapon:{...shots[0].weapon,rate:Math.max(.001,Math.min(...e.robotWait))*(p.rateBonus||1)},bullets:shots.flatMap(s=>s.bullets)};
   }
-  const api={supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,aimInput,playerAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
+  const api={GUN_NOISE,noiseRadius,impactDamage,supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,aimInput,playerAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
 })(typeof window!=='undefined'?window:globalThis);
 

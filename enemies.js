@@ -192,7 +192,8 @@
         P.step(n,{},dt,platforms);n.vx=0;
         if(n.alert&&Math.abs(dx)>2)n.facing=Math.sign(dx);
         n.turretAim=turretAim(n,n.alert?p:{x:n.x+n.facing*400,y:n.y-3.22});
-        if(!seen||n.hit>0){n.burst=0;n.shot=Math.max(n.shot,.35);continue;}
+        if(!seen||n.hit>0){n.aimReady=false;n.burst=0;n.shot=Math.max(n.shot,.35);continue;}
+        n.aimReady=true;
         if(n.shot<=0){const aim=n.turretAim;
           if(!platforms.some(s=>blocksShot({fromTurret:true},s)&&segmentHit(n.x,n.y-29,aim.x-n.x,aim.y-(n.y-29),{x:s.x,y:s.y,w:s.w,h:s.thickness||12,terrain:s.terrain})!==null)){
             n.flash=.09;n.burst++;n.shot=n.burst<5?.14:2.1;
@@ -227,8 +228,20 @@
       if(n.alert&&Math.abs(goal.x-n.x)>2)n.facing=Math.sign(goal.x-n.x);
       const sx=n.x+n.facing*20,sy=n.y-28,tx=p.x-sx,ty=p.y-25-sy,d=Math.hypot(tx,ty)||1;
       const blocked=platforms.some(s=>segmentHit(sx,sy,tx,ty,{x:s.x,y:s.y,w:s.w,h:s.thickness||12,terrain:s.terrain})!==null);
-      if(n.kind!=='knife'&&seen&&d<430&&!blocked&&n.shot<=0){n.shot=1.65;n.flash=.16;bullets.push({x:sx,y:sy,vx:tx/d*190,vy:ty/d*190,life:2.5,enemy:true,fromSoldier:true});}
+      // aimReady: solo falta que acabe la cuenta atrás para disparar (lo lee aimWarning).
+      n.aimReady=n.kind!=='knife'&&seen&&d<430&&!blocked;
+      if(n.aimReady&&n.shot<=0){n.shot=1.65;n.flash=.16;bullets.push({x:sx,y:sy,vx:tx/d*190,vy:ty/d*190,life:2.5,enemy:true,fromSoldier:true});}
     }
   }
-  const api={TURRET,blocksShot,turretAim,create,createSoldier,damage,area,melee,ram,wolfCombat,update,contact};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEnemies=api;
+  // Aviso de disparo: 0 mientras no hay peligro y sube hasta 1 durante los
+  // últimos AIM_WARNING segundos antes de que el soldado o la torreta abran fuego.
+  // Valor puro para el dibujo; no cambia tiempos ni daño. La torreta solo avisa
+  // del primer tiro de cada ráfaga.
+  const AIM_WARNING=.3;
+  function aimWarning(n){
+    if(!n||!n.aimReady||!(n.hp>0)||!n.alert||n.frozen>0||n.ramHit||n.dropRoute||n.dropRecovery>0)return 0;
+    if(n.kind==='turret'&&n.burst>0)return 0;
+    return n.shot<AIM_WARNING?Math.max(0,Math.min(1,1-n.shot/AIM_WARNING)):0;
+  }
+  const api={AIM_WARNING,aimWarning,TURRET,blocksShot,turretAim,create,createSoldier,damage,area,melee,ram,wolfCombat,update,contact};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEnemies=api;
 })(typeof window!=='undefined'?window:globalThis);

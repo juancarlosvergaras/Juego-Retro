@@ -18,7 +18,7 @@ test('a melee attack damages once at contact, not while preparing, on either sid
   E.updateEncounter(e,p,{fire:true},0,P.createPlatforms());assert.equal(e.boss.hp,18);
   const duration=e.weaponAction.duration;
   E.updateEncounter(e,p,{},duration*.27,P.createPlatforms());assert.equal(e.boss.hp,18);
-  E.updateEncounter(e,p,{},duration*.02,P.createPlatforms());assert.equal(e.boss.hp,slot===1?16:15);
+  E.updateEncounter(e,p,{},duration*.02,P.createPlatforms());assert.equal(e.boss.hp,slot===1?16:14);
   const hp=e.boss.hp;E.updateEncounter(e,p,{},duration,P.createPlatforms());assert.equal(e.boss.hp,hp);
  }
 });

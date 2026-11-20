@@ -160,47 +160,44 @@ test('la tienda avisa del porcentaje solo cuando la misión no paga el 100 %',()
 
 // ---- Mapa ----
 const {nodes}=Map.graph();
-const locked=(level,completed=[],{quimera=false,fuga=false,developer=false}={})=>Object.fromEntries(Map.locks(level,nodes,quimera,fuga,completed,developer).map((value,i)=>[nodes[i].id,value]));
+const locked=(level,completed=[],{fighter=false,developer=false}={})=>Object.fromEntries(Map.locks(level,nodes,completed,fighter,developer).map((value,i)=>[nodes[i].id,value]));
 const openIds=state=>Object.keys(state).filter(id=>!state[id]);
-test('al empezar solo está abierta la misión 1 y cada victoria abre lo que viene detrás',()=>{
-  assert.deepEqual(openIds(locked(1)),['m1']);assert.deepEqual(openIds(locked(undefined)),['m1']);
-  assert.deepEqual(openIds(locked(1,[1])),['m1','m2']);
-  assert.deepEqual(openIds(locked(2,[1,2])),['m1','m2','m3','m4','m5'],'la bifurcación entera');
-  assert.deepEqual(openIds(locked(4,[1,2,4])),['m1','m2','m3','m4','m5','m6'],'basta un mundo de la bifurcación');
+test('las dos bifurcaciones requieren la victoria anterior',()=>{
+  assert.deepEqual(openIds(locked(1)),['m1']);
+  assert.deepEqual(openIds(locked(2,[1,2])),['m1','m2','m3','m4']);
+  assert.deepEqual(openIds(locked(3,[1,2,3])),['m1','m2','m3','m4','m5']);
+  assert.equal(locked(5,[1,2,3,5]).m6,false);assert.equal(locked(5,[1,2,3,5]).m7,false);
+  assert.equal(locked(6,[1,2,3,5],{fighter:true}).m8,true);
+  for(const n of [6,7])assert.equal(locked(n,[n]).m8,false);
 });
-test('los especiales y la misión 7 requieren la 6; la 8, la 7 o un especial',()=>{
-  const before=locked(6,[1,2,4]);
-  assert.equal(before.m6,false,'la misión en curso está abierta');for(const id of ['m7','chase','assault','m8'])assert.equal(before[id],true,id);
-  const after=locked(6,[1,2,4,6]);
-  for(const id of ['m7','chase','assault'])assert.equal(after[id],false,id);assert.equal(after.m8,true);
-  assert.equal(locked(7,[1,2,4,6,7]).m8,false,'por la misión 7');
-  assert.equal(locked(6,[1,2,4,6],{quimera:true}).m8,false,'por Distrito Quimera');
-  assert.equal(locked(6,[1,2,4,6],{fuga:true}).m8,false,'por Fuga del Sol');
+test('Fuga requiere ganar en moto y Quimera requiere el traje de luchador',()=>{
+  assert.equal(locked(4,[]).fuga,true);assert.equal(locked(5,[3,5]).fuga,true);
+  assert.equal(locked(4,[4]).fuga,false);assert.equal(locked(4,[4]).quimera,true);
+  assert.equal(locked(5,[5]).quimera,true);
+  assert.equal(locked(5,[],{fighter:true}).quimera,false);
+  assert.equal(locked(6,[6],{fighter:true}).fuga,true);
 });
-test('la misión de la campaña guardada y las ya completadas nunca se bloquean',()=>{
-  const jumped=locked(5);
-  assert.equal(jumped.m5,false,'la campaña guardada apunta a la 5');assert.equal(jumped.m4,true);assert.equal(jumped.m6,true);
-  const veteran=locked(1,[8],{quimera:true});
-  assert.equal(veteran.m8,false);assert.equal(veteran.chase,false,'un especial ya superado sigue abierto');assert.equal(veteran.m7,true);
-  // Completar un mundo abre el siguiente aunque falten los anteriores.
-  assert.equal(locked(1,[5]).m6,false);
+test('se puede continuar una misión guardada con la ruta antigua',()=>{
+  assert.equal(locked(7).m7,false);assert.equal(locked(7).m8,true);assert.equal(locked(2,[8]).m8,false);
 });
 test('el modo desarrollador abre todo el mapa',()=>{
   assert.deepEqual(openIds(locked(1,[],{developer:true})),nodes.map(n=>n.id));
   const source=read('mission-map.js');
-  assert.match(source,/ArcadeDeveloperMode\?\.active\?\.\(\)/,'el mapa consulta el modo desarrollador');
+  assert.match(read('campaign.js'),/ArcadeDeveloperMode\?\.active\?\.\(\)/,'el mapa consulta el modo desarrollador');
   assert.equal(typeof require('../developer-mode.js').create({getItem:()=>null},{getItem:()=>null,setItem(){},removeItem(){}}).active,'function');
 });
 test('el bloqueo no altera los estados ni el dibujo del mapa',()=>{
-  const before=JSON.stringify(Map.graph());Map.locks(4,nodes,false,false,[1,2]);assert.equal(JSON.stringify(Map.graph()),before);
+  const before=JSON.stringify(Map.graph());Map.locks(4,nodes,[1,2]);assert.equal(JSON.stringify(Map.graph()),before);
   assert.deepEqual(Map.states(1,nodes),['current',...Array(nodes.length-1).fill('open')]);
 });
 test('la tarjeta bloqueada dice qué completar y no inicia la misión',()=>{
   assert.equal(Map.requirement('m1',nodes),'');
   assert.equal(Map.requirement('m2',nodes),'Completa la misión 1 para abrir este mundo.');
-  assert.equal(Map.requirement('m6',nodes),'Completa una de las misiones 3, 4 o 5 para abrir este mundo.');
-  for(const id of ['m7','chase','assault'])assert.equal(Map.requirement(id,nodes),'Completa la misión 6 para abrir este mundo.');
-  assert.equal(Map.requirement('m8',nodes),'Completa la misión 7 o un mundo especial para abrir este mundo.');
+  assert.equal(Map.requirement('m5',nodes),'Completa una de las misiones 3 o 4 para abrir este mundo.');
+  for(const id of ['m6','m7'])assert.equal(Map.requirement(id,nodes),'Completa la misión 5 para abrir este mundo.');
+  assert.match(Map.requirement('quimera',nodes),/traje de luchador/);
+  assert.match(Map.requirement('fuga',nodes),/Furia en la Carretera/);
+  assert.equal(Map.requirement('m8',nodes),'Completa una de las misiones 6 o 7 para abrir este mundo.');
   const source=read('mission-map.js'),css=read('mission-map.css');
   assert.match(source,/aria-disabled/);assert.match(source,/preventDefault\(\);e\.stopImmediatePropagation\(\)/);assert.match(source,/removeAttribute\('href'\)/);
   assert.match(css,/\.map-node\.locked \.map-thumb\{[^}]*grayscale/);assert.match(css,/\.map-node\.locked b::after\{content:'🔒'/);assert.match(css,/\.mission-card\.map-locked/);

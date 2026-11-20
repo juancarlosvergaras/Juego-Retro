@@ -42,49 +42,29 @@ test('la armería ofrece todas las armas menos el cuchillo inicial',()=>{
   assert.equal(Armory.buy(profile(9999),Arsenal.createInventory(),1).ok,false);
 });
 
-test('el mapa tiene tres rutas paralelas y dos bifurcaciones',()=>{
-  const {nodes,forks}=Map.graph();
-  assert.deepEqual([...new Set(nodes.map(n=>n.lane))].sort(),['land','sea','sky']);
-  assert.equal(nodes.filter(n=>n.mission).length,8);
-  assert.deepEqual(forks.map(f=>f.choices),[['m3','m4','m5'],['m7','chase','assault']]);
-  for(const n of nodes){assert.ok(n.x>=5&&n.x<=95);assert.equal(n.y,Map.lanes.find(l=>l.id===n.lane).y);}
-  // Dos mundos nunca comparten sitio.
-  assert.equal(new Set(nodes.map(n=>n.x+','+n.y)).size,nodes.length);
-});
-test('desde la primera misión se llega a la última saltándose mundos de cada bifurcación',()=>{
-  const {nodes,edges}=Map.graph(),next=id=>edges.filter(e=>e.from.id===id).map(e=>e.to.id);
-  const paths=[];(function walk(id,path){if(id==='m8'){paths.push(path);return;}for(const n of next(id))walk(n,[...path,n]);})('m1',['m1']);
-  assert.equal(paths.length,9,'3 rutas en cada bifurcación');
-  for(const path of paths){assert.equal(path.length,6);assert.ok(path.includes('m2')&&path.includes('m6'));}
-  // Con los mundos ya construidos basta una misión de la primera bifurcación.
-  const playable=paths.filter(path=>path.every(id=>!nodes.find(n=>n.id===id).soon));
-  assert.deepEqual([...new Set(playable.map(p=>p[2]))].sort(),['m3','m4','m5']);
-  assert.deepEqual([...new Set(playable.map(p=>p[4]))].sort(),['assault','chase','m7']);
-  for(const e of edges)assert.equal(e.to.col,e.from.col+1,'cada tramo avanza una columna');
-});
-test('los dos especiales ocupan la segunda bifurcación',()=>{
-  const {nodes,edges}=Map.graph(),soon=nodes.filter(n=>n.soon);
-  assert.deepEqual(soon,[]);assert.ok(nodes.find(n=>n.id==='assault').special);
-  const completed=Map.states(8,nodes,false,true);assert.equal(completed[nodes.findIndex(n=>n.id==='assault')],'done');assert.equal(completed[nodes.findIndex(n=>n.id==='chase')],'open');
-  assert.equal(nodes.find(n=>n.id==='chase').special,true);
+test('la campaña tiene cuatro recorridos y todos pasan por el abismo',()=>{
+  const {nodes,edges,forks}=Map.graph();
+  assert.deepEqual(forks.map(f=>f.choices),[['m3','m4'],['m6','m7']]);
+  assert.equal(new Set(nodes.map(n=>n.x+','+n.y)).size,10);
+  function paths(id){
+    if(id==='m8')return [[id]];
+    return edges.filter(e=>e.from.id===id).flatMap(e=>paths(e.to.id).map(t=>[id,...t]));
+  }
+  assert.deepEqual(paths('m1').map(p=>p.join('-')).sort(),[
+    'm1-m2-m3-m5-m6-m8','m1-m2-m3-m5-m7-m8','m1-m2-m4-m5-m6-m8','m1-m2-m4-m5-m7-m8'
+  ]);
   for(const n of nodes.filter(n=>n.special)){
-    assert.equal(n.col,nodes.find(m=>m.id==='m7').col);
-    assert.ok(edges.some(e=>e.from.id==='m6'&&e.to===n&&!e.soon));
-    assert.ok(edges.some(e=>e.from===n&&e.to.id==='m8'&&!e.soon));
+    assert.deepEqual(edges.filter(e=>e.to===n).map(e=>e.from.id),[n.id==='fuga'?'m4':'m5']);
+    assert.ok(!edges.some(e=>e.from===n));
   }
 });
-test('el estado del mapa distingue superadas, actual, alternativas y pendientes',()=>{
-  const {nodes,edges}=Map.graph(),cleared=[1,2,4],at=level=>Object.fromEntries(Map.states(level,nodes,false,false,!level||level===1?[]:cleared.filter(id=>id!==level)).map((s,i)=>[nodes[i].id,s]));
-  assert.deepEqual(at(1),{m1:'current',m2:'open',m3:'open',m4:'open',m5:'open',m6:'open',m7:'open',chase:'open',assault:'open',m8:'open'});
-  const fork=at(4);
-  assert.equal(fork.m4,'current');assert.equal(fork.m3,'choice');assert.equal(fork.m5,'choice');assert.equal(fork.m2,'done');assert.equal(fork.m6,'open');
-  const late=at(6);
-  assert.deepEqual([late.m3,late.m4,late.m5,late.m6],['open','done','open','current']);
-  assert.equal(at(undefined).m1,'current');assert.equal(at(99).m8,'current');
-  const lit=level=>{const list=Map.states(level,nodes,false,false,!level||level===1?[]:cleared.filter(id=>id!==level));return edges.filter(e=>Map.travelled(e,list,nodes)).map(e=>e.from.id+'-'+e.to.id);};
-  assert.deepEqual(lit(1),[]);
-  assert.deepEqual(lit(4),['m1-m2','m2-m3','m2-m4','m2-m5']);
-  assert.ok(!lit(8).some(id=>id.includes('chase')||id.includes('assault')),'los tramos en construcción no se iluminan');
+test('el mapa distingue las alternativas, las victorias y los premios de cada especial',()=>{
+  const {nodes}=Map.graph(),states=(level,wins,hero=false,cloak=false)=>Object.fromEntries(
+    Map.states(level,nodes,hero,cloak,wins).map((state,i)=>[nodes[i].id,state]));
+  const first=states(4,[1,2]);assert.equal(first.m3,'choice');assert.equal(first.m4,'current');
+  const fork=states(5,[1,2,3,5]);assert.equal(fork.m6,'choice');assert.equal(fork.m7,'choice');
+  const second=states(6,[1,2,4,5],true);assert.equal(second.m7,'choice');assert.equal(second.m5,'done');
+  assert.equal(second.quimera,'done');assert.equal(second.fuga,'open');assert.equal(states(8,[8],false,true).fuga,'done');
 });
 test('las curvas del camino unen exactamente sus dos paradas',()=>{
   const {edges}=Map.graph();
@@ -107,4 +87,19 @@ test('el mapa recuerda las victorias del perfil tras repetir y distingue las rut
   Campaign.markCompleted(store,8);
   assert.deepEqual(Campaign.completedMissions(store),[2,4,8]);
   assert.equal(Map.states(8,Map.graph().nodes,false,false,[2,4,8]).at(-1),'done');
+});
+
+test('un enlace directo respeta el perfil activo y devuelve al mapa sin avanzar la campaña',()=>{
+  const vm=require('node:vm'),fs=require('node:fs'),records=new globalThis.Map();
+  const store={getItem:k=>records.get(k)||null,setItem:(k,v)=>records.set(k,v)};
+  let redirected=null,profile={fighterUnlocked:false,owned:['cloak']};
+  const window={document:{},localStorage:store,location:{replace:url=>redirected=url},
+    ArcadeDeveloperMode:{storage:()=>store,active:()=>false},ArcadeProgression:{load:()=>profile}};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../campaign'),'utf8'),{window});
+  const c=window.ArcadeCampaign;c.write(store,{level:4});
+  assert.equal(c.guardEntry('fuga'),false);assert.equal(redirected,'index.html?menu=levels#fuga');
+  c.markCompleted(store,4);assert.equal(c.guardEntry('fuga'),true);
+  assert.equal(c.guardEntry('quimera'),false);profile={...profile,fighterUnlocked:true};
+  assert.equal(c.guardEntry('quimera'),true);assert.equal(c.guardEntry('m8'),false);
+  assert.equal(c.read(store).level,4);
 });

@@ -31,7 +31,7 @@ test('the mission map fills the window and adapts to each screen',()=>{
  assert.ok(css.includes('.main-menu:has([data-menu-page="levels"]:not([hidden])){place-items:stretch'),'the missions page stretches to the whole window');
  assert.ok(css.includes('grid-template-areas:"title summary" "map detail" "foot detail"'),'wide screens: map on the left, mission sheet on the right');
  assert.ok(css.includes('container-type:size'),'stops scale with the map');
- for(const query of ['@media (max-width:1099px)','@media (max-height:560px) and (min-width:640px)','@media (max-width:720px) and (orientation:portrait)'])assert.ok(css.includes(query),query);
+ for(const query of ['@media (max-width:1099px)','@media (max-height:560px) and (orientation:landscape)','@media (max-width:720px) and (orientation:portrait)'])assert.ok(css.includes(query),query);
  assert.ok(css.includes('left:var(--y)!important;top:calc(var(--x)*.9 + 3%)!important'),'portrait phones turn the map: the route runs top to bottom');
  assert.ok(css.includes('transform:translateY(3cqh) matrix(0,.9,1,0,0,0)'),'the roads turn with the stops');
  for(const piece of ["setProperty('--x',node.x+'%')","setProperty('--y',node.y+'%')","setProperty('--y',lane.y+'%')","className='map-summary'","className='map-legend'",'list.hidden=true'])assert.ok(map.includes(piece),piece);

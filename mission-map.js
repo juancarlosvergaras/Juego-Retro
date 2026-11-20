@@ -1,26 +1,25 @@
 (function(root){
   'use strict';
-  // Mapa de misiones con bifurcaciones. Tres rutas corren en paralelo (alta,
-  // central y baja); en cada bifurcación basta un mundo para seguir adelante,
-  // así que el jugador puede saltarse los otros. Reutiliza las tarjetas del
-  // menú: iniciar una misión funciona igual que antes.
-  const lanes=[{id:'sky',name:'RUTA ALTA · CIELO Y ESPACIO',short:'CIELO',y:18},{id:'land',name:'RUTA CENTRAL · TIERRA',short:'TIERRA',y:50},{id:'sea',name:'RUTA BAJA · MAR Y PUERTO',short:'MAR',y:82}];
+  // El eje principal avanza por etapas. Los especiales son desvíos opcionales.
+  const lanes=[{id:'sky',name:'RUTA ALTERNATIVA',short:'ALTERNATIVA',y:18},{id:'land',name:'CAMPAÑA',short:'CAMPAÑA',y:50},{id:'sea',name:'MISIONES ESPECIALES',short:'ESPECIALES',y:82}];
+  const campaign=typeof module!=='undefined'&&module.exports?require('./campaign'):root.ArcadeCampaign;
   const COLUMNS=6;
   const upcoming={};
   const plan=[
     {id:'m1',mission:1,col:0,lane:'land'},{id:'m2',mission:2,col:1,lane:'land'},
-    {id:'m3',mission:3,col:2,lane:'sky'},{id:'m4',mission:4,col:2,lane:'land'},{id:'m5',mission:5,col:2,lane:'sea'},
-    {id:'m6',mission:6,col:3,lane:'land'},
-    {id:'m7',mission:7,col:4,lane:'sky'},{id:'chase',special:true,col:4,lane:'land'},{id:'assault',special:true,col:4,lane:'sea'},
-    {id:'m8',mission:8,col:5,lane:'land'}
+    {id:'m3',mission:3,col:2,lane:'sky'},{id:'m4',mission:4,col:2,lane:'land'},
+    {id:'m5',mission:5,col:3,lane:'land'},{id:'fuga',special:true,col:3,lane:'sea'},
+    {id:'m6',mission:6,col:4,lane:'land'},{id:'m7',mission:7,col:4,lane:'sky'},
+    {id:'quimera',special:true,col:4,lane:'sea'},{id:'m8',mission:8,col:5,lane:'land'}
   ];
-  const links=[['m1','m2'],['m2','m3'],['m2','m4'],['m2','m5'],['m3','m6'],['m4','m6'],['m5','m6'],['m6','m7'],['m6','chase'],['m6','assault'],['m7','m8'],['chase','m8'],['assault','m8']];
+  const shortNames={m1:'La obra',m2:'El umbral',m3:'Aire',m4:'Carretera',m5:'Abismo',m6:'Centro',m7:'Espacio',m8:'Nueva York',quimera:'Quimera',fuga:'Fuga'};
+  const links=plan.flatMap(n=>campaign.previous[n.id].map(level=>['m'+level,n.id]));
   function graph(){
     const nodes=plan.map(n=>({...n,x:8+n.col*(84/(COLUMNS-1)),y:lanes.find(l=>l.id===n.lane).y}));
     const byId=Object.fromEntries(nodes.map(n=>[n.id,n]));
     const edges=links.map(([a,b])=>({from:byId[a],to:byId[b],soon:!!(byId[a].soon||byId[b].soon)}));
     // Una bifurcación es una columna con más de un mundo: se elige uno.
-    const forks=[...new Set(nodes.map(n=>n.col))].filter(col=>nodes.filter(n=>n.col===col).length>1).map(col=>({col,x:8+(col-.5)*(84/(COLUMNS-1)),choices:nodes.filter(n=>n.col===col).map(n=>n.id)}));
+    const forks=[...new Set(nodes.map(n=>n.col))].filter(col=>nodes.filter(n=>n.col===col&&n.mission).length>1).map(col=>({col,x:8+(col-.5)*(84/(COLUMNS-1)),choices:nodes.filter(n=>n.col===col&&n.mission).map(n=>n.id)}));
     return{nodes,edges,forks};
   }
   // Curva suave entre dos paradas, en el sistema 0–100 del mapa.
@@ -29,23 +28,25 @@
   // de la misma bifurcación · open: disponible · soon: mundo aún por construir.
   function states(level,nodes,specialCleared=false,chaseCleared=false,completed=[]){
     const last=Math.max(...nodes.filter(n=>n.mission).map(n=>n.mission)),current=Math.max(1,Math.min(last,Math.floor(Number(level)||1))),here=nodes.find(n=>n.mission===current);
-    return nodes.map(n=>n.soon?'soon':n.special?((n.id==='assault'?chaseCleared:specialCleared)?'done':n.col===here.col?'choice':'open'):completed.includes(n.mission)?'done':n.mission===current?'current':n.col===here.col?'choice':'open');
+    const next=completed.includes(current)?nodes.filter(n=>n.mission&&campaign.previous[n.id].includes(current)):[];
+    return nodes.map(n=>{
+      if(n.special)return (n.id==='fuga'?chaseCleared:specialCleared)?'done':'open';
+      if(completed.includes(n.mission))return 'done';
+      if(n.mission===current)return 'current';
+      if(next.includes(n))return next.length>1?'choice':'open';
+      return !completed.includes(current)&&n.col===here.col?'choice':'open';
+    });
   }
-  // Bloqueo. Un mundo está abierto si es la misión 1, si ya se completó, si se
-  // completó alguno de los que llevan a él (links) o si es la misión que marca
-  // la campaña guardada. El modo desarrollador lo abre todo. Devuelve, en el
-  // orden de nodes, true para cada mundo bloqueado.
-  function locks(level,nodes,specialCleared=false,chaseCleared=false,completed=[],developer=false){
-    const list=states(level,nodes,specialCleared,chaseCleared,completed),done=new Set(nodes.filter((n,i)=>list[i]==='done').map(n=>n.id));
-    return nodes.map((n,i)=>!(developer||n.mission===1||['done','current','soon'].includes(list[i])||links.some(([from,to])=>to===n.id&&done.has(from))));
+  function locks(level,nodes,completed=[],fighterUnlocked=false,developer=false){
+    return nodes.map(n=>!campaign.available(n.id,level,completed,fighterUnlocked,developer));
   }
   // Qué hay que completar para abrir un mundo, en una frase para su tarjeta.
-  function requirement(id,nodes){
-    const before=links.filter(([,to])=>to===id).map(([from])=>nodes.find(n=>n.id===from)).filter(Boolean);
-    const missions=before.filter(n=>n.mission).map(n=>n.mission),specials=before.filter(n=>n.special).length;
-    const numbers=missions.length>1?missions.slice(0,-1).join(', ')+' o '+missions.at(-1):String(missions[0]);
-    const parts=[...(missions.length?[(missions.length>1?'una de las misiones ':'la misión ')+numbers]:[]),...(specials?[specials>1?'un mundo especial':'el mundo especial']:[])];
-    return parts.length?'Completa '+parts.join(' o ')+' para abrir este mundo.':'';
+  function requirement(id){
+    if(id==='quimera')return 'Consigue el traje de luchador al vencer al Capitán del Abismo.';
+    if(id==='fuga')return 'Completa Furia en la Carretera (misión 4).';
+    const required=campaign.previous[id]||[];
+    if(!required.length)return '';
+    return 'Completa '+(required.length===1?'la misión '+required[0]:'una de las misiones '+required.join(' o '))+' para abrir este mundo.';
   }
   // Un tramo está recorrido cuando lleva a la misión actual o queda detrás de ella.
   function travelled(edge,list,nodes){const state=n=>list[nodes.indexOf(n)];return !edge.soon&&state(edge.from)==='done'&&['done','current','choice'].includes(state(edge.to));}
@@ -59,7 +60,7 @@
     roads.forEach(lit=>svg.append(lit));map.append(svg);
     for(const fork of forks){const sign=doc.createElement('div');sign.className='map-fork';sign.style.left=fork.x+'%';sign.style.setProperty('--x',fork.x+'%');sign.innerHTML='<i aria-hidden="true">◆</i><span>BIFURCACIÓN</span><small>elige una ruta</small>';map.append(sign);}
     const cards=nodes.map(node=>{
-      if(node.id==='assault'){
+      if(node.id==='fuga'){
         const card=doc.createElement('a');card.className='secondary mission-card';card.href='fuga.html';card.innerHTML='<img src="assets/thumbs/especial-fuga.webp" alt="Carretera costera al atardecer"><div><small>ESPECIAL 02 · PERSECUCIÓN</small><strong>Fuga del Sol</strong><span>Persigue al coupé negro por la costa y cruza su escolta antes del peaje.</span><em>Premio · Invisibilidad</em></div>';return card;
       }
       if(node.special){
@@ -71,7 +72,7 @@
       const u=upcoming[node.id],card=doc.createElement('div');card.className='secondary mission-card map-soon-card';card.innerHTML='<div class="map-soon-art" aria-hidden="true">?</div><div><small></small><strong></strong><span></span><em></em></div>';
       card.querySelector('small').textContent=u.label;card.querySelector('strong').textContent=u.name;card.querySelector('span').textContent=u.text;card.querySelector('em').textContent=u.tags;return card;});
     const detail=doc.createElement('div');detail.className='map-detail';
-    const hint=doc.createElement('p');hint.className='menu-tip map-hint';hint.innerHTML='<span>En cada bifurcación basta completar un mundo para seguir: puedes saltarte los demás.</span> <span class="map-keys">Las flechas recorren el mapa.</span>';
+    const hint=doc.createElement('p');hint.className='menu-tip map-hint';hint.innerHTML='<span>Elige 3 o 4 antes de la misión 5. Después, elige 6 o 7 para llegar a Nueva York.</span> <span class="map-keys">Las flechas recorren el mapa.</span>';
     // Resumen de progreso junto al título y leyenda de estados bajo el mapa.
     const summary=doc.createElement('p');summary.className='map-summary';summary.setAttribute('role','status');
     const legend=doc.createElement('ul');legend.className='map-legend';legend.setAttribute('aria-label','Leyenda del mapa');legend.innerHTML='<li class="done">Completada</li><li class="current">Misión actual</li><li class="choice">Ruta alternativa</li><li class="locked">Bloqueada</li>';
@@ -83,7 +84,7 @@
       button.type='button';button.className='map-node lane-'+node.lane;button.style.left=node.x+'%';button.style.top=node.y+'%';button.style.setProperty('--x',node.x+'%');button.style.setProperty('--y',node.y+'%');
       button.innerHTML='<span class="map-thumb"></span><b></b><span class="map-name"></span>';
       if(img)button.querySelector('.map-thumb').style.backgroundImage='url("'+img.getAttribute('src')+'")';
-      button.querySelector('b').textContent=node.soon?'?':node.special?'★':String(node.mission);button.querySelector('.map-name').textContent=title;
+      button.querySelector('b').textContent=node.soon?'?':node.special?'★':String(node.mission);button.querySelector('.map-name').textContent=title;button.querySelector('.map-name').dataset.short=shortNames[node.id];
       button.onclick=()=>select(i,true);
       button.addEventListener('keydown',e=>{
         let next=-1;const turned=!!upright?.matches,along=turned?['ArrowDown','ArrowUp']:['ArrowRight','ArrowLeft'],across=turned?['ArrowRight','ArrowLeft']:['ArrowDown','ArrowUp'];
@@ -95,20 +96,21 @@
     // Cada tarjeta lleva su aviso de bloqueo; mientras está bloqueada, ni el enlace navega ni el botón inicia la misión.
     const notes=cards.map((card,i)=>{
       if(!card||nodes[i].soon)return null;
-      const note=doc.createElement('span');note.className='map-lock-note';note.hidden=true;note.textContent='🔒 Bloqueada · '+requirement(nodes[i].id,nodes);(card.querySelector('div')||card).append(note);
+      const note=doc.createElement('span');note.className='map-lock-note';note.hidden=true;note.textContent='🔒 Bloqueada · '+requirement(nodes[i].id);(card.querySelector('div')||card).append(note);
       card.addEventListener('click',e=>{if(card.getAttribute('aria-disabled')==='true'){e.preventDefault();e.stopImmediatePropagation();}},true);
       return note;});
     // Every card stays in the document so the menu's own click handlers keep working.
     detail.append(...cards.filter(Boolean));list.before(summary,map,foot,detail);list.hidden=true;
     let selected=0,current=[];
-    function select(index,user){selected=index;buttons.forEach((n,i)=>{n.classList.toggle('selected',i===index);n.setAttribute('aria-pressed',String(i===index));});cards.forEach((card,i)=>{if(card)card.hidden=i!==index;});if(user)cards[index]?.scrollIntoView?.({block:'nearest',behavior:'smooth'});}
+    function select(index,user){selected=index;buttons.forEach((n,i)=>{n.classList.toggle('selected',i===index);n.setAttribute('aria-pressed',String(i===index));});cards.forEach((card,i)=>{if(card)card.hidden=i!==index;});}
     const words={done:' · completada',current:' · misión actual',choice:' · ruta alternativa',soon:' · próximamente',open:''};
     function refresh(){
-      let level=1,specialCleared=false,chaseCleared=false,completed=[];try{const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;level=root.ArcadeCampaign?.read(store)?.level||1;completed=root.ArcadeCampaign?.completedMissions(store)||[];const profile=root.ArcadeProgression?.load(store);specialCleared=!!profile?.heroUnlocked;chaseCleared=!!profile?.owned.includes('cloak');}catch{}
+      const store=root.ArcadeDeveloperMode?.storage(root.localStorage)||root.localStorage;
+      const {current:level,completed,fighter,developer}=campaign.profileAccess(store);
+      const profile=root.ArcadeProgression?.load(store),specialCleared=!!profile?.heroUnlocked,chaseCleared=!!profile?.owned.includes('cloak');
       current=states(level,nodes,specialCleared,chaseCleared,completed);
-      let developer=false;try{developer=!!root.ArcadeDeveloperMode?.active?.();}catch{}
-      const locked=locks(level,nodes,specialCleared,chaseCleared,completed,developer);
-      buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.classList.toggle('locked',locked[i]);n.setAttribute('aria-label',(nodes[i].soon||nodes[i].special?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+(locked[i]?' · bloqueada. '+requirement(nodes[i].id,nodes):words[current[i]]));});
+      const locked=locks(level,nodes,completed,fighter,developer);
+      buttons.forEach((n,i)=>{n.classList.remove('done','current','choice','open','soon');n.classList.add(current[i]);n.classList.toggle('locked',locked[i]);n.setAttribute('aria-label',(nodes[i].soon||nodes[i].special?'Mundo extra · ':'Misión '+nodes[i].mission+' · ')+n.querySelector('.map-name').textContent+(locked[i]?' · bloqueada. '+requirement(nodes[i].id):words[current[i]]));});
       cards.forEach((card,i)=>{
         if(!card||!notes[i])return;card.classList.toggle('map-locked',locked[i]);notes[i].hidden=!locked[i];
         // Sin href un enlace ni navega ni entra en el recorrido de teclado o mando del menú; se devuelve al desbloquear.
@@ -118,7 +120,10 @@
       roads.forEach((lit,i)=>lit.style.display=travelled(edges[i],current,nodes)?'':'none');
       const cleared=nodes.filter((n,i)=>n.mission&&current[i]==='done').length,extras=nodes.filter((n,i)=>n.special&&current[i]==='done').length;
       summary.innerHTML='<b>'+cleared+' / '+nodes.filter(n=>n.mission).length+'</b> misiones · <b>'+extras+' / '+nodes.filter(n=>n.special).length+'</b> especiales';
-      select(Math.max(0,nodes.findIndex(n=>n.mission===level)),false);
+      const requested=root.location.hash.slice(1),from=nodes.find(n=>n.mission===level);
+      const next=completed.includes(level)&&nodes.find(n=>n.mission&&!completed.includes(n.mission)&&campaign.previous[n.id].includes(level));
+      const focus=nodes.find(n=>n.id===requested)||next||from||nodes[0];
+      select(nodes.indexOf(focus),false);
     }
     new MutationObserver(()=>{if(!page.hidden)refresh();}).observe(page,{attributes:true,attributeFilter:['hidden']});
     refresh();

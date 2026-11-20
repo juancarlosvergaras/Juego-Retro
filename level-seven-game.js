@@ -1,5 +1,6 @@
 (() => {
  'use strict';
+  if(window.ArcadeCampaign?.guardEntry && !ArcadeCampaign.guardEntry('m7'))return;
  const $=id=>document.getElementById(id),canvas=$('level-two'),ctx=canvas.getContext('2d'),menu=$('level-two-menu'),play=$('play-two'),audio=ArcadeAudio.create();
  // Informe previo y radio, compartidos con las misiones 1 a 4. Sin el módulo la misión funciona igual.
  const story=window.ArcadeMissionSevenStory?.mount(canvas.parentElement);let briefed=false;

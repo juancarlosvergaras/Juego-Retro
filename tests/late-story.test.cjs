@@ -63,14 +63,14 @@ test('el hilo es uno solo: el Consorcio, sin regionalismos ni restos del guion a
  const [two,three,four,five,six,seven,eight]=stories.map(s=>allText(s).join('\n'));
  assert.doesNotMatch(two,/portaaviones/i,'la misión 02 no empuja a la 03 como única salida');
  assert.doesNotMatch(four,/portaaviones|Centinela/i,'la misión 04 no da por jugada la 03');
- assert.doesNotMatch(four,/submarino esperándolos/);assert.match(require('../mission-four-story.js').config.epilogue,/centro comercial/);
+ assert.doesNotMatch(four,/submarino esperándolos/);assert.match(require('../mission-four-story.js').config.epilogue,/submarino/);
  assert.doesNotMatch(five,/portaaviones|Centinela|Devorador|convoy|mini tanque/i,'la misión 05 no da por jugadas la 03 ni la 04');
  assert.doesNotMatch(six,/portaaviones|Centinela|Devorador|convoy|submarino|Capitán/i,'la misión 06 no da por jugada ninguna de las 03 a 05');
- assert.doesNotMatch(seven,/Centinela|Devorador|Capitán del Abismo|submarino/i);assert.match(seven,/antena/);
+ assert.doesNotMatch(seven,/Centinela|Devorador|Capitán del Abismo|submarino/i);assert.match(seven,/libros del Capitán/);
  assert.doesNotMatch(eight,/Soberano|nave nodriza|Quimera|Varela/i,'la misión 08 no dice quién apagó la señal');assert.match(eight,/La señal que alimentaba al Consorcio se apagó/);
  assert.match(read('sea-renderer.js'),/p\.tankUnlocked\?'El mini tanque sella su blindaje\.'/,'el rótulo del mini tanque solo sale si existe');
  assert.match(read('quimera-game.js'),/a bordo del helicóptero de Vega/);assert.doesNotMatch(read('quimera-game.js'),/a bordo de Vega/);
- assert.match(read('level-three-game.js'),/El Consorcio evacúa/);assert.doesNotMatch(read('mission-endings.js'),/FURIA EN LA CARRETERA|MISIÓN 04/,'el final de la 03 no anuncia la 04 como único camino');
+ assert.match(read('level-three-game.js'),/coordenadas del submarino/);assert.doesNotMatch(read('mission-endings.js'),/FURIA EN LA CARRETERA|MISIÓN 04/,'el final de la 03 no anuncia la 04 como único camino');
  assert.doesNotMatch(read('level-seven-game.js')+read('space-renderer.js'),/núcleo expuesto/i,'el Soberano no tiene un núcleo que se exponga');
 });
 
@@ -199,7 +199,7 @@ test('sin los módulos de historia las misiones 5 a 8 siguen arrancando',async()
 test('la radio acompaña al jefe y cierra cada misión antes del parte, que sustituye al panel antiguo',async()=>{
  const arena={5:{inside:true,started:true,x:180,y:436,checkpoint:3},6:{floor:3,checkpoint:3,started:true,x:350,y:472},7:{floor:2,started:true,x:350,y:472},8:{floor:2,started:true,x:350,y:472}};
  const closing={5:['books','next'],6:['signal','orbit'],7:['down','home'],8:['down','wrap']},ending={5:14,6:11,7:14,8:15};
- const next={5:'level-six.html?entry=campaign',6:'level-seven.html?entry=campaign',7:'level-eight.html?entry=campaign'};
+ const next={5:'level-six.html?entry=campaign',6:'level-eight.html?entry=campaign',7:'level-eight.html?entry=campaign'};
  for(const m of missions){
   const story=fakeStory(m.story),results=fakeResults(),g=await game(m.n,'?entry=resume',{[saveKey(m)]:JSON.stringify({hp:8,[world[m.n]]:arena[m.n]})},{story,results});
   g.survive(12);assert.ok(story.state.shown.has('boss'),'misión '+m.n+': Vega presenta al jefe');
@@ -227,9 +227,10 @@ test('la radio acompaña al jefe y cierra cada misión antes del parte, que sust
   assert.equal(g.el('victory-screen').hidden,true,'el parte sustituye al panel antiguo');
   const x=g.view.p.x;g.key('ArrowRight');g.key('Escape');g.tick(.3);assert.equal(g.view.p.x,x,'el teclado del juego calla con el parte abierto');assert.equal(results.shown.length,1);
   assert.deepEqual([...story.state.missing],[],'misión '+m.n+': contexto completo también en el combate final');
-  if(m.n===6){assert.deepEqual(Array.from(card.routes,r=>r.label),['Especial · Distrito Quimera','Especial · Fuga del Sol']);}
+  if(m.n===5)assert.deepEqual(Array.from(card.routes,r=>r.label),['Espacio · Misión 07','Especial · Distrito Quimera']);
+  if(m.n===6)assert.equal(card.routes,undefined);
   results.open=false;card.next.run();assert.equal(g.navigation,next[m.n]);
  }
- const fork=fakeResults(),six=missions[1],sixStory=fakeStory(six.story),g=await game(6,'?entry=resume',{[saveKey(six)]:JSON.stringify({hp:8,mall:{floor:3,checkpoint:3,started:true,complete:true,ending:true}})},{story:sixStory,results:fork});
- g.play();sixStory.close();fork.shown.at(-1).routes[1].run();assert.equal(g.navigation,'fuga.html');
+ const fork=fakeResults(),five=missions[0],fiveStory=fakeStory(five.story),g=await game(5,'?entry=resume',{[saveKey(five)]:JSON.stringify({hp:8,sea:{inside:true,checkpoint:3,started:true,complete:true,ending:true}})},{story:fiveStory,results:fork});
+ g.play();fiveStory.close();fork.shown.at(-1).routes[0].run();assert.equal(g.navigation,'level-seven.html?entry=campaign');
 });

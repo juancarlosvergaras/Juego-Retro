@@ -114,7 +114,7 @@
       new root.MutationObserver(()=>{if(layer.hidden&&plainPause())show();})
         .observe(overlay,{attributes:true,attributeFilter:['hidden'],subtree:true,childList:true,characterData:true});
     }
-    return {defer(load){loader=load;ready=true;byId('menu-loading').textContent='Elige tu perfil y comienza la partida.';show();},show,isOpen:()=>!layer.hidden,ready({autoPlay=false}={}){ready=true;byId('menu-loading').textContent='La cacería comienza contigo.';if(autoPlay){started=true;close();onPlay();}else show();},fail(){byId('menu-loading').textContent='No se pudo cargar el juego. Recarga la página para volver a intentarlo.';},get started(){return started;}};
+    return {defer(load){loader=load;ready=true;byId('menu-loading').textContent='Elige tu perfil y comienza la partida.';show(root.location?.search&&new URLSearchParams(root.location.search).get('menu')==='levels'?'levels':'home');},show,isOpen:()=>!layer.hidden,ready({autoPlay=false}={}){ready=true;byId('menu-loading').textContent='La cacería comienza contigo.';if(autoPlay){started=true;close();onPlay();}else show();},fail(){byId('menu-loading').textContent='No se pudo cargar el juego. Recarga la página para volver a intentarlo.';},get started(){return started;}};
   }
   root.ArcadeMainMenu={create,PAUSED};
 })(window);

@@ -1,5 +1,6 @@
 (() => {
  'use strict';
+  if(window.ArcadeCampaign?.guardEntry && !ArcadeCampaign.guardEntry('m4'))return;
  const $=id=>document.getElementById(id),canvas=$('level-two'),ctx=canvas.getContext('2d'),menu=$('level-two-menu'),play=$('play-two'),audio=ArcadeAudio.create();
  // Historia y puesta en escena compartidas con las misiones 1 a 3.
  const story=window.ArcadeMissionFourStory?.mount(canvas.parentElement),presentation=window.ArcadeBossPresentation?.create(canvas.parentElement,canvas),staged={};let briefed=false;
@@ -29,7 +30,7 @@
  function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Moto fuera de combate':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La persecución queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
  // The mission closes on the same debrief card as the others; the old screen stays as a fallback.
  function finish(){ArcadeCampaign.markCompleted(store,4);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
-  if(window.ArcadeMissionResults?.show){const t=ArcadeRoadWar.tally(s),debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 04 COMPLETADA',title:'FURIA EN LA CARRETERA',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Enemigos abatidos',t.fallen+' / '+t.total],['Tiempo',window.ArcadeMissionKit?ArcadeMissionKit.clock(t.seconds):Math.round(t.seconds)+' s'],['Estrellas',t.stars+' / '+t.starTotal],['Mini tanque','Conseguido']],next:{label:'Continuar · Misión 05',run:()=>$('victory-next').click()},routes:[{label:'Avanzar al centro comercial · Misión 06',run:()=>leaveForRoute(6)}],retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
+  if(window.ArcadeMissionResults?.show){const t=ArcadeRoadWar.tally(s),debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 04 COMPLETADA',title:'FURIA EN LA CARRETERA',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Enemigos abatidos',t.fallen+' / '+t.total],['Tiempo',window.ArcadeMissionKit?ArcadeMissionKit.clock(t.seconds):Math.round(t.seconds)+' s'],['Estrellas',t.stars+' / '+t.starTotal],['Mini tanque','Conseguido']],next:{label:'Continuar · Misión 05',run:()=>$('victory-next').click()},routes:[{label:'Especial · Fuga del Sol',run:()=>$('victory-fuga').click()}],retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
    // Epílogo a pantalla completa antes del parte.
    if(story?.outro)story.outro(debrief);else debrief();return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}

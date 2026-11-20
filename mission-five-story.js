@@ -1,8 +1,7 @@
 (function(root){
   'use strict';
   // Guion de la misión 05. Informe y radio reutilizan el sistema de la misión 01.
-  // El mapa permite llegar aquí sin haber jugado la 03 ni la 04: el texto solo da
-  // por vividas las misiones 01 y 02. Bajo el agua la señal de Vega llega a pedazos.
+  // Tras completar la ruta aérea o la de carretera, ambas pistas convergen en el submarino.
   // Cada página es el subtítulo de un plano (mission-late-scenes.js, conjunto 'five').
   const briefing=[
     {text:'El Consorcio es una empresa militar con ejército propio y cuentas que nadie revisa. No fabrica sus monstruos: los compra.'},
@@ -13,7 +12,7 @@
   // Tras el cierre bajo el agua (sea-renderer.js): los libros de cuentas y adónde llevan.
   const outro=[
     {text:'Los libros del Capitán anotan cada pedido del Consorcio. Todos salen por el mismo lugar.'},
-    {text:'Una antena en la azotea del último centro comercial que sigue en pie.'}
+    {text:'Los libros dan las coordenadas de la antena del centro comercial y de la nave en órbita que recibe sus pedidos.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -29,10 +28,10 @@
     {id:'boss',who:VEGA,text:'¡…el Capitán del Abismo! Salta la ametralladora… y sal de las marcas rojas.',when:c=>c.bossActive},
     {id:'half',who:CAP,text:'Retrocede hacia la caja fuerte. Ahí guarda los libros.',when:c=>c.bossHalf},
     {id:'books',who:CAP,text:'Sus libros de cuentas. Los pedidos salen por una antena… en una azotea.',when:c=>c.bossDown},
-    {id:'next',who:VEGA,text:'Te copio… El último centro comercial en pie. Yo pongo el rumbo.',when:c=>c.reward,after:'books'}
+    {id:'next',who:VEGA,text:'Tengo las dos posiciones. ¿Me llevas a la antena o subimos a la nave?',when:c=>c.reward,after:'books'}
   ];
   const config={briefing,outro,beats,eyebrow:'MISIÓN 05 · BAJO EL ABISMO',scenes:'five',startLabel:'Sumergirse',ambient:/^(hull|mines|shark|hurt|sonar|reef|trench)/,series:/^(reef|trench)/,
-    epilogue:'El Capitán ha caído y su carga ya no llegará a nadie. Entre los sueros sin estrenar había uno de combate: ahora es tuyo. Sus libros de cuentas señalan una antena repetidora en la azotea del último centro comercial en pie.'};
+    epilogue:'El Capitán ha caído y su carga ya no llegará a nadie. Entre los sueros sin estrenar había uno de combate: ahora es tuyo. Sus libros revelan los dos extremos de la transmisión. Puedes tomar la antena del centro comercial o abordar la nave en órbita.'};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionFiveStory=api;
 })(typeof window!=='undefined'?window:globalThis);

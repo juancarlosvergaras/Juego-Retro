@@ -95,7 +95,7 @@
    c.restore();
    art.veil(c,s);
    if(s.intro<4)title(c,'MISIÓN 06','EL ÚLTIMO CENTRO','La fachada del Consorcio · Sube hasta la antena de la azotea.');
-   if(s.ending>=6)title(c,'MISIÓN 06 COMPLETADA','EL COLOSO HA CAÍDO','La antena del Consorcio apunta al cielo · Progreso y récords guardados');
+   if(s.ending>=6)title(c,'MISIÓN 06 COMPLETADA','EL COLOSO HA CAÍDO','Antena desconectada · Próximo destino: Nueva York');
    c.restore();
   }
   return{draw,props};

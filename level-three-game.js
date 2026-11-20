@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if(window.ArcadeCampaign?.guardEntry && !ArcadeCampaign.guardEntry('m3'))return;
   const L=ArcadeLevelThree,P=ArcadePhysics,canvas=document.getElementById('level-two'),ctx=canvas.getContext('2d');
   const menu=document.getElementById('level-two-menu'),play=document.getElementById('play-two'),message=document.getElementById('level-two-message'),context=document.getElementById('context-two');
   const audio=ArcadeAudio.create(),keys=new Set(),queue=new Set(),firePointers=new Set(),camera={x:0,y:0},images={};
@@ -132,9 +133,9 @@
     player.transform=Math.max(0,(player.transform||0)-dt);player.claw=Math.max(0,(player.claw||0)-dt);player.kick=Math.max(0,(player.kick||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
     wheel.update(player.form,true,paused||arrival?.active||player.transform>0||!!player.rope||!!player.ladder||!!player.burrow,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked,player.heroUnlocked);
 
-    if(state.endingAge>=0){state.endingAge+=dt;if(!state.debriefed)audio.loop('helicopter',.25);queue.clear();if(state.endingAge>=13&&!leavingMission){const leave=level=>{save();leavingMission=true;location.assign(ArcadeCampaign.enterRoute(level,store,player,stats,score,powers));},go=()=>leave(4);
+    if(state.endingAge>=0){state.endingAge+=dt;if(!state.debriefed)audio.loop('helicopter',.25);queue.clear();if(state.endingAge>=13&&!leavingMission){const leave=level=>{save();leavingMission=true;location.assign(ArcadeCampaign.enterRoute(level,store,player,stats,score,powers));},go=()=>leave(5);
       // The finale ends on the shared debrief card where it is available.
-      if(!window.ArcadeMissionResults?.show)go();else if(!state.debriefed){state.debriefed=true;audio.loop('helicopter',0);const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 03 COMPLETADA',title:'GUERRA EN EL AIRE',epilogue:'El Centinela ha caído y su chasis es tuyo. El Consorcio evacúa: puedes perseguir a su convoy por carretera o seguir su rastro hasta el centro comercial.',stats:ArcadeMissionResults.rows(score,{enemies:stats.enemies.filter(n=>n.kind!=='mecha'),seconds:state.time,extra:[['Estrellas',loot.stars.filter(x=>x.taken).length+' / '+loot.stars.length],['Chasis robot','Conseguido']]}),next:{label:'Continuar · Misión 04',run:go},routes:[{label:'Avanzar al centro comercial · Misión 06',run:()=>leave(6)}],retry:{label:'Repetir misión',run:()=>document.getElementById('restart').click()}});
+      if(!window.ArcadeMissionResults?.show)go();else if(!state.debriefed){state.debriefed=true;audio.loop('helicopter',0);const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 03 COMPLETADA',title:'GUERRA EN EL AIRE',epilogue:'El Centinela ha caído y su chasis es tuyo. En la cubierta encontraste las coordenadas del submarino del Consorcio. Vega te espera en el puerto.',stats:ArcadeMissionResults.rows(score,{enemies:stats.enemies.filter(n=>n.kind!=='mecha'),seconds:state.time,extra:[['Estrellas',loot.stars.filter(x=>x.taken).length+' / '+loot.stars.length],['Chasis robot','Conseguido']]}),next:{label:'Bajo el abismo · Misión 05',run:go},retry:{label:'Repetir misión',run:()=>document.getElementById('restart').click()}});
         // Tras la cinemática de cierre, el epílogo a pantalla completa y después el parte.
         if(story?.outro)story.outro(debrief);else debrief();}}return;}
     if(mecha.defeated&&player.x>7460){ArcadeCampaign.markCompleted(store,3);state.endingAge=0;stats.bullets=[];save();return;}

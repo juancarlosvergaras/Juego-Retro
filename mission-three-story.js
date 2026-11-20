@@ -11,7 +11,7 @@
   // Tras la cinemática de cierre (mission-endings.js): la caída y los dos rastros.
   const outro=[
     {text:'Sin su guardián, el portaaviones del Consorcio pierde el rumbo. Y la altura.'},
-    {text:'Lo que pudieron salvar huye por tierra. Lo que no, deja un rastro hasta la ciudad.'}
+    {text:'En la bodega queda una carta náutica. Las coordenadas señalan un submarino frente al puerto.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -24,7 +24,7 @@
     {id:'mecha',who:VEGA,text:'¡El Centinela! Ráfagas, misiles marcados en el suelo y ondas al pisar: muévete siempre.',when:c=>c.mechaActive},
     {id:'half',who:CAP,text:'Echa humo por las juntas. Un poco más y cae.',when:c=>c.mechaHalf},
     {id:'robot',who:CAP,text:'El chasis sigue entero. Dos brazos, dos armas… puedo usar esto.',when:c=>c.mechaDown},
-    {id:'exit',who:VEGA,text:'¡Centinela fuera de combate! Te recojo en la zona de extracción, a tu derecha. El Consorcio evacúa por carretera.',when:c=>c.mechaDown,after:'robot'}
+    {id:'exit',who:VEGA,text:'¡Centinela fuera de combate! Te recojo en la zona de extracción, a tu derecha. Llévate esa carta. Nos vemos en el puerto.',when:c=>c.mechaDown,after:'robot'}
   ];
   const config={briefing,outro,beats,eyebrow:'MISIÓN 03 · GUERRA EN EL AIRE',scenes:'three',startLabel:'Despegar',ambient:/^(militia|jets|hurt|mid|bow)/,series:/^(mid|bow)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};

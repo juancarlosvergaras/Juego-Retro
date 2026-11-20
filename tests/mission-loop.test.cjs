@@ -65,7 +65,7 @@ test('the debrief counts the fallen and formats score and time',()=>{
  assert.deepEqual(Results.rows(null).map(r=>r[1]),['0','0 / 0','0:00']);
 });
 test('all three missions close on the same card, with continue and retry',()=>{
- for(const [file,next] of [['game.js','Continuar · Misión 02'],['level-two-game.js','Aire · Misión 03'],['level-three-game.js','Continuar · Misión 04']]){
+ for(const [file,next] of [['game.js','Continuar · Misión 02'],['level-two-game.js','Aire · Misión 03'],['level-three-game.js','Bajo el abismo · Misión 05']]){
   const source=read(file);assert.match(source,/ArcadeMissionResults\.show\(/,file);
   assert.ok(source.includes("label:'"+next+"'"),file+' continues to '+next);assert.ok(source.includes("retry:{label:'Repetir misión'"),file+' offers a retry');
   assert.match(source,/presentation\??\.title\('MISIÓN 0\d'/,file+' opens with the shared title card');

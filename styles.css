@@ -178,3 +178,51 @@ button.gamepad-focus,a.gamepad-focus,select.gamepad-focus,input.gamepad-focus{ou
 .main-menu.in-game .profile-selector{display:none}
 .main-menu.in-game .menu-art{opacity:.82}
 #menu-restart,#menu-developer{color:#d7c9a2}
+
+/* Portada y pausa comparten la misma distribución y el orden de teclado. */
+.main-menu{box-sizing:border-box;grid-template-columns:minmax(0,1fr);scrollbar-gutter:auto}
+.main-menu .menu-content:has([data-menu-page="home"]:not([hidden])){
+  display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);
+  grid-template-areas:"brand actions" "profiles actions" "status actions";
+  align-content:center;align-items:center;gap:12px clamp(16px,4vw,58px);
+  width:min(100%,1080px);box-sizing:border-box;padding:clamp(16px,3.5vw,48px);
+}
+[data-menu-page="home"]:not([hidden]){display:contents}
+.menu-brand{grid-area:brand}.menu-brand h1{margin:6px 0}
+.menu-brand>p{margin:0}.menu-signature{display:none}
+.menu-content .profile-selector{grid-area:profiles;min-width:0;margin:0}
+.menu-content .profile-selector>.menu-tip{font-size:11px;line-height:1.4;margin:8px 0 0}
+#menu-loading{grid-area:status;margin:0;line-height:1.4}
+.menu-actions{grid-area:actions;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.menu-actions button{box-sizing:border-box;min-height:44px;padding:10px 12px;overflow-wrap:anywhere;line-height:1.2}
+#menu-play{grid-column:1/-1}
+.main-menu .menu-content:has(:is([data-menu-page="help"],[data-menu-page="settings"],[data-menu-page="shop"]):not([hidden])){
+  display:flex;flex-direction:column;min-height:0;max-height:100%;width:min(100%,900px);box-sizing:border-box;margin:auto;padding:clamp(12px,2vw,28px);
+}
+.menu-content:has(:is([data-menu-page="help"],[data-menu-page="settings"]):not([hidden])) .menu-brand{display:none}
+.menu-content>:is([data-menu-page="help"],[data-menu-page="settings"],[data-menu-page="shop"]):not([hidden]){min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 4px 4px}
+.menu-content:has(:is([data-menu-page="help"],[data-menu-page="settings"],[data-menu-page="shop"]):not([hidden])) #menu-back{order:-1;align-self:flex-start;margin:0;min-height:40px}
+.menu-content .menu-help{max-height:none;overflow:visible}
+@media(max-width:620px) and (orientation:portrait){
+  .main-menu .menu-content:has([data-menu-page="home"]:not([hidden])){grid-template-columns:minmax(0,1fr);grid-template-areas:"brand" "profiles" "status" "actions";gap:10px;padding:14px}
+  .menu-brand h1{font-size:clamp(32px,9vw,50px)}.menu-brand h1 span{display:inline}.menu-brand>p{font-size:11px}
+  .menu-content .profile-selector{padding:8px}.profile-choices button{padding:6px 3px;min-height:44px}
+  .menu-actions button{font-size:13px;padding:8px}.menu-actions{gap:6px}
+}
+@media(max-height:560px) and (orientation:landscape){
+  .main-menu .menu-content:has([data-menu-page="home"]:not([hidden])){padding:12px;gap:5px 16px}
+  .menu-brand h1{font-size:clamp(24px,7vh,38px);margin:3px 0}.menu-brand h1 span{display:inline}.menu-brand>p{font-size:10px}
+  .menu-content .profile-selector{padding:6px}.profile-choices{gap:4px}.profile-choices button{padding:4px;min-height:44px}
+  .menu-actions{gap:5px}.menu-actions button{padding:6px 8px;font-size:13px}
+}
+
+@media(max-width:620px) and (max-height:520px) and (orientation:portrait){
+  .main-menu .menu-content:has([data-menu-page="home"]:not([hidden])){gap:5px;padding:8px}
+  .menu-brand .eyebrow{display:none}.menu-brand h1{margin:0 0 3px}
+  .menu-content .profile-selector{padding:4px 6px}.profile-choices span{margin-top:2px}
+  .menu-actions{gap:4px}
+}
+@media(max-height:345px) and (orientation:landscape){
+  .main-menu .menu-content:has([data-menu-page="home"]:not([hidden])){padding:6px;gap:3px 12px}
+  .menu-brand .eyebrow,.menu-content:has([data-menu-page="exit"]:not([hidden])) .menu-brand{display:none}.menu-actions button{padding:4px 6px}
+}

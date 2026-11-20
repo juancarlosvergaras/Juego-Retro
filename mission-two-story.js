@@ -13,7 +13,7 @@
   const outro=[
     {text:'El rey cayó. En su cripta había cajas que no tenían siglos.'},
     {text:'Todas llevaban el mismo sello: el Consorcio, la empresa militar que compró la ciudad cuando acabó la guerra.'},
-    {text:'Sus envíos llegaron por aire, por carretera y por mar. Cap tendrá que elegir qué rastro sigue.'}
+    {text:'Hay dos envíos en marcha: uno por aire y otro por carretera. Cap tendrá que elegir qué rastro sigue.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -37,7 +37,7 @@
     {id:'inside',who:CAP,text:'Hace frío aquí dentro. Algo enorme respira bajo la piedra.',when:c=>c.inside},
     {id:'king',who:VEGA,text:'¡El Rey de Piedra! Su coraza aguanta las balas: busca el momento en que se agrieta.',when:c=>c.kingActive},
     {id:'rot',who:VEGA,text:'¡La coraza ha caído y lo de dentro sigue vivo! ¡No pares, Cap!',when:c=>c.kingStage===2},
-    {id:'done',who:VEGA,text:'El rey ha caído. Te recojo en la puerta. En su cripta hay cajas con un sello: el Consorcio. Llegaron por aire, por carretera y por mar.',when:c=>c.kingDown}
+    {id:'done',who:VEGA,text:'El rey ha caído. Te recojo en la puerta. En su cripta hay cajas con un sello: el Consorcio. Veo dos rutas en los albaranes: aire y carretera.',when:c=>c.kingDown}
   ];
   const config={briefing,outro,beats,eyebrow:'MISIÓN 02 · EL UMBRAL DEL REY',scenes:'two',startLabel:'Saltar sobre la ciudad',ambient:/^(militia|hurt|giants|avenue|airship|cemetery|barricade|storm)/,series:/^(giants|avenue|cemetery|barricade)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};

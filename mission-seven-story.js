@@ -1,11 +1,10 @@
 (function(root){
   'use strict';
   // Guion de la misión 07. Informe y radio reutilizan el sistema de la misión 01.
-  // Siempre se llega desde la 06 (la antena de la azotea), pero no se da por
-  // jugada ninguna de las misiones 03 a 05. Vega habla por el enlace de la antena.
+  // Se llega desde el abismo. Vega usa la señal de los libros del Capitán para localizar la nave.
   // Cada página es el subtítulo de un plano (mission-late-scenes.js, conjunto 'seven').
   const briefing=[
-    {text:'La antena del centro comercial tenía quien le contestara: una nave nodriza en órbita.'},
+    {text:'Los libros del Capitán identifican al proveedor: una nave nodriza en órbita.'},
     {text:'La mordida del lobo blanco, el rey que despertó, las máquinas de guerra… Todo bajó de ahí arriba, a cambio de la ciudad.'},
     {text:'Vega engancha el helicóptero al haz y sube a Cap hasta donde se acaba el aire. Al proveedor lo llaman el Soberano del Vacío.'},
     {text:''}

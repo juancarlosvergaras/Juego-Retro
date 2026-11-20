@@ -1,5 +1,6 @@
 (() => {
  'use strict';
+  if(window.ArcadeCampaign?.guardEntry && !ArcadeCampaign.guardEntry('m6'))return;
  const $=id=>document.getElementById(id),canvas=$('level-two'),ctx=canvas.getContext('2d'),menu=$('level-two-menu'),play=$('play-two'),audio=ArcadeAudio.create();
  // Informe previo y radio, compartidos con las misiones 1 a 4. Sin el módulo la misión funciona igual.
  const story=window.ArcadeMissionSixStory?.mount(canvas.parentElement);let briefed=false;
@@ -28,10 +29,8 @@
  function clear(){keys.clear();queue.clear();pointers.clear();}
  function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Has caído en el centro':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
  // La misión cierra con el mismo parte que las misiones 1 a 4; el panel antiguo queda de respaldo.
- // Desde aquí el mapa se bifurca: la misión 07 o uno de los dos especiales.
- function leaveFor(page){save();leaving=true;location.assign(page);}
  function finish(){ArcadeCampaign.markCompleted(store,6);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
-  if(window.ArcadeMissionResults?.show){const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 06 COMPLETADA',title:'EL ÚLTIMO CENTRO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 3'],['Antena del Consorcio','Localizada']],next:{label:'Continuar · Misión 07',run:()=>$('victory-next').click()},routes:[{label:'Especial · Distrito Quimera',run:()=>leaveFor('quimera.html')},{label:'Especial · Fuga del Sol',run:()=>leaveFor('fuga.html')}],retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
+  if(window.ArcadeMissionResults?.show){const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 06 COMPLETADA',title:'EL ÚLTIMO CENTRO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 3'],['Antena del Consorcio','Localizada']],next:{label:'Nueva York · Misión 08',run:()=>$('victory-next').click()},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
   // Epílogo a pantalla completa antes del parte.
   if(story?.outro)story.outro(debrief);else debrief();return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}
@@ -43,7 +42,7 @@
  $('pause-two').onclick=()=>paused?play.click():pause();$('show-shortcuts').onclick=()=>{$('shortcuts').hidden=!$('shortcuts').hidden;};$('restart').onclick=()=>{save();leaving=true;location.assign('level-six.html?entry=select');};
  mainMenu=ArcadeMainMenu.create({mission:6,resumeAvailable:!!saved.mall,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission(){save();leaving=true;},onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;e.combatDamage=next.damage;e.hitProtection=next.grace;return ArcadeDifficulty.save(id,store);}});
  $('open-main-menu').onclick=()=>mainMenu.show();$('victory-menu').onclick=()=>{save();leaving=true;location.assign('index.html');};$('victory-replay').onclick=()=>{save();leaving=true;location.assign('level-six.html?entry=select');};
- $('victory-next').onclick=()=>{save();leaving=true;ArcadeCampaign.transferSeven(store,p,e,score,powers);location.assign('level-seven.html?entry=campaign');};
+ $('victory-next').onclick=()=>{save();leaving=true;ArcadeCampaign.transferEight(store,p,e,score,powers);location.assign('level-eight.html?entry=campaign');};
  let queuedAim=null;
  function press(code){if(paused||arcade?.active||story?.briefingOpen())return;keys.add(code);if(locked())return;if(code==='Space')queue.add('jump');if(code==='ArrowUp'||code==='KeyW')queue.add('interact');if(code==='KeyE')queue.add('hook');if(code==='KeyF')queue.add('jet');if(code==='KeyT')switchForm();if(code==='KeyG')queue.add('power');if(code==='KeyH')cyclePower();if(code==='KeyL'&&p.form==='robot'){ArcadeRobotForm.cycle(e.inventory);save();}if(code==='KeyL')queue.add('kick');if(ArcadeArsenal.fireKeys.includes(code)){queue.add('fire');queuedAim=ArcadeArsenal.aimDirection(ArcadeArsenal.aimInput(controls()),p.facing);}if(/^Digit[1-9]$/.test(code))chooseWeapon(Number(code.slice(-1)));if(code==='BracketLeft'||code==='BracketRight'){const a=e.inventory.owned;chooseWeapon(a[(a.indexOf(e.inventory.selected)+(code==='BracketRight'?1:-1)+a.length)%a.length]);}}
  window.addEventListener('keydown',ev=>{if(arcade?.active||mainMenu.isOpen()||!$('victory-screen').hidden||window.ArcadeMissionResults?.isOpen?.()||story?.briefingOpen())return;const code=ArcadeArsenal.controlCode(ev);if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space',...ArcadeArsenal.fireKeys].includes(code))ev.preventDefault();if(code==='Escape'||code==='KeyP'){paused?play.click():pause();return;}if(!ev.repeat)press(code);});

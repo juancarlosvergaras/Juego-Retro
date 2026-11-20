@@ -1,8 +1,7 @@
 (function(root){
   'use strict';
   // Guion de la misión 08 y final de la campaña. Informe y radio reutilizan el
-  // sistema de la misión 01. Aquí se llega desde la 07 o desde un especial: el
-  // texto dice que la señal se apagó, sin decir quién la apagó.
+  // Se llega desde la misión 6 o la 7, con el transmisor o su receptor fuera de servicio.
   // Cada página es el subtítulo de un plano (mission-late-scenes.js, conjunto 'eight').
   const briefing=[
     {text:'La señal que alimentaba al Consorcio se apagó. Sin proveedor no hay repuestos.'},

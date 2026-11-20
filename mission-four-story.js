@@ -12,7 +12,7 @@
   // Tras el frenazo y el incendio del Devorador (road-war.js): el botín y lo que señala.
   const outro=[
     {text:'Dentro del Devorador viajaba el prototipo que el Consorcio quería salvar. Ahora viaja con Cap.'},
-    {text:'Sus papeles nombran dos lugares: un puerto con un submarino y el último centro comercial en pie.'}
+    {text:'Los papeles del convoy dan la posición de un submarino. En la última hoja hay una matrícula de la escolta.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -28,10 +28,10 @@
     {id:'turret',who:CAP,text:'Una torreta menos. Se le ven las tripas al horno.',when:c=>c.bossStage>=1},
     {id:'last',who:VEGA,text:'¡Solo le queda una! Ahora embestirá más: no te quedes en su carril.',when:c=>c.bossStage>=2},
     {id:'tank',who:CAP,text:'Así que esto era lo que escondían. Pequeño, blindado… y con un cañón que no cabe en él.',when:c=>c.reward},
-    {id:'sea',who:VEGA,text:'Convoy neutralizado. Sus papeles nombran un puerto y un centro comercial. Y ese juguete tuyo también flota.',when:c=>c.reward,after:'tank'}
+    {id:'sea',who:VEGA,text:'Convoy neutralizado. Los papeles nos llevan al puerto. Y ese juguete tuyo también flota.',when:c=>c.reward,after:'tank'}
   ];
   const config={briefing,outro,beats,eyebrow:'MISIÓN 04 · FURIA EN LA CARRETERA',scenes:'four',startLabel:'Arrancar',ambient:/^(escort|ramp|crash|jets|hurt|mid|near)/,series:/^(mid|near)/,
-    epilogue:'El Devorador ha caído y su prototipo es tuyo. El Consorcio aún tiene dos salidas: un submarino en el puerto y el último centro comercial en pie. Elige por dónde seguir.'};
+    epilogue:'El Devorador ha caído y su prototipo es tuyo. El submarino espera en el puerto. La matrícula de la escolta también te abre una persecución por la costa.'};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionFourStory=api;
 })(typeof window!=='undefined'?window:globalThis);

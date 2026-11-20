@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if(window.ArcadeCampaign?.guardEntry && !ArcadeCampaign.guardEntry('m2'))return;
   const L=ArcadeLevelTwo,P=ArcadePhysics,canvas=document.getElementById('level-two'),ctx=canvas.getContext('2d');
   const menu=document.getElementById('level-two-menu'),play=document.getElementById('play-two'),message=document.getElementById('level-two-message'),context=document.getElementById('context-two');
   const audio=ArcadeAudio.create(),keys=new Set(),queue=new Set(),firePointers=new Set(),camera={x:0,y:0},images={};
@@ -166,7 +167,7 @@
       const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 02 COMPLETADA',title:'EL UMBRAL DEL REY',epilogue:'El rey ha caído. Vega espera tus coordenadas. Elige por dónde seguir la cacería.',
         stats:ArcadeMissionResults.rows(score,{enemies:[...cityEnemies,...interiorEnemies],seconds:state.time,extra:[['Estrellas',loot.stars.filter(x=>x.taken).length+' / '+loot.stars.length],['Traje de zombi',profile.zombieUnlocked?'Conseguido':'—']]}),
         next:{label:'Aire · Misión 03',run:()=>leaveForRoute(3)},
-        routes:[{label:'Carretera · Misión 04',run:()=>leaveForRoute(4)},{label:'Mar · Misión 05',run:()=>leaveForRoute(5)}],
+        routes:[{label:'Carretera · Misión 04',run:()=>leaveForRoute(4)}],
         retry:{label:'Repetir misión',run:()=>document.getElementById('restart').click()}});
       if(story?.outro)story.outro(debrief);else debrief();}
   }

@@ -1,5 +1,6 @@
 (()=>{
   'use strict';
+  if(!ArcadeCampaign.guardEntry('fuga'))return;
   const $=id=>document.getElementById(id),canvas=$('road'),audio=ArcadeAudio.create();
   let touchPad;
   const store=ArcadeDeveloperMode.storage(localStorage),keyboard=new Set(),touch=new Map();
@@ -19,8 +20,8 @@
     ArcadeMissionResults.show({kicker:'ESPECIAL 02 · INTERCEPCIÓN CONFIRMADA',title:'Fuga del Sol',
       stats:[['Distancia recorrida',(s.z/1000).toFixed(2)+' km'],['Tiempo de persecución',Math.ceil(s.time)+' s'],['Poder recuperado','Invisibilidad']],
       epilogue:'Vega recupera el módulo de camuflaje. En campaña, equipa Invisibilidad y pulsa G para desaparecer durante seis segundos. Las balas te atravesarán.',
-      next:{label:'Continuar a Nueva York',run:()=>{const c=ArcadeCampaign.read(store)||ArcadeCampaign.first(store)||{};ArcadeCampaign.write(store,{...c,level:8,arrival:true});location.assign('level-eight.html?entry=campaign');}},
-      retry:{label:'Volver a conducir',run:start},routes:[{label:'Menú principal',run:()=>location.assign('index.html')}]});
+      next:{label:'Volver al mapa',run:()=>location.assign('index.html?menu=levels')},
+      retry:{label:'Volver a conducir',run:start}});
   }
   $('go').onclick=()=>{if(screen==='paused')drive(pausedFrom);else if(screen==='save')results();else if(screen==='error')location.reload();else start();};
   $('pause').onclick=pause;

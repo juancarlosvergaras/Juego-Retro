@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if(!ArcadeCampaign.guardEntry('quimera'))return;
   const Q=ArcadeQuimera,$=id=>document.getElementById(id),canvas=$('arena'),c=canvas.getContext('2d');
   const store=ArcadeDeveloperMode.storage(localStorage),saveKey='cap-dollar.quimera.v1',audio=ArcadeAudio.create();
   let saved={};try{saved=JSON.parse(store.getItem(saveKey)||'{}')||{};}catch{}
@@ -18,18 +19,13 @@
     return ArcadeProgression.save(profile,store);
   }
   function leave(url){try{store.removeItem(saveKey);}catch{}location.assign(url);}
-  function nextMission(){
-    const carry=ArcadeCampaign.read(store)||ArcadeCampaign.first(store)||{};
-    ArcadeCampaign.write(store,{...carry,level:8,form:'hero',arrival:true});leave('level-eight.html?entry=campaign');
-  }
   function results(){
     if(!prizeSaved&&!savePrize()){show('saveError','Premio pendiente','El navegador bloqueó el guardado del traje. Puedes volver a intentarlo.','Guardar premio');return;}
     screen='won';clear();audio.setRunning(false);$('panel').hidden=true;$('skip-scene').hidden=true;$('pause').disabled=true;
     ArcadeMissionResults.show({kicker:'ESPECIAL 01 · MISIÓN COMPLETADA',title:'El puerto vuelve a respirar',
       stats:[['Puntos',state.score.toLocaleString('es-CO')],['Encuentros superados',state.clears+' / '+Q.waves.length],['Traje recuperado','Centella Azul']],
       epilogue:'Inés pasa lista a bordo del helicóptero de Vega. Están todos. Con Centella, F activa el vuelo y J dispara rayos azules. Las balas rebotan en el traje.',
-      next:{label:'Volar a Nueva York',run:nextMission},retry:{label:'Repetir el especial',run:()=>leave('quimera.html')},
-      routes:[{label:'Menú principal',run:()=>leave('index.html')}]});
+      next:{label:'Volver al mapa',run:()=>leave('index.html?menu=levels')},retry:{label:'Repetir el especial',run:()=>leave('quimera.html')}});
   }
   function clear(){held.clear();padKeys.clear();touchPad?.clear();touches.clear();buffer='';jump=false;pickup=false;buttonAge=0;}
   function show(id,title,copy,action){screen=id;clear();audio.setRunning(false);$('skip-scene').hidden=true;$('panel').hidden=false;$('heading').textContent=title;$('description').textContent=copy;$('go').textContent=action;$('tag').textContent=id==='down'?'FUERA DE COMBATE':'ESPECIAL 01 · DISTRITO QUIMERA';$('go').focus();$('pause').disabled=true;}

@@ -87,7 +87,17 @@ test('the writing is sound by construction: tonic bass, resolved phrases, bounde
 test('each theme keeps the character of its mission',()=>{
  const by=id=>M.themeFor(id),tempos=M.themes.map(t=>t.tempo);
  assert.equal(by('carretera').tempo,Math.max(...tempos),'the chase is the fastest');assert.equal(by('abismo').tempo,Math.min(...tempos),'the abyss is the slowest');
- assert.ok(by('aire').tempo>=140&&by('aire').scale==='major');assert.equal(by('obra').scale,'minor');assert.equal(by('umbral').scale,'minor');assert.equal(by('vacio').scale,'octatonic');assert.equal(by('centro').scale,'major');
+ assert.ok(by('aire').tempo>=140&&by('aire').scale==='major');assert.equal(by('obra').scale,'minor');assert.equal(by('umbral').scale,'minor');assert.equal(by('vacio').scale,'octatonic');assert.equal(by('centro').scale,'minor');
+ // Mission 6: infiltration at a medium-fast pace, snare on 2 and 4, a two-bar motif that returns.
+ const mall=by('centro');assert.ok(mall.tempo>=110&&mall.tempo<=124&&mall.bars>=12&&mall.bars<=16);
+ for(let bar=0;bar<mall.bars;bar++){const events=M.barEvents('centro',bar),bass=events.filter(e=>e.track==='bass');
+  assert.deepEqual(events.filter(e=>e.track==='snare').map(e=>e.step).slice(0,2),[4,12],'snare on 2 and 4');
+  assert.ok(bass.every(e=>e.midi>=M.noteToMidi('F2')),'bass audible on small speakers');
+  const root=bass.find(e=>e.step===0).midi,third=bass.find(e=>e.step===8).midi;assert.equal(third,root,'firm pulse: the root on beats 1 and 3');}
+ const motif=bar=>M.barEvents('centro',bar).filter(e=>e.track==='lead').map(e=>[e.step,e.len,e.midi]);
+ for(const boss of [false,true]){const notes=melodic(M.compile('centro',boss));
+  for(const a of notes)for(const b of notes){if(a.inst===b.inst||a.step>=b.step+b.len||b.step>=a.step+a.len)continue;const d=Math.abs(a.midi-b.midi)%12;assert.ok(d!==1&&d!==11,'no semitone clash between '+a.inst.name+' and '+b.inst.name+' at step '+Math.max(a.step,b.step));}}
+ assert.deepEqual(motif(4),motif(0),'the question returns');assert.deepEqual(motif(8).map(e=>e[0]),motif(0).map(e=>e[0]),'and is developed in sequence');
  assert.ok(by('abismo').echo&&by('vacio').echo&&by('fuga').echo,'echo where the setting asks for it');
  // Mission 4: the bass runs in eighth notes, eight to the bar, all loop long.
  const road=M.compile('carretera');for(let bar=0;bar<road.bars;bar++){const bass=M.barEvents('carretera',bar).filter(e=>e.track==='bass');assert.deepEqual(bass.map(e=>e.step),[0,2,4,6,8,10,12,14]);assert.ok(bass.every(e=>e.len===2));}
@@ -102,7 +112,7 @@ test('a bar pattern is generated from its readable notation',()=>{
  const bar=M.barEvents('carretera',0),steps=bar.map(e=>e.step);assert.deepEqual(steps,[...steps].sort((a,b)=>a-b),'events come in step order');
  assert.deepEqual(bar.filter(e=>e.track==='kick').map(e=>e.step),[0,4,8,12]);assert.ok(bar.filter(e=>e.track==='kick').every(e=>e.midi===null&&e.len===1));
  assert.ok(Math.abs(bar.find(e=>e.track==='bass').frequency-82.41)<.01);assert.equal(bar.filter(e=>e.track==='arp').length,16,'sixteenth-note arpeggio');
- const comp=M.barEvents('centro',0).filter(e=>e.track==='comp');assert.deepEqual(comp.map(e=>e.step),[2,2,2,8,8,8,14,14,14],'chords sound together');
+ const stab=M.barEvents('centro',0,true).filter(e=>e.track==='capa');assert.deepEqual(stab.map(e=>e.step),[2,2,2,6,6,6,10,10,10,14,14,14],'chords sound together');
  assert.deepEqual(M.barEvents('obra',8),M.barEvents('obra',0),'the loop wraps');assert.deepEqual(M.barEvents('obra',-1),M.barEvents('obra',7));assert.deepEqual(M.barEvents('nada',0),[]);
  const hat=M.barEvents('quimera',0).filter(e=>e.track==='hat');assert.equal(hat[hat.length-1].level,1.3,'accents are louder');
  const broken={id:'rota',title:'Rota',tempo:100,bars:8,key:'C',scale:'major',tracks:{bass:{voice:'bass',bars:['C2 . C2']},lead:{voice:'lead',bars:['C4 F#4 . .']}},drums:{kick:['x...']},boss:{tempo:1.3,drums:{},layer:{voice:'arp',bars:['C4']}}};

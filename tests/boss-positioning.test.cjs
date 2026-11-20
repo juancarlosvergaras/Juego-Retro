@@ -30,12 +30,13 @@ test('the Colossus can hit both roof edges at floor, jump and flight height, wit
  run(1.8,()=>Mall.update(s,p,e,{},dt));assert.ok(e.damageTaken>0);
 });
 test('the final rooftop and high flight have a full exterior view; indoor crossings finish even when the player stops',()=>{
- for(const x of [270,400,936])assert.equal(Mall.landingView(3,x),null);
- const {s,p,e}=room(Mall,3,80,72);assert.equal(s.camera.landing,null);
- s.boss.active=true;s.boss.hp=0;Mall.update(s,p,e,{},dt);assert.equal(s.camera.landing,null);
+ for(const x of [20,270,400,936])assert.equal(Mall.cameraX(3,x),0);
+ const {s,p,e}=room(Mall,3,80,72);assert.equal(s.camera.x,0);assert.equal(s.camera.y,0);
+ s.boss.active=true;s.boss.hp=0;Mall.update(s,p,e,{},dt);assert.equal(s.camera.x,0);assert.equal(s.camera.y,0);
  const st=Mall.escalator(0),g=room(Mall,0,st.exit-1,Mall.treadY(st,st.exit));
- run(.5,()=>{Mall.stepPlayer(g.s,g.p,{},dt);Mall.update(g.s,g.p,g.e,{},dt);});
- assert.equal(g.s.floor,1);assert.equal(g.s.skyTransition,null);
+ Mall.stepPlayer(g.s,g.p,{right:true},dt);Mall.update(g.s,g.p,g.e,{right:true},dt);assert.equal(g.s.stairs.active,true);
+ run(1.2,()=>{Mall.stepPlayer(g.s,g.p,{},dt);Mall.update(g.s,g.p,g.e,{},dt);});
+ assert.equal(g.s.floor,1);assert.equal(g.s.stairs.active,false);assert.equal(g.s.stairs.fade,0);
 });
 test('the Sovereign locks one visible beam through the actual target on either side, including directly above its mouth',()=>{
  for(const x of [24,646,936]){

@@ -13,30 +13,25 @@ function atStair(floor,distance,form='soldier'){
  s.x=st.lower+distance;s.y=M.treadY(st,s.x);M.configure(s,p,e);p.form=form;
  return {...game,st};
 }
-test('stepping on a belt boards immediately and each open landing changes floors once',()=>{
+test('stepping on an escalator starts the crossing, which finishes by itself and changes floors once',()=>{
  for(let floor=0;floor<3;floor++){
   const game=atStair(floor,-70),{s,p,e,st}=game;
-  advance(game,15);assert.equal(p.x,st.entry-2);
-  advance(game,10,{right:true});assert.ok(p.x>st.entry);assert.equal(M.interact(s,p),null);
-  e.bullets.push({x:0});const events=advance(game,570);
-  assert.equal(s.floor,floor+1);assert.equal(s.checkpoint,s.floor);
+  advance(game,15);assert.equal(p.x,st.entry-2);assert.equal(s.stairs.active,false);
+  advance(game,10,{right:true});assert.ok(p.x>st.entry&&s.stairs.active);assert.equal(M.interact(s,p),null);
+  e.bullets.push({x:0});const events=advance(game,300);
+  assert.equal(s.floor,floor+1);assert.equal(s.checkpoint,s.floor);assert.equal(s.stairs.active,false);assert.equal(s.stairs.fade,0);
   assert.equal(events.filter(v=>v.type==='checkpoint').length,1);assert.equal(e.bullets.length,0);
-  assert.ok(Math.abs(p.x-M.landingX)<2);assert.equal(p.y,M.FLOOR);
+  assert.ok(p.x>=M.arrivalX&&p.x<M.arrivalX+12,'stops just past the arrival point');assert.equal(p.y,M.FLOOR);assert.equal(p.facing,1);
  }
 });
-test('the gallery, stair and feet stay in the same screen positions across both floor boundaries',()=>{
+test('each floor has its own frame: the escalator is in view before boarding and the roof is framed whole',()=>{
  for(const floor of [0,1,2]){
-  const st=M.escalator(floor);
-  for(const local of [M.landingX,M.landingX-18]){
-   const x=st.exit+local-M.landingX,before=M.landingView(floor,x),after=M.landingView(floor+1,local);
-   assert.equal(before.upperCamera,after.upperCamera);
-   assert.equal(before.lift,after.lift);
-   assert.equal(x-M.cameraX(floor,x),local-M.cameraX(floor+1,local));
-   assert.equal(M.treadY(st,x)+before.actorOffset,M.FLOOR+after.actorOffset);
-  }
-  const atCrest=M.cameraX(floor,st.upper);
-  assert.ok(atCrest+960-st.exit>=320,'the corridor is visible before crossing');
+  const st=M.escalator(floor),camera=M.cameraX(floor,st.entry);
+  assert.equal(camera,M.widths[floor]-870);assert.equal(M.cameraX(floor,st.exit),camera,'the frame rests during the climb');
+  assert.ok(st.entry-camera>300&&st.exit-camera<900,'the whole escalator is visible');
+  assert.equal(M.cameraX(floor+1,M.landingX),floor===2?0:-90,'the head of the escalator is in view on arrival');
  }
+ assert.equal(M.cameraX(0,140),0);
  assert.equal(M.cameraX(3,270),0,'the boss arena is framed before combat starts');
 });
 test('Arcade entry still requires proximity, ground and no burrow; saves restore the current tread',()=>{
@@ -57,12 +52,12 @@ test('original maze has reachable circuits, winning and collision defeat',()=>{c
 test('pinball launching, bumper scoring, independent flippers and draining three balls',()=>{const s=A.create('pinball');A.update(s,{jumpPressed:true},.01);assert.ok(s.ball.vy<0);s.ball={x:150,y:180,vx:0,vy:-100};A.update(s,{},.01);assert.ok(s.score>=100);s.ball={x:175,y:449,vx:0,vy:100};A.update(s,{left:true},.01);assert.ok(s.ball.vy<0);assert.equal(s.right,false);s.lives=1;s.ball={x:240,y:536,vx:0,vy:150};A.update(s,{},.01);assert.ok(s.over);});
 test('racer steering, collision invulnerability and finish line',()=>{const s=A.create('race');A.update(s,{left:true,up:true},.02);assert.ok(s.x<240);s.cars=[{x:s.x,y:430}];A.update(s,{},.01);assert.equal(s.lives,2);s.cars=[{x:s.x,y:430}];A.update(s,{},.01);assert.equal(s.lives,2);s.distance=8999;A.update(s,{up:true},.03);assert.ok(s.won);});
 
-test('every skin can ride, jump onto the moving incline and walk back off at the foot',()=>{
+test('every skin can stand on the incline, jump back onto it and walk off at the foot',()=>{
  for(const form of ['soldier','wolf','zombie','robot','tank','fighter','hero']){
   for(const floor of [0,1,2]){
    const game=atStair(floor,82,form),{s,p,st}=game,initial=p.x;
    advance(game,36);
-   assert.ok(Math.abs(p.x-initial-st.speed*.3)<1e-6);assert.ok(p.grounded&&p.form===form);
+   assert.ok(Math.abs(p.x-initial)<1e-6,'standing still does not start a crossing');assert.ok(p.grounded&&p.form===form&&!s.stairs.active);
    assert.ok(Math.abs(p.y-M.treadY(st,p.x))<1e-6);
    advance(game,1,{jumpPressed:true,left:true});advance(game,18,{left:true});
    assert.ok(!p.grounded&&p.y<M.treadY(st,p.x)-20);
@@ -73,16 +68,16 @@ test('every skin can ride, jump onto the moving incline and walk back off at the
   }
  }
 });
-test('landings work in both directions, including an airborne crossing and return from the roof',()=>{
+test('crossings work in both directions, including from the landing and back down from the roof',()=>{
  for(const floor of [0,1,2]){
   const game=atStair(floor,350),{s,p,st}=game,guards=s.enemies;
-  guards[0].hp=1;advance(game,1,{jumpPressed:true,right:true});
-  for(let i=0;i<90&&s.floor===floor;i++)advance(game,1,{right:true});
-  assert.equal(s.floor,floor+1);assert.ok(!p.grounded&&p.y<M.FLOOR&&p.vy<0);
+  guards[0].hp=1;
+  for(let i=0;i<360&&(s.floor===floor||s.stairs.active);i++)advance(game,1,{right:true});
+  assert.equal(s.floor,floor+1);assert.ok(p.grounded&&p.y===M.FLOOR&&!s.stairs.active);
   const checkpoint=M.snapshot(s,p);assert.equal(checkpoint.floor,floor+1);
-  for(let i=0;i<240&&s.floor!==floor;i++)advance(game,1,{left:true});
+  for(let i=0;i<600&&(s.floor!==floor||s.stairs.active);i++)advance(game,1,{left:true});
   assert.equal(s.floor,floor);assert.equal(s.checkpoint,floor);assert.equal(s.enemies,guards);assert.equal(guards[0].hp,1);
-  assert.ok(p.x<=st.exit-17&&p.facing===-1);advance(game,60,{left:true});assert.equal(s.floor,floor);
+  assert.ok(p.x<st.entry&&p.facing===-1);advance(game,60,{left:true});assert.equal(s.floor,floor);assert.equal(s.stairs.active,false);
  }
 });
 test('flying high against a screen edge does not change floors, and recoil alone cannot send the player downstairs',()=>{
@@ -91,8 +86,9 @@ test('flying high against a screen edge does not change floors, and recoil alone
  M.update(s,p,e,{right:true},1/120);assert.equal(s.floor,1);
  Object.assign(p,{x:M.landingX-24,vx:-100});
  M.update(s,p,e,{left:true},1/120);assert.equal(s.floor,1);
- p.y=M.FLOOR;M.update(s,p,e,{},1/120);assert.equal(s.floor,1);
- M.update(s,p,e,{left:true},1/120);assert.equal(s.floor,0);
+ Object.assign(p,{y:M.FLOOR,grounded:true,heroFlight:false});M.update(s,p,e,{},1/120);assert.equal(s.floor,1);assert.equal(s.stairs.active,false);
+ M.update(s,p,e,{left:true},1/120);assert.equal(s.stairs.active,true);assert.equal(s.stairs.dir,-1);
+ advance({s,p,e},360);assert.equal(s.floor,0);assert.equal(s.stairs.active,false);
 });
 test('the rocks leave the rooftop giant and land at the warning marks',()=>{
  const {s,p,e}=setup(3);p.x=240;e.invincible=999;

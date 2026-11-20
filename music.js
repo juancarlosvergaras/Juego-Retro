@@ -192,35 +192,48 @@
         'B3 . B3 B3 . B3 B3 .','G3 . G3 G3 . G3 G3 .','E3 . E3 E3 . E3 E3 .','F#3 . F#3 F#3 . F#3 F#3 .']}}
   };
 
-  // Acordes del hilo musical del centro comercial.
-  const FM='A3+C4+E4',DM='F3+A3+C4',GM='F3+Bb3+D4',C7='E3+G3+Bb3',BB='F3+A3+D4',GT='G3+Bb3+D4';
-  const bossa=chord=>'. '+chord+' - . '+chord+' - . '+chord,tense=chord=>'. '+chord+' . '+chord+' . '+chord+' . '+chord;
+  // Infiltración en el centro comercial: Sol menor natural, pulso firme y un
+  // motivo de dos compases (pregunta) que responde sobre Mib–Fa y se desarrolla
+  // por secuencia en la segunda mitad. Las notas largas de la melodía son notas
+  // del acorde; las de paso están a un tono de él, nunca a un semitono.
+  // Gm Gm Eb F | Gm Gm Eb Dm || Cm Cm Gm Gm | Eb F Dm Dm (semicadencia: vuelve a Gm)
+  const CENTRO_CHORDS=['Gm','Gm','Eb','F','Gm','Gm','Eb','Dm','Cm','Cm','Gm','Gm','Eb','F','Dm','Dm'];
+  const CENTRO={ // bajo (tónica en 1 y 3, quinta en 2 y 4), arpegio, colchón y golpe de jefe
+    Gm:{bass:'G2 G2 D3 G2 G2 G2 D3 G2',    arp:'G3 D4 Bb3 D4',  pad:'G3+D4', stab:'G4+Bb4+D5'},
+    Eb:{bass:'Eb3 Eb3 Bb2 Eb3 Eb3 Eb3 Bb2 Eb3',arp:'G3 Eb4 Bb3 Eb4',pad:'G3+Bb3',stab:'G4+Bb4+Eb5'},
+    F: {bass:'F2 F2 C3 F2 F2 F2 C3 F2',    arp:'F3 C4 A3 C4',   pad:'A3+C4', stab:'A4+C5+F5'},
+    Dm:{bass:'D3 D3 A2 D3 D3 D3 A2 D3',    arp:'F3 D4 A3 D4',   pad:'A3+D4', stab:'A4+D5+F5'},
+    Cm:{bass:'C3 C3 G2 C3 C3 C3 G2 C3',    arp:'G3 Eb4 C4 Eb4', pad:'C4+Eb4',stab:'G4+C5+Eb5'}
+  };
+  const centroBars=(part,last)=>CENTRO_CHORDS.map((chord,bar)=>bar===15&&last?last:CENTRO[chord][part]);
   const centro={
-    id:'centro',mission:6,title:'El último centro',character:'Hilo musical de centro comercial que se va tensando',
-    key:'F',scale:'major',tempo:108,bars:12, // Fmaj7 Dm7 Gm7 C7 | Fmaj7 Dm7 Bbmaj7 C7 || Dm Dm Gm C7 (tensión)
+    id:'centro',mission:6,title:'El último centro',character:'Infiltración en un lugar que aparenta normalidad',
+    key:'G',scale:'minor',tempo:118,bars:16,
     tracks:{
-      bass:{voice:'softBass',bars:[
-        'F2 - . C3 F2 - . C3',    'D3 - . A2 D3 - . A2',    'G2 - . D3 G2 - . D3',    'C3 - . G2 C3 - . G2',
-        'F2 - . C3 F2 - . C3',    'D3 - . A2 D3 - . A2',    'Bb2 - . F2 Bb2 - . F2',  'C3 - . G2 C3 - . G2',
-        'D3 D3 D3 D3 D3 D3 D3 D3','D3 D3 D3 D3 D3 D3 D3 D3','G2 G2 G2 G2 G2 G2 G2 G2','C3 C3 C3 C3 C3 C3 C3 C3']},
-      lead:{voice:'flute',bars:[
-        'A4 - C5 - E5 - D5 C5',  'A4 - - F4 A4 - - .',  'Bb4 - D5 - F5 - E5 D5','C5 - - Bb4 G4 - E4 -',
-        'A4 - C5 - E5 - F5 E5',  'D5 - - C5 A4 - - .',  'D5 - F5 - A5 - G5 F5', 'E5 - - D5 C5 - - .',
-        'D5 . D5 . F5 E5 D5 .',  'A4 . A4 . Bb4 A4 . .','G4 . G4 . Bb4 A4 G4 .','E4 - G4 - Bb4 - C5 -']},
-      comp:{voice:'pluck',level:.4,bars:[
-        bossa(FM),bossa(DM),bossa(GM),bossa(C7),
-        bossa(FM),bossa(DM),bossa(BB),bossa(C7),
-        tense(DM),tense(DM),tense(GT),tense(C7)]}
+      // El último compás camina hacia la tónica: Re–Do–La–Fa → Sol.
+      bass:{voice:'bass',bars:centroBars('bass','D3 D3 A2 D3 D3 C3 A2 F2')},
+      lead:{voice:'lead',bars:[
+        'G4 . . G4 Bb4 . D5 .',  'C5 . D5 . F5 - - .',  // pregunta: sube por la tríada y queda en la séptima
+        'G5 - F5 . Eb5 . . .',   'D5 . C5 . A4 - - .',  // respuesta: baja y se detiene en La
+        'G4 . . G4 Bb4 . D5 .',  'C5 . D5 . G5 - - .',  // la pregunta vuelve y llega más alto
+        'Bb5 - G5 . F5 . Eb5 .', 'D5 - - - A4 - - .',   // respuesta que reposa en la dominante
+        'C5 . . C5 Eb5 . G5 .',  'F5 . G5 . Bb5 - - .', // secuencia del motivo sobre Do menor
+        'D5 . . D5 G5 . Bb5 .',  'Bb5 - G5 . F5 . D5 .',// y sobre Sol menor, una octava más tensa
+        'Eb5 . G5 . Bb5 - G5 .', 'A5 - G5 . F5 . C5 .',
+        'D5 . F5 . A5 - G5 F5',  'D5 - - - . . . .']},
+      arp:{voice:'arp',bars:CENTRO_CHORDS.map(chord=>x4(CENTRO[chord].arp))},
+      pad:{voice:'pad',level:.8,bars:centroBars('pad')}
     },
     drums:{
-      kick:['o.....o.o.....o.'],
-      snare:['o..o..o...o.o...','o..o..o...o.o...','o..o..o...o.o...','o..o..o...o.o...','o..o..o...o.o...','o..o..o...o.o...','o..o..o...o.o...','o..o..o...o.o...',
-             '....x.......x...','....x.......x...','....x.......x...','....x.....x.x.xx'],
-      hat:['o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.','o.o.o.o.o.o.o.o.',
-           'xoxoxoxoxoxoxoxo','xoxoxoxoxoxoxoxo','xoxoxoxoxoxoxoxo','xoxoxoxoxoxoxoxo']},
-    boss:{tempo:1.1,
-      drums:{kick:['x..x..x.x..x..x.'],snare:['....x.......x..o'],hat:['xoxoxoxoxoxoxoxo']},
-      layer:{voice:'arp',level:1.2,bars:['A3 A3 . A3 A3 . A3 A3']}} // pedal nervioso sobre la tercera
+      kick:['x.....x...x.....'],
+      snare:['....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x...','....x.......x.ox'],
+      hat:['o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.','o.x.o.x.o.x.o.x.',
+           'x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.x.','x.x.x.x.x.x.x.X.']},
+    // El Coloso: bombo a negras, caja con redobles, charles a semicorcheas y
+    // acordes a contratiempo que empujan cada compás.
+    boss:{tempo:1.08,
+      drums:{kick:['x...x...x...x.x.'],snare:['....x.......x.xx'],hat:['xoxoxoxoxoxoxoXo']},
+      layer:{voice:'stab',level:1.2,bars:CENTRO_CHORDS.map(chord=>'. '+CENTRO[chord].stab+' . '+CENTRO[chord].stab+' . '+CENTRO[chord].stab+' . '+CENTRO[chord].stab)}}
   };
 
   const VA='C5 . . A4 . . F#4 . . Eb4 . . C4 . . .',VB='Db5 . . Bb4 . . G4 . . E4 . . Db4 . . .';

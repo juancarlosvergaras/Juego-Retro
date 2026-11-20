@@ -54,26 +54,18 @@
     if(item.x>=camera-32&&item.x<=camera+992&&!s.taken.has(item.id))root.ArcadePickupRenderer.draw(c,item,s.time,p);
   }
   function title(c,small,big,detail){c.fillStyle='#081b29eb';c.fillRect(0,0,960,66);c.fillRect(0,458,960,82);c.textAlign='center';c.fillStyle='#ffc96c';c.font='bold 15px monospace';c.fillText(small,480,39);c.fillStyle='#ebf7ed';c.font='bold 25px monospace';c.fillText(big,480,491);c.fillStyle='#b8d5d6';c.font='12px monospace';c.fillText(detail,480,520);}
-  function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;const landing=s.camera.landing;
-   if(landing)art.landingBackdrop(c,s,images,landing);
-   else{
-    const panorama=art.background(c,s,images);
-    root.ArcadeMallShoppers.draw(c,s,images.shoppers,panorama);
-    if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);}
-   }
+  function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;
+   // One floor at a time: the crossing between floors happens behind a veil.
+   const panorama=art.background(c,s,images);
+   root.ArcadeMallShoppers.draw(c,s,images.shoppers,panorama);
+   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);}
+   art.stairwell(c,s,images);
    c.save();c.translate(-Math.round(s.camera.x),-s.camera.y);
-   if(landing)art.landingStairs(c,s,landing,false);
+   art.escalators(c,s,false);
    if(s.floor<3){
     for(const pl of s.geometry.platforms)if(pl.kind==='balcony')art.balcony(c,pl);
    }
    supplies(c,s,p,s.floor,s.camera.x);
-   if(landing){
-    const floor=landing.incoming?landing.from:landing.from+1;
-    const dx=landing.incoming?-landing.origin:landing.origin;
-    const dy=landing.incoming?landing.st.rise:-landing.st.rise;
-    c.save();c.translate(dx,dy);
-    supplies(c,s,p,floor,landing.incoming?landing.lowerCamera:landing.upperCamera);c.restore();
-   }
    if(s.floor===0){
     const x=s.arcadeX,base=ArcadeMallWorld.FLOOR,left=x-85,top=base-88;
     c.fillStyle='#182629';c.fillRect(left,top,170,88);
@@ -96,11 +88,12 @@
    if(s.ending<0&&!p.rope&&!p.ladder&&!p.transform&&!['wolf','zombie'].includes(p.form))ArcadeWeaponRenderer.draw(c,p,e);
    if(p.jetpack)drawJetpack('front');
    c.restore();
-   if(landing)art.landingStairs(c,s,landing,true);
+   art.escalators(c,s,true);
    ArcadeMissionCombat.draw(c,e,powers,p,{left:s.camera.x,right:s.camera.x+960,top:s.camera.y,bottom:s.camera.y+540});
    for(const f of s.debris)for(let i=0;i<14;i++){const t=f.age,x=f.x+Math.sin(i*7)*100*t,y=f.y-Math.abs(Math.cos(i*4))*130*t+110*t*t;c.fillStyle=i%2?'#b8b49b':'#5f7076';c.fillRect(Math.round(x),Math.round(y),7-i%3,5+i%4);}
    if(s.floor===3&&s.boss.active&&s.ending<0)art.hazards(c,s,images,giantEffects);
    c.restore();
+   art.veil(c,s);
    if(s.intro<4)title(c,'MISIÓN 06','EL ÚLTIMO CENTRO','La fachada del Consorcio · Sube hasta la antena de la azotea.');
    if(s.ending>=6)title(c,'MISIÓN 06 COMPLETADA','EL COLOSO HA CAÍDO','La antena del Consorcio apunta al cielo · Progreso y récords guardados');
    c.restore();

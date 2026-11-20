@@ -97,7 +97,8 @@
   for(let x=entry+14;x<exit;x+=48){
    const y=world.treadY(st,x);line(c,'#98a8a0',2,[[x-5,y-26],[x-5,y-12]]);
   }
-  const pitch=st.pitch,phase=(s.time*st.speed)%pitch;
+  // The treads follow the belt of the world, which reverses for a ride down.
+  const pitch=st.pitch,phase=(((s.belt??s.time*st.speed)%pitch)+pitch)%pitch;
   for(let x=lower+phase-120;x<comb;x+=pitch){
    if(x<entry)continue;
    const y=Math.round(world.treadY(st,x)),ix=Math.round(x);
@@ -119,111 +120,99 @@
   }
   return H;
  }
- function landingBackdrop(c,s,images,v){
-  const {from,st,upperCamera,lowerCamera,lift,progress}=v,next=from+1;
-  const upperY=lift-st.rise,cam=Math.round(upperCamera),right=cam+W;
-  const below=background(c,{floor:from,camera:{x:lowerCamera}},images,lift);
-  if(!v.incoming){
-   c.save();c.translate(0,lift);
-   root.ArcadeMallShoppers.draw(c,s,images.shoppers,below);c.restore();
+ const titles=['GALERÍAS','RESTAURANTES','AZOTEA'];
+ function plaque(c,title,x,y){
+  c.font='bold 8px monospace';c.textAlign='left';
+  const width=Math.ceil(c.measureText(title).width)+19;
+  c.fillStyle='#937959';c.fillRect(x-1,y-1,width+2,12);
+  c.fillStyle='#253336';c.fillRect(x,y,width,10);
+  c.fillStyle='#e4d2a5';c.fillText(title+' ›',x+4,y+8);
+ }
+ // Each floor is a room of its own. Upstairs the row of shops ends in a wall at
+ // the left, beside the open well that the escalator climbs through. Drawn in
+ // screen space, over the panorama and behind everybody.
+ function stairwell(c,s,images){
+  const floor=s.floor,cam=Math.round(s.camera.x),right=cam+W;
+  if(floor<1||cam>300)return;
+  const st=root.ArcadeMallWorld.escalator(floor-1);
+  c.save();c.translate(-cam,0);
+  if(floor===3){
+   // On the roof the escalator surfaces through a hatch in the deck.
+   const hatch=[[cam-10,ground-8],[30,ground-8],[44,ground+7],[44,H]];
+   polygon(c,'#101a21',[...hatch,[cam-10,H]]);line(c,'#a09081',2,hatch);
+   c.restore();return;
   }
-  const upstairs=next===3?null:interiorArt(images,next);
-  const left=lip[0][0],back=left+36,ceiling=upstairs?upstairs.layout.top:ground-134;
-  // Keep one panorama across the atrium. Only the distant scenery dissolves
-  // at the room boundary; the floor, escalator and actors remain opaque.
-  const skyMix=s.skyTransition?.from===from?s.skyTransition.mix:Number(v.incoming);
-  if(skyMix>0){
-   c.save();c.globalAlpha=skyMix;
-   if(upstairs)repeat(c,upstairs.back,upperCamera*.72,upperY,true);
-   else{
-    c.beginPath();c.rect(0,0,W,edge+upperY+1);c.clip();
-    background(c,{floor:3,camera:{x:0}},images,upperY);
-   }
-   c.restore();
-  }
-  if(right<left)return;
-  c.save();c.translate(-cam,upperY);
-  // Stone piers and soffit beneath the occupied wing are sampled at shop scale.
+  const upstairs=interiorArt(images,floor),back=lip[0][0]+36,ceiling=upstairs.layout.top;
+  const shade=c.createLinearGradient(0,ceiling,0,H);
+  shade.addColorStop(0,'#2b363d');shade.addColorStop(.65,'#18222a');shade.addColorStop(1,'#0c141a');
+  polygon(c,shade,[[cam-10,ceiling],[back,ceiling],[back,ground-27],...lip,[cam-10,H]]);
+  // Stone piers, soffit and trim are sampled from the gallery painting at shop scale.
   const stone=images.gallery,k=stone.width/root.ArcadeMallInterior.referenceWidth;
   function stoneRect(sx,sy,sw,sh,x,y,w,h){
    c.drawImage(stone,sx*k,sy*k,sw*k,sh*k,x,y,w,h);
   }
-  for(let x=52;x<right+45;x+=164){
-   if(x<cam-50)continue;
-   const head=lipY(x)+10;
-   c.fillStyle='#25202d63';c.fillRect(x+8,Math.round(head),27,st.rise+ground-head);
-   stoneRect(389,182,23,147,x,Math.round(head),20,st.rise+ground-head-1);
-   stoneRect(387,164,26,21,x-4,Math.round(head),28,12);
-   stoneRect(389,310,23,20,x-3,ground+st.rise-8,26,8);
+  for(let x=back-124;x>cam-130;x-=120)stoneRect(231,160,125,17,x,ceiling-4,120,9);
+  c.save();c.globalAlpha=.55;
+  for(const x of [52,216]){
+   const head=Math.round(lipY(x)+10);
+   stoneRect(389,182,23,147,x,head,20,st.rise+ground-head-1);
+   stoneRect(387,164,26,21,x-4,head,28,12);
   }
+  c.restore();
   const outer=[...lip,[Math.max(290,right+1),H]];
   polygon(c,'#392d32',[...outer,...outer.map(([x,y])=>[x,y+16]).reverse()]);
   for(const [color,w,dy] of [['#796254',4,12],['#b09a77',2,7],['#504344',3,4],['#e1c9a0',2,1]]){
    line(c,color,w,outer.map(([x,y])=>[x,y+dy]));
   }
   stoneRect(233,161,123,18,17,ground+11,146,11);
-  const title=['GALERÍAS','RESTAURANTES','AZOTEA'][from];
-  c.font='bold 8px monospace';c.textAlign='left';
-  const plaqueX=82,plaqueY=ground+11,plaqueW=Math.ceil(c.measureText(title).width)+19;
-  c.fillStyle='#937959';c.fillRect(plaqueX-1,plaqueY-1,plaqueW+2,12);
-  c.fillStyle='#253336';c.fillRect(plaqueX,plaqueY,plaqueW,10);
-  c.fillStyle='#e4d2a5';c.fillText(title+' ›',plaqueX+4,plaqueY+8);
-  c.save();c.beginPath();
-  c.moveTo(back,ceiling);c.lineTo(right+1,ceiling);c.lineTo(right+1,H);
-  for(const [x,y] of lip.slice().reverse())c.lineTo(x,y);
-  c.lineTo(back,ground-27);c.closePath();c.clip();
-  c.translate(cam,0);
-  if(upstairs){
-   repeat(c,upstairs.front,upperCamera*root.ArcadeMallInterior.parallax,ceiling);
-  }else{
-   c.save();c.translate(-cam,0);
-   rooftop(c,images.roofDeck,s.time);c.restore();
-  }
+  plaque(c,titles[floor-1],82,ground+11);
+  // A corner pilaster and its cornice close the row of shops.
+  stoneRect(389,182,23,147,back-5,ceiling+4,13,upstairs.layout.threshold-ceiling-4);
+  stoneRect(386,159,30,29,back-8,ceiling-1,19,11);
+  stoneRect(388,310,25,18,back-7,upstairs.layout.threshold-8,17,8);
   c.restore();
-  // A rear corner pilaster and cornice frame the shops; the route in front is open.
-  if(right>=back){
-   if(upstairs){
-    stoneRect(389,182,23,147,back-5,ceiling+4,13,upstairs.layout.threshold-ceiling-4);
-    stoneRect(386,159,30,29,back-8,ceiling-1,19,11);
-    stoneRect(388,310,25,18,back-7,upstairs.layout.threshold-8,17,8);
-    if(progress<1){
-     c.save();c.globalAlpha=1-progress;
-     for(let x=Math.max(0,Math.floor((cam-back)/120))*120+back-4;x<right;x+=120)stoneRect(231,160,125,17,x,ceiling-4,120,9);
-     c.restore();
-    }
-   }else{
-    c.fillStyle='#394b4f';c.fillRect(back-4,edge+1,9,24);
-    c.fillStyle='#a99980';c.fillRect(back-6,edge,13,3);
+ }
+ // The top of an escalator, seen from its own floor: a landing over a closed
+ // base and the doorway that leads on. Nothing of the next room is shown.
+ function landing(c,st,floor){
+  const top=ground-st.rise,left=st.exit-8,right=st.exit+164,door=st.exit+34,height=80;
+  c.fillStyle='#27333a';c.fillRect(left+6,top+14,right-left-6,ground-top-14);
+  for(let x=left+52;x<right;x+=46){c.fillStyle='#1e2930';c.fillRect(x,top+17,2,ground-top-22);}
+  c.fillStyle='#3f4c50';c.fillRect(left+6,top+14,2,ground-top-14);
+  c.fillStyle='#16222a';c.fillRect(left+8,top+14,right-left-8,3);
+  c.fillStyle='#55605a';c.fillRect(left+6,ground-5,right-left-6,5);
+  plaque(c,titles[floor],left+18,top+30);
+  c.fillStyle='#3c4342';c.fillRect(door-6,top-height-7,right-door+6,height+7);
+  c.fillStyle='#726b51';c.fillRect(door-6,top-height-7,right-door+6,3);
+  c.fillStyle='#99866d';c.fillRect(door-5,top-height-4,1,height+4);
+  c.fillStyle='#0e171d';c.fillRect(door,top-height,right-door,height);
+  c.fillStyle='#19262d';c.fillRect(door,top-height,6,height);
+  c.fillStyle='#233237';c.fillRect(left,top,right-left,14);
+  c.fillStyle='#a18a66';c.fillRect(left,top,right-left,3);
+  c.fillStyle='#5e4d41';c.fillRect(left,top+12,right-left,2);
+ }
+ // World space. This floor's escalator with its landing, and the head of the
+ // one that arrives from the floor below.
+ function escalators(c,s,front){
+  const world=root.ArcadeMallWorld,cam=s.camera.x;
+  if(s.floor<3){
+   const st=world.escalator(s.floor);
+   if(cam+W>st.entry-40){
+    if(!front)landing(c,st,s.floor);
+    stairs(c,s,front,st);
    }
   }
-  // A low rail follows the outer balcony edge, well in front of the walking lane.
-  if(upperY<0){
-   c.globalAlpha=clamp(-upperY/18,0,1);
-   const start=294,railY=H-16;
-   for(let x=start;x<right;x+=56){
-    c.fillStyle='#443635';c.fillRect(x,railY,3,16);
-    c.fillStyle='#a28a66';c.fillRect(x,railY+1,1,14);
-    c.fillStyle='#5e4d41';c.fillRect(x+12,railY+5,1,10);c.fillRect(x+42,railY+5,1,10);
-    line(c,'#78634e',1,[[x+18,railY+9],[x+28,railY+4],[x+37,railY+9],[x+28,railY+14],[x+18,railY+9]]);
-   }
-   if(right>start){
-    c.fillStyle='#504039';c.fillRect(start-1,railY,right-start+1,3);
-    c.fillStyle='#c3a579';c.fillRect(start-1,railY,right-start+1,1);
-   }
-  }
-  c.restore();
-  if(v.incoming&&upstairs){
-   c.save();c.translate(0,upperY);root.ArcadeMallShoppers.draw(c,s,images.shoppers,upstairs);c.restore();
-  }else if(v.incoming&&v.roofBlend>0){
-   c.save();c.globalAlpha=v.roofBlend;
-   background(c,{floor:3,camera:{x:0}},images,upperY);
-   c.translate(0,upperY);giant(c,s,images.giant);rooftop(c,images.roofDeck,s.time);c.restore();
+  if(s.floor>0&&cam<160){
+   const st=world.escalator(s.floor-1);
+   c.save();c.translate(world.landingX-st.exit,st.rise);stairs(c,s,front,st);c.restore();
   }
  }
- function landingStairs(c,s,v,front){
-  c.save();
-  if(v.incoming){c.translate(-v.origin,v.st.rise);c.globalAlpha*=1-v.roofBlend;}
-  stairs(c,s,front,v.st);c.restore();
+ // The veil of a crossing. It covers far more than the frame, so that it also
+ // hides everything under any zoom applied around the renderer.
+ function veil(c,s){
+  const fade=Math.min(1,s.stairs?.fade||0);
+  if(fade<=0)return;
+  c.save();c.globalAlpha=fade;c.fillStyle='#060c12';c.fillRect(-2000,-2000,6000,6000);c.restore();
  }
  function gait(c,sheet,actor,k,time,cycle){
   const weight=Math.min(1,Math.abs(actor.vx||0)/68);
@@ -313,5 +302,5 @@
    }
   }
  }
- root.ArcadeMallStageArt={background,balcony,landingBackdrop,landingStairs,giant,giantPose,rooftop,hazards,gait,guard};
+ root.ArcadeMallStageArt={background,balcony,stairwell,escalators,veil,giant,giantPose,rooftop,hazards,gait,guard};
 })(window);

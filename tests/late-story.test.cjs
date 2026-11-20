@@ -105,9 +105,11 @@ test('las páginas 5 a 8 cargan estilos y guiones en orden, con los marcadores d
  assert.deepEqual(boss('level-six.html'),['JEFE · EL COLOSO','Vida del Coloso']);
  assert.deepEqual(boss('level-eight.html'),['JEFE · EL COMANDANTE','Vida del Comandante']);
  assert.ok(read('level-five.html').includes('id="stars-two">★ 0 / 4<'),'la misión 05 tiene cuatro estrellas');assert.ok(read('level-five-game.js').includes("s.stars.size+' / 4'"));
- // La hoja compartida no cambia el encuadre ni la tienda de las misiones 5 a 8.
+ // Las misiones 5 a 8 comparten el encuadre amplio de la 4; la tienda y la rueda de poderes siguen siendo las suyas.
  const css=read('mission-one-polish.css'),guard=':not(.mission-five):not(.mission-six)';
- for(const line of css.split('\n'))if(/--scene-height:|>\.header|>\.page-footer|\) main|#power-status\{display|#power-wheel:has|\.overlay-panel:has\(#shop|#shop \.shop-summary|^.*#shop-list\{display:block/.test(line)&&!line.trimStart().startsWith('/*'))assert.ok(line.includes(guard),'regla acotada: '+line.slice(0,70));
+ for(const line of css.split('\n'))if(/#power-status\{display|#power-wheel:has|\.overlay-panel:has\(#shop|#shop \.shop-summary|^.*#shop-list\{display:block/.test(line)&&!line.trimStart().startsWith('/*'))assert.ok(line.includes(guard),'regla acotada: '+line.slice(0,70));
+ assert.ok(css.includes(':root:not(.mobile-play) body>.header,')&&css.includes(':root:not(.mobile-play) body{--scene-height:'),'el encuadre sin cabecera vale para las ocho misiones');
+ assert.match(read('level-five.css'),/body\.mission-five \.combat-hud,body\.mission-six \.combat-hud\{top:20px/,'munición y saltos van en la fila superior del HUD');
  assert.match(css,/\.mission-five #radio,[^{]*\.mission-six #radio\{top:/,'la radio baja por debajo del HUD de munición');
  for(const id of ['#radio{','#briefing{','#mission-results{'])assert.ok(css.includes('\n'+id),'la radio, el informe y el parte siguen sin acotar: '+id);
 });

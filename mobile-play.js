@@ -42,7 +42,7 @@
   function update(p,e,profile,powers,blocked,arrival=false){
    if(!active)return;if(blocked&&!locked||descending!==!!arrival)release();locked=!!blocked;descending=!!arrival;for(const b of buttons){const disabled=locked||descending&&b.dataset.mobileAction!=='jump';if(b.disabled!==disabled)b.disabled=disabled;}text(controls.querySelector('[data-mobile-action="jump"]'),descending?'Descender':p.burrow?'Emerger':'Saltar');
    const zombie=p.form==='zombie',wolf=p.form==='wolf',w=root.ArcadeArsenal.weapons[e.inventory.selected],name=root.ArcadeZombieForm.label(p.form),power=root.ArcadeProgression.catalog.find(c=>c.id===profile.equipped),wait=Math.ceil(powers.cooldowns[profile.equipped]||0);
-   text(nodes.health,e.hp+'/'+e.maxHp);const life=Math.round(e.hp/e.maxHp*100);if(nodes.life.value!==life)nodes.life.value=life;
+   text(nodes.health,String(Math.round(e.hp*10)/10).replace('.',',')+'/'+e.maxHp);const life=Math.round(e.hp/e.maxHp*100);if(nodes.life.value!==life)nodes.life.value=life;
    const objectives=doc.getElementById('stars-two')||doc.getElementById('challenge-status');text(stars,objectives?.textContent.match(/★\s*\d+\s*\/\s*\d+/)?.[0]||'');
    text(nodes.weapon,p.form==='hero'?'Centella · Rayos ∞':zombie?'Zombi · Rayos ∞':wolf?'Lobo · Zarpazo':w.name+' · '+(w.ammo===null?'∞':e.inventory.ammo[e.inventory.selected]||0));
    text(nodes.power,(power?.name||'Sin poder')+(wait?' · '+wait+'s':''));text(nodes.jumps,'Saltos '+Math.max(0,(p.maxJumps||2)-(p.jumps||0))+'/'+(p.maxJumps||2));text(nodes.fuel,(p.jetpackMk2?'MK II ×2 · ':'Gas ')+Math.round(100*p.fuel/(p.fuelMax||1))+'%');

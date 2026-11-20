@@ -109,7 +109,7 @@
    if(Stage){if(cut)cinema(c,cut.bars,s.shared?null:['MISIÓN 04','FURIA EN LA CARRETERA','El convoy huye por la autopista'],cut.hint?'Espacio · Saltar la escena':'');
     else if(end)cinema(c,end.bars,s.shared?null:end.reward?['MISIÓN 04 COMPLETADA','MINI TANQUE DESBLOQUEADO','Súper cañón · Transformación submarina · Próximo destino: el mar']:['CONVOY NEUTRALIZADO','EL DEVORADOR HA CAÍDO','Blindaje roto · Tripulación derrotada'],'');
     c.restore();return;}
-   if(s.intro<5){letterbox(c,'MISIÓN 04','FURIA EN LA CARRETERA',s.intro<2?'Despliegue desde el portaaviones':'Flechas: maniobrar · Espacio: saltar · J: atacar · Shift: turbo');}
+   if(s.intro<5){letterbox(c,'MISIÓN 04','FURIA EN LA CARRETERA',s.intro<2?'Vega te deja en la Autopista 04':'Flechas: maniobrar · Espacio: saltar · J: atacar · Shift: turbo');}
    if(s.ending>=0){const age=s.ending;if(age<4){c.fillStyle='#ffde9822';c.fillRect(0,0,960,540);letterbox(c,'CONVOY NEUTRALIZADO','EL DEVORADOR HA CAÍDO','Blindaje roto · Tripulación derrotada');}else{const fade=Math.min(1,(age-4)/2);c.fillStyle='#f2bb6922';c.fillRect(0,0,960,540);player(c,p,{...s,jump:0,ram:0,shotFlash:0},p.x+Math.min(800,(age-4)*75),p.lane,1);if(age>=8)root.ArcadeAdvancedForms?.draw(c,{...p,form:'tank',x:480,y:390,anim:s.time,transform:0,hurt:0,cannonPose:0});letterbox(c,'MISIÓN 04 COMPLETADA',age<8?'CARRETERA LIBERADA':'MINI TANQUE DESBLOQUEADO',age<8?'El cazador deja atrás el convoy en llamas.':'Súper cañón · Transformación submarina · Próximo destino: el mar');c.globalAlpha=fade;}}
    c.restore();
   }

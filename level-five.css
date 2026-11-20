@@ -5,3 +5,5 @@
 .mission-five #victory-screen .overlay-panel{border-color:#80dcd3}
 .mission-five #victory-screen h2{color:#a9f2df}
 @media(max-width:700px){.mission-five .combat-hud{top:72px;transform:translateX(-50%) scale(.5)}}
+/* Misiones 5 a 8: munición y saltos van en la fila superior, junto a la salud, en vez de flotar sobre la escena. */
+@media(min-width:701px){body.mission-five .combat-hud,body.mission-six .combat-hud{top:20px;bottom:auto;left:calc(50% + 52px);right:auto;transform:scale(.6);transform-origin:top left}}

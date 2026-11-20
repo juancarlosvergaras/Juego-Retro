@@ -1,19 +1,19 @@
 /* Misión 01 · ajustes de presentación. Se carga después de styles.css.
-   Las misiones 05 a 08 (body.mission-five / body.mission-six) solo usan de aquí
-   la radio, el informe y el parte de misión: las reglas de encuadre, rueda de
+   Las misiones 05 a 08 (body.mission-five / body.mission-six) comparten de aquí
+   el encuadre, la radio, el informe y el parte de misión; las reglas de rueda de
    poderes y tienda llevan un :where(...) que las deja fuera sin cambiar la
    especificidad que tenían en las misiones 01 a 04. */
 
 /* El nivel es vertical: la escena ocupa toda la altura útil y limita su anchura
    para no perder campo de visión vertical en pantallas panorámicas. */
 @media (min-width:721px){
-  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)){--scene-height:clamp(390px,calc(100dvh - 196px),1050px)}
-  :root:not(.mobile-play) body:where(:not(.mission-five):not(.mission-six))>.header,
-  :root:not(.mobile-play) body:where(:not(.mission-five):not(.mission-six))>.page-footer{display:none}
-  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) main{max-width:calc(var(--scene-height)*1.45 + 42px);padding:8px 20px 0}
+  :root:not(.mobile-play) body{--scene-height:clamp(390px,calc(100dvh - 196px),1050px)}
+  :root:not(.mobile-play) body>.header,
+  :root:not(.mobile-play) body>.page-footer{display:none}
+  :root:not(.mobile-play) body main{max-width:calc(var(--scene-height)*1.45 + 42px);padding:8px 20px 0}
   /* Side-scrolling missions keep a wide frame. */
-  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) main:has(#level-two){max-width:calc(var(--scene-height)*2.1 + 42px)}
-  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) .game-card .viewport{height:var(--scene-height)}
+  :root:not(.mobile-play) body main:has(#level-two){max-width:calc(var(--scene-height)*2.1 + 42px)}
+  :root:not(.mobile-play) body .game-card .viewport{height:var(--scene-height)}
   :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) #power-status{display:none}
 }
 
@@ -27,6 +27,7 @@
 /* Misiones 05 a 08: la munición ocupa el centro superior, así que la radio baja
    hasta quedar por debajo de ella y de los avisos de jefe que pinta el lienzo. */
 :root:not(.mobile-play) .mission-five #radio,:root:not(.mobile-play) .mission-six #radio{top:max(160px,27%);width:min(420px,56%)}
+@media(min-width:701px){:root:not(.mobile-play) .mission-five #radio,:root:not(.mobile-play) .mission-six #radio{top:92px}}
 #radio .radio-icon{flex:none;width:30px;height:30px;border-radius:4px;background:#12313a;border:1px solid #3d7f78;display:grid;place-items:center;font-size:15px;color:#8fe3cf;animation:radio-pulse 1s steps(2) infinite}
 #radio .radio-speaker{display:block;font-size:9px;letter-spacing:2px;color:#8fe3cf;margin-bottom:3px}
 #radio .radio-text{font-size:12px;line-height:1.5}

@@ -2,7 +2,7 @@
   'use strict';
   // Guion de la misión 04. Informe y radio reutilizan el sistema de la misión 01.
   const briefing=[
-    {title:'Huyen por carretera',text:'El portaaviones arde sobre la costa, pero sus dueños no iban a bordo cuando cayó el Centinela. Salieron antes, por tierra, en un convoy blindado.\n\nLlevan consigo lo único que les importa salvar: el prototipo que pensaban estrenar contra la ciudad.'},
+    {title:'Huyen por carretera',text:'El Consorcio, la empresa militar que compró la ciudad tras la guerra, está sacando lo suyo antes de que lo alcances. Sale por tierra, en un convoy blindado.\n\nLleva consigo lo único que le importa salvar: un prototipo que pensaba estrenar contra la ciudad.'},
     {title:'La persecución',text:'Vega te deja en la Autopista 04 con una moto del ejército y el depósito lleno. Desde el aire no puede seguirlos: la escolta lleva soldados con mochila propulsora.\n\nLa calzada está rota. Las rampas te lanzan por encima de lo que venga; los baches te tiran al suelo.'},
     {title:'El Devorador de Asfalto',text:'Cierra el convoy un camión de seis ruedas con tres torretas. Dispara, siembra minas y frena en seco para aplastar a quien lo siga.\n\nCada torreta que pierde es un arma menos. Cuando no le quede ninguna, lo que guarda dentro será tuyo.',objectives:['Alcanza al convoy por la Autopista 04','Destruye las tres torretas del Devorador de Asfalto','Hazte con el prototipo: el mini tanque']}
   ];
@@ -20,10 +20,10 @@
     {id:'turret',who:CAP,text:'Una torreta menos. Se le ven las tripas al horno.',when:c=>c.bossStage>=1},
     {id:'last',who:VEGA,text:'¡Solo le queda una! Ahora embestirá más: no te quedes en su carril.',when:c=>c.bossStage>=2},
     {id:'tank',who:CAP,text:'Así que esto era lo que escondían. Pequeño, blindado… y con un cañón que no cabe en él.',when:c=>c.reward},
-    {id:'sea',who:VEGA,text:'Convoy neutralizado. Los que quedan han huido hacia el puerto: hay un submarino esperándolos. Ese juguete tuyo también flota.',when:c=>c.reward,after:'tank'}
+    {id:'sea',who:VEGA,text:'Convoy neutralizado. Sus papeles nombran un puerto y un centro comercial. Y ese juguete tuyo también flota.',when:c=>c.reward,after:'tank'}
   ];
   const config={briefing,beats,eyebrow:'MISIÓN 04 · FURIA EN LA CARRETERA',scenes:'four',startLabel:'Arrancar',ambient:/^(escort|ramp|crash|jets|hurt|mid|near)/,series:/^(mid|near)/,
-    epilogue:'El Devorador ha caído y su prototipo es tuyo. Los dueños del convoy escapan hacia el puerto, donde los espera un submarino.'};
+    epilogue:'El Devorador ha caído y su prototipo es tuyo. El Consorcio aún tiene dos salidas: un submarino en el puerto y el último centro comercial en pie. Elige por dónde seguir.'};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionFourStory=api;
 })(typeof window!=='undefined'?window:globalThis);

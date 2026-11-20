@@ -1,25 +1,32 @@
-/* Misión 01 · ajustes de presentación. Se carga después de styles.css y solo en index.html. */
+/* Misión 01 · ajustes de presentación. Se carga después de styles.css.
+   Las misiones 05 a 08 (body.mission-five / body.mission-six) solo usan de aquí
+   la radio, el informe y el parte de misión: las reglas de encuadre, rueda de
+   poderes y tienda llevan un :where(...) que las deja fuera sin cambiar la
+   especificidad que tenían en las misiones 01 a 04. */
 
 /* El nivel es vertical: la escena ocupa toda la altura útil y limita su anchura
    para no perder campo de visión vertical en pantallas panorámicas. */
 @media (min-width:721px){
-  :root:not(.mobile-play){--scene-height:clamp(390px,calc(100dvh - 196px),1050px)}
-  :root:not(.mobile-play) body>.header,
-  :root:not(.mobile-play) body>.page-footer{display:none}
-  :root:not(.mobile-play) main{max-width:calc(var(--scene-height)*1.45 + 42px);padding:8px 20px 0}
+  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)){--scene-height:clamp(390px,calc(100dvh - 196px),1050px)}
+  :root:not(.mobile-play) body:where(:not(.mission-five):not(.mission-six))>.header,
+  :root:not(.mobile-play) body:where(:not(.mission-five):not(.mission-six))>.page-footer{display:none}
+  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) main{max-width:calc(var(--scene-height)*1.45 + 42px);padding:8px 20px 0}
   /* Side-scrolling missions keep a wide frame. */
-  :root:not(.mobile-play) main:has(#level-two){max-width:calc(var(--scene-height)*2.1 + 42px)}
-  :root:not(.mobile-play) .game-card .viewport{height:var(--scene-height)}
-  :root:not(.mobile-play) #power-status{display:none}
+  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) main:has(#level-two){max-width:calc(var(--scene-height)*2.1 + 42px)}
+  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) .game-card .viewport{height:var(--scene-height)}
+  :root:not(.mobile-play) :where(body:not(.mission-five):not(.mission-six)) #power-status{display:none}
 }
 
 /* Sin poderes comprados no hay rueda que mostrar. */
-#power-wheel:has(.power-cards.empty){display:none}
+:where(body:not(.mission-five):not(.mission-six)) #power-wheel:has(.power-cards.empty){display:none}
 
 /* Transmisiones de radio de la historia. */
 #radio{position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:7;display:flex;gap:10px;align-items:flex-start;width:min(460px,62%);padding:9px 12px;border:1px solid #6fb7a8;border-left:4px solid #8fe3cf;border-radius:5px;background:rgba(9,22,30,.9);box-shadow:0 8px 24px #0007;color:#e4f1ee;pointer-events:none;transition:opacity .35s,transform .35s}
 #radio[hidden]{display:none}
 #radio.leaving{opacity:0;transform:translate(-50%,-8px)}
+/* Misiones 05 a 08: la munición ocupa el centro superior, así que la radio baja
+   hasta quedar por debajo de ella y de los avisos de jefe que pinta el lienzo. */
+:root:not(.mobile-play) .mission-five #radio,:root:not(.mobile-play) .mission-six #radio{top:max(160px,27%);width:min(420px,56%)}
 #radio .radio-icon{flex:none;width:30px;height:30px;border-radius:4px;background:#12313a;border:1px solid #3d7f78;display:grid;place-items:center;font-size:15px;color:#8fe3cf;animation:radio-pulse 1s steps(2) infinite}
 #radio .radio-speaker{display:block;font-size:9px;letter-spacing:2px;color:#8fe3cf;margin-bottom:3px}
 #radio .radio-text{font-size:12px;line-height:1.5}
@@ -46,15 +53,16 @@
 /* El aviso vacío del arranque no debe dibujar una caja oscura sobre el suelo. */
 .toast:empty{display:none}
 
-/* Tienda: panel ancho con pestañas y tarjetas ilustradas. */
-.overlay-panel:has(#shop:not([hidden])){width:min(900px,96%);max-width:none;max-height:94%;overflow:auto}
-#shop .shop-summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 16px;background:linear-gradient(120deg,#1b2c3a,#22313b);border-color:#d9a94e}
-#shop .shop-summary h3{grid-column:1;font-size:15px;letter-spacing:1px}
-#shop .shop-summary #shop-balance{grid-column:2;grid-row:1/3;font:700 22px Consolas,monospace;color:#ffd98a;text-align:right;white-space:nowrap}
-#shop .shop-summary #shop-balance::before{content:'◈ ';color:#f7b64c}
-#shop .shop-summary p{grid-column:1;margin:0}
-#shop .shop-summary #shop-message{grid-column:1/3;padding-top:4px}
-#shop-list{display:block}
+/* Tienda: panel ancho con pestañas y tarjetas ilustradas. Las misiones 05 a 08
+   conservan su tienda de lista sencilla: no cargan shop-ui.js. */
+:where(body:not(.mission-five):not(.mission-six)) .overlay-panel:has(#shop:not([hidden])){width:min(900px,96%);max-width:none;max-height:94%;overflow:auto}
+:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 16px;background:linear-gradient(120deg,#1b2c3a,#22313b);border-color:#d9a94e}
+:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary h3{grid-column:1;font-size:15px;letter-spacing:1px}
+:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary #shop-balance{grid-column:2;grid-row:1/3;font:700 22px Consolas,monospace;color:#ffd98a;text-align:right;white-space:nowrap}
+:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary #shop-balance::before{content:'◈ ';color:#f7b64c}
+:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary p{grid-column:1;margin:0}
+:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary #shop-message{grid-column:1/3;padding-top:4px}
+:where(body:not(.mission-five):not(.mission-six)) #shop-list{display:block}
 .shop-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 #shop-list .shop-tab{padding:9px 10px;border:1px solid #3d5262;border-bottom:3px solid #3d5262;border-radius:6px;background:#14212c;color:#b9c9d3;text-align:left;cursor:pointer;font:inherit}
 #shop-list .shop-tab strong{display:block;font-size:13px;letter-spacing:1px;color:#e6eef2}
@@ -89,7 +97,7 @@
 #shop-list .shop-buy:hover:not(:disabled){background:#ffd98a}
 #shop-list .shop-buy:disabled{background:#1c2a36;border-color:#3d5262;color:#93a6b3;opacity:1;cursor:default}
 #shop-list .owned .shop-buy:not(:disabled){background:#1f4a4a;border-color:#8fe3cf;color:#dffaf3}
-@media (max-width:620px){#shop-list .shop-tab small{display:none}.shop-grid{grid-template-columns:1fr}#shop .shop-summary{grid-template-columns:1fr}#shop .shop-summary #shop-balance{grid-column:1;grid-row:auto;text-align:left}#shop .shop-summary #shop-message{grid-column:1}}
+@media (max-width:620px){#shop-list .shop-tab small{display:none}.shop-grid{grid-template-columns:1fr}:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary{grid-template-columns:1fr}:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary #shop-balance{grid-column:1;grid-row:auto;text-align:left}:where(body:not(.mission-five):not(.mission-six)) #shop .shop-summary #shop-message{grid-column:1}}
 @media (prefers-reduced-motion:reduce){#shop-list .shop-card{transition:none}#shop-list .shop-card.bought{animation:none}}
 
 /* Puesta en escena de jefes: rótulo, temblor y estela de daño en la barra. */
@@ -131,3 +139,7 @@ canvas.boss-shake{animation:boss-shake .09s steps(2) infinite}
 @keyframes results-in{0%{opacity:0;transform:translateY(14px) scale(.97)}100%{opacity:1;transform:none}}
 @keyframes results-row{0%{opacity:0;transform:translateX(-10px)}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#mission-results .results-card{animation:none}#mission-results .results-rows div{animation:none;opacity:1}}
+
+/* Créditos del final de la campaña (panel de victoria de la misión 08). */
+#victory-credits{margin:16px 0 4px;padding-top:12px;border-top:1px solid #3c4d5e;letter-spacing:2px}
+#victory-credits strong{color:#ffd98a;font-size:13px;letter-spacing:3px}

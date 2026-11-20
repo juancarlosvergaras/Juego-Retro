@@ -1,0 +1,40 @@
+(function(root){
+  'use strict';
+  // Guion de la misión 08 y final de la campaña. Informe y radio reutilizan el
+  // sistema de la misión 01. Aquí se llega desde la 07 o desde un especial: el
+  // texto dice que la señal se apagó, sin decir quién la apagó.
+  const briefing=[
+    {title:'La sede',text:'La señal que alimentaba al Consorcio se apagó. Sin proveedor no hay sueros, ni máquinas nuevas, ni monstruos de repuesto.\n\nSolo le queda lo que ya tiene: un ejército privado, una sede en Nueva York y el hombre que firma las órdenes. Lo llaman el Comandante.'},
+    {title:'La policía',text:'Manhattan está tomada. Soldados en cada cruce, granaderos tras las barricadas y un tráfico que no frena por nadie.\n\nLa policía lleva años comprada o acorralada. Hoy tiene una razón para elegir bando: acércate a sus puestos y pelearán a tu lado.'},
+    {title:'El Titán de Acero',text:'El Comandante te espera en la última plaza. Cuando se quede sin balas subirá a su último prototipo: el Titán de Acero. Ametralladora, misiles y un pisotón que levanta el asfalto.\n\nEs el último contrato. Y es el que mejor paga.',objectives:['Cruza Manhattan y Midtown hasta la última plaza','Suma a la policía a tu lado','Derrota al Comandante y destruye el Titán de Acero']}
+  ];
+  const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
+  const beats=[
+    {id:'start',who:VEGA,text:'Nueva York, Cap. Sede del Consorcio. Yo vigilo desde arriba; tú ve por el Comandante.',when:c=>c.playing&&c.floor===0},
+    {id:'traffic',who:VEGA,text:'¡Cuidado en los cruces! Ese tráfico no frena: espera la señal o salta los carros.',when:c=>c.traffic},
+    {id:'soldiers',who:VEGA,text:'Soldados del Consorcio en la avenida. Los granaderos tiran por encima de las barricadas.',when:c=>c.soldiers>0},
+    {id:'police',who:CAP,text:'Policías tras una barricada. No me apuntan a mí.',when:c=>c.policeNear},
+    {id:'joined',who:VEGA,text:'La policía cambió de bando, Cap. Ya no peleas solo.',when:c=>c.allies>0},
+    {id:'hurt',who:VEGA,text:'Estás sangrando. Hay botiquines en la acera: no pases de largo.',when:c=>c.hp<=3&&c.hp>0},
+    {id:'midtown',who:VEGA,text:'Midtown. La línea policial aguanta por ti. La plaza está al final de la avenida.',when:c=>c.floor>=1},
+    {id:'plaza',who:CAP,text:'La última plaza. Y una máquina apagada del tamaño de un edificio.',when:c=>c.floor>=2},
+    {id:'boss',who:VEGA,text:'¡El Comandante! Salta sus ráfagas y no pierdas de vista la granada.',when:c=>c.bossActive},
+    {id:'retreat',who:CAP,text:'Corre hacia la máquina. No va a rendirse: va a subirse.',when:c=>c.retreat},
+    {id:'titan',who:VEGA,text:'¡El Titán de Acero! Cambia de altura con la ametralladora, sal de las marcas y salta las ondas.',when:c=>c.titan},
+    {id:'half',who:CAP,text:'Pierde placas. Es su último prototipo, y ya no hay repuestos.',when:c=>c.titanHalf},
+    {id:'down',who:CAP,text:'Contrato cerrado.',when:c=>c.bossDown},
+    {id:'wrap',who:VEGA,text:'La plaza es de la policía, Cap. Baja las armas: voy por ti.',when:c=>c.wrap,after:'down'}
+  ];
+  // El final se muestra en el panel de victoria de level-eight.html, que repite
+  // estos mismos textos para funcionar aunque este módulo no llegue a cargarse.
+  const finale={kicker:'CAMPAÑA COMPLETADA',title:'Contrato cerrado',
+    paragraphs:[
+      'Sin proveedor, sin ejército y sin Comandante, el Consorcio ya no es dueño de nada. La ciudad vuelve a ser de quien vive en ella.',
+      'Vega aterriza entre los restos del Titán con un maletín: la recompensa más grande de tu carrera. «Cuéntala, Cap Dollar. Por algo te llaman así.»',
+      'La mordida no se cura. Vega pregunta qué piensas hacer con el lobo. «Quedármelo. Un cazador usa lo que tiene.»'],
+    credits:['GRACIAS POR JUGAR','CAP DOLLAR, THE HUNTER','Fin de la campaña']};
+  const config={briefing,beats,eyebrow:'MISIÓN 08 · NUEVA YORK · LA ÚLTIMA BATALLA',scenes:'eight',startLabel:'Entrar en Nueva York',ambient:/^(traffic|soldiers|police|hurt)/,series:/^$/,
+    epilogue:'El Titán de Acero se apaga en mitad de la plaza. El Comandante sale de la cabina con las manos en alto y la policía le pone las esposas que le debía.'};
+  const api={briefing,beats,config,finale,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
+  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionEightStory=api;
+})(typeof window!=='undefined'?window:globalThis);

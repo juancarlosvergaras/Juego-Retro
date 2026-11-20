@@ -29,7 +29,7 @@
     {id:'inside',who:CAP,text:'Hace frío aquí dentro. Algo enorme respira bajo la piedra.',when:c=>c.inside},
     {id:'king',who:VEGA,text:'¡El Rey de Piedra! Su coraza aguanta las balas: busca el momento en que se agrieta.',when:c=>c.kingActive},
     {id:'rot',who:VEGA,text:'¡La coraza ha caído y lo de dentro sigue vivo! ¡No pares, Cap!',when:c=>c.kingStage===2},
-    {id:'done',who:VEGA,text:'El rey ha caído. Sal por donde entraste: te recojo en la puerta. Hay un portaaviones volando hacia la costa y no es nuestro.',when:c=>c.kingDown}
+    {id:'done',who:VEGA,text:'El rey ha caído. Te recojo en la puerta. En su cripta hay cajas con un sello: el Consorcio. Llegaron por aire, por carretera y por mar.',when:c=>c.kingDown}
   ];
   const config={briefing,beats,eyebrow:'MISIÓN 02 · EL UMBRAL DEL REY',scenes:'two',startLabel:'Saltar sobre la ciudad',ambient:/^(militia|hurt|giants|avenue|airship|cemetery|barricade|storm)/,series:/^(giants|avenue|cemetery|barricade)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};

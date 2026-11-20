@@ -27,7 +27,7 @@
     screen='won';clear();audio.setRunning(false);$('panel').hidden=true;$('skip-scene').hidden=true;$('pause').disabled=true;
     ArcadeMissionResults.show({kicker:'ESPECIAL 01 · MISIÓN COMPLETADA',title:'El puerto vuelve a respirar',
       stats:[['Puntos',state.score.toLocaleString('es-CO')],['Encuentros superados',state.clears+' / '+Q.waves.length],['Traje recuperado','Centella Azul']],
-      epilogue:'Inés pasa lista a bordo de Vega. Están todos. Con Centella, F activa el vuelo y J dispara rayos azules. Las balas rebotan en el traje.',
+      epilogue:'Inés pasa lista a bordo del helicóptero de Vega. Están todos. Con Centella, F activa el vuelo y J dispara rayos azules. Las balas rebotan en el traje.',
       next:{label:'Volar a Nueva York',run:nextMission},retry:{label:'Repetir el especial',run:()=>leave('quimera.html')},
       routes:[{label:'Menú principal',run:()=>leave('index.html')}]});
   }

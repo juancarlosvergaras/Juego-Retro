@@ -2,8 +2,8 @@
   'use strict';
   // Guion de la misión 03. Informe y radio reutilizan el sistema de la misión 01.
   const briefing=[
-    {title:'El dueño de la manada',text:'El rey del mausoleo no despertó solo. Alguien lo fue a buscar, igual que alguien pagaba al Capataz.\n\nLas órdenes salían de un portaaviones que no toca el agua: vuela sobre la costa con cuatro motores y una flota de escolta.'},
-    {title:'El asalto',text:'Vega te acercará por debajo de las nubes. La artillería antiaérea abrirá fuego en cuanto os vean, así que no habrá segunda pasada.\n\nBajas a cubierta y avanzas hacia proa entre torretas, cazas aparcados y soldados con mochila propulsora.'},
+    {title:'El Consorcio',text:'El rey del mausoleo no despertó solo. Alguien lo fue a buscar, igual que alguien pagaba al Capataz: el Consorcio, la empresa militar que compró la ciudad cuando acabó la guerra.\n\nSus órdenes salen de un portaaviones que no toca el agua: vuela sobre la costa con cuatro motores y una flota de escolta.'},
+    {title:'El asalto',text:'Vega te acercará por debajo de las nubes. La artillería antiaérea abrirá fuego en cuanto los vean, así que no habrá segunda pasada.\n\nBajas a cubierta y avanzas hacia proa entre torretas, cazas estacionados y soldados con mochila propulsora.'},
     {title:'El Centinela',text:'La cubierta de proa la vigila una máquina de guerra de dos pisos. Mientras siga en pie, nadie despega ni aterriza.\n\nSu chasis es un prototipo. Si lo tumbas, lo que quede dentro será tuyo.',objectives:['Cruza la cubierta del portaaviones hasta proa','Destruye al Centinela','Hazte con el chasis robot y sal por la zona de extracción']}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
@@ -17,7 +17,7 @@
     {id:'mecha',who:VEGA,text:'¡El Centinela! Ráfagas, misiles marcados en el suelo y ondas al pisar: muévete siempre.',when:c=>c.mechaActive},
     {id:'half',who:CAP,text:'Echa humo por las juntas. Un poco más y cae.',when:c=>c.mechaHalf},
     {id:'robot',who:CAP,text:'El chasis sigue entero. Dos brazos, dos armas… puedo usar esto.',when:c=>c.mechaDown},
-    {id:'exit',who:VEGA,text:'¡Centinela fuera de combate! Te recojo en la zona de extracción, a tu derecha. Los dueños huyen por carretera.',when:c=>c.mechaDown,after:'robot'}
+    {id:'exit',who:VEGA,text:'¡Centinela fuera de combate! Te recojo en la zona de extracción, a tu derecha. El Consorcio evacúa por carretera.',when:c=>c.mechaDown,after:'robot'}
   ];
   const config={briefing,beats,eyebrow:'MISIÓN 03 · GUERRA EN EL AIRE',scenes:'three',startLabel:'Despegar',ambient:/^(militia|jets|hurt|mid|bow)/,series:/^(mid|bow)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};

@@ -101,8 +101,8 @@
    for(const f of s.debris)for(let i=0;i<14;i++){const t=f.age,x=f.x+Math.sin(i*7)*100*t,y=f.y-Math.abs(Math.cos(i*4))*130*t+110*t*t;c.fillStyle=i%2?'#b8b49b':'#5f7076';c.fillRect(Math.round(x),Math.round(y),7-i%3,5+i%4);}
    if(s.floor===3&&s.boss.active&&s.ending<0)art.hazards(c,s,images,giantEffects);
    c.restore();
-   if(s.intro<4)title(c,'MISIÓN 6','EL ÚLTIMO CENTRO','Cruza las galerías hasta la azotea.');
-   if(s.ending>=6)title(c,'MISIÓN 6 COMPLETADA','EL CENTRO VUELVE A RESPIRAR','Azotea despejada · Progreso y récords guardados');
+   if(s.intro<4)title(c,'MISIÓN 06','EL ÚLTIMO CENTRO','La fachada del Consorcio · Sube hasta la antena de la azotea.');
+   if(s.ending>=6)title(c,'MISIÓN 06 COMPLETADA','EL COLOSO HA CAÍDO','La antena del Consorcio apunta al cielo · Progreso y récords guardados');
    c.restore();
   }
   return{draw,props};

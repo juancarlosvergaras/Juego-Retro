@@ -3,3 +3,7 @@ deployment/packages/
 
 # Configuración local de herramientas
 .claude/
+
+# Caché de conversiones del empaquetador
+deployment/cache/
+__pycache__/

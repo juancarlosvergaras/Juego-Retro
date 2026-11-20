@@ -86,3 +86,13 @@ html.game-expanded body{position:fixed;inset:0}
 }
 .touch-game .touch-home-full{width:100%;min-height:44px}
 
+
+/* En vertical, las escenas panorámicas (misiones 4 a 8 y especiales) se ven muy pequeñas: se invita a girar el teléfono. */
+@media (orientation:portrait) and (max-width:720px){
+  .touch-game body.mission-four .game-card::before,.touch-game body.special-mission .game-card::before,.touch-game body:has(.highway) .game-card::before{
+    content:'↻ Gira el teléfono: esta misión se juega en horizontal';position:fixed;left:50%;top:max(46px,env(safe-area-inset-top));transform:translateX(-50%);z-index:9000;
+    max-width:92vw;padding:8px 12px;border-radius:8px;background:#101a28f2;border:1px solid #f7b64c;color:#ffe2a8;font:700 12px/1.3 system-ui,sans-serif;text-align:center;pointer-events:none;
+    animation:rotate-hint 9s ease-in-out 1 forwards}
+}
+@keyframes rotate-hint{0%,82%{opacity:1}100%{opacity:0;visibility:hidden}}
+@media (prefers-reduced-motion:reduce){.touch-game .game-card::before{animation-duration:9s}}

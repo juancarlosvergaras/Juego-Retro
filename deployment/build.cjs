@@ -14,6 +14,8 @@ while (pending.length) {
   const refs = file.endsWith('.html')
     ? [...source.matchAll(/(?:src|href)=["']([^"'?#]+\.(?:js|css|html|png|webp|jpg|webmanifest))(?:[?#][^"']*)?["']/g)].map(m => m[1])
     : [...source.matchAll(/["'](assets\/[^"']+\.(?:png|webp|jpg|ogg|mp3|wav))["']/g)].map(m => m[1]);
+  // The shared menu links the missions from JavaScript (menu-shell.js, mission-map.js).
+  if (file.endsWith('.js')) refs.push(...[...source.matchAll(/["']([a-z0-9-]+\.html)(?:[?#][^"']*)?["']/g)].map(m => m[1]).filter(page => fs.existsSync(path.join(root, page))));
   if (file === 'quimera-game.js') refs.push(...Object.values(require('../quimera').characterSprites()));
   for (const raw of refs) {
     const ref = raw.replace(/^\.\//, '');

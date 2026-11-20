@@ -62,12 +62,14 @@
   // Pixel span of a planted sole in the authored gait, before projection.
   const stepSpan={batter:34,foreman:34,fighter:36,knife:33,rifle:30,warden:32,infected:25,robot:28};
   const armedRows={batter:0,foreman:1,capBat:2,capAlloy:3,capRifle:4,capPistol:5};
+  // El paquete publicado renombra las hojas con su hash (deployment/build.py).
+  const published=path=>(typeof ARCADE_ASSETS!=='undefined'&&ARCADE_ASSETS[path])||path;
   function characterSprites(){
     const paths={};
     for(const kind of ['fighter',...Object.keys(foes).filter(k=>!(k in armedRows)),'hero'])
-      paths[kind]='assets/sprites/quimera-'+kind+'.png';
+      paths[kind]=published('assets/sprites/quimera-'+kind+'.png');
     for(const kind of new Set([...Object.keys(stepSpan),...Object.keys(armedRows)]))
-      paths['steps_'+kind]='assets/sprites/quimera-pasos-'+kind+'.webp';
+      paths['steps_'+kind]=published('assets/sprites/quimera-pasos-'+kind+'.webp');
     return paths;
   }
   const bodyScale={batter:1.27,foreman:1.32,fighter:1.28,knife:1.34,rifle:1.22,warden:1.29,jet:1.63,infected:1.28,robot:1.28,

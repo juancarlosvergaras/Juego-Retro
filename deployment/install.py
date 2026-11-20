@@ -39,8 +39,17 @@ pending.replace(current)
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     gzip on;
-    gzip_types text/css application/javascript;
+    gzip_types text/css application/javascript application/json application/manifest+json image/svg+xml;
     location / { try_files $uri $uri/ =404; }
+    # Los archivos con hash en el nombre no cambian nunca: el navegador no
+    # vuelve a pedirlos. HTML y manifiesto siguen revalidandose.
+    location ~* "\\.[0-9a-f]{16}\\.(?:js|css|png|webp|jpg|ogg|mp3|wav)$" {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        try_files $uri =404;
+    }
+    location = /game.webmanifest { default_type application/manifest+json; add_header Cache-Control "no-cache" always; }
     location ~ /\\. { deny all; }
 }
 ''')
@@ -63,4 +72,8 @@ services:
       retries: 3
 ''')
 subprocess.run([str(Path.home() / '.orbstack/bin/docker'), 'compose', '-f', str(base / 'docker-compose.servidor.yml'), 'up', '-d'], cwd=base, check=True)
+# El contenedor ya en marcha no relee nginx.conf por si solo: se valida y se recarga.
+docker = str(Path.home() / '.orbstack/bin/docker')
+subprocess.run([docker, 'exec', 'juego-web', 'nginx', '-t'], check=True)
+subprocess.run([docker, 'exec', 'juego-web', 'nginx', '-s', 'reload'], check=True)
 print('Installed release', manifest['id'], 'with', len(manifest['files']), 'verified files')

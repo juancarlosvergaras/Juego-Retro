@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261120T125644Z
+
+Juego a pantalla completa con personajes más grandes, cinemáticas animadas al inicio y fin de cada misión, gran final tras la misión 8 y escaleras del centro comercial rehechas con música nueva. [Cambios y verificación](releases/20261120T125644Z.md)
+
 ## Publicado en Mac mini · 20261120T035838Z
 
 El mapa de misiones ocupa toda la ventana y se adapta a escritorio, tableta y teléfono; en vertical se gira y se recorre de arriba abajo. [Cambios y verificación](releases/20261120T035838Z.md)

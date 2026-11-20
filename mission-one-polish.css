@@ -33,23 +33,49 @@
 #radio .radio-text{font-size:12px;line-height:1.5}
 @keyframes radio-pulse{50%{background:#1b4a50}}
 
-/* Informe previo a la misión. */
-#briefing{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 30%,#16283a 0,#070c13 72%);color:#e8eef2;padding:24px}
+/* Historia a pantalla completa (story-cinema.js): intros, epílogos y final.
+   La capa cubre toda la ventana, por encima del marco del juego; el lienzo ocupa
+   todo y las franjas de cine se superponen arriba y abajo. */
+#briefing{position:fixed;inset:0;z-index:500;margin:0;overflow:hidden;background:#05080d;color:#eef2f4;--story-top:10.5%;--story-bottom:15%}
 #briefing[hidden]{display:none}
-#briefing .briefing-scene{display:block;width:calc(100% + 64px);margin:-28px -32px 20px;aspect-ratio:640/250;image-rendering:pixelated;border-radius:8px 8px 0 0;border-bottom:1px solid #3c4d5e;background:#0a1018}
-#briefing .briefing-card{width:min(680px,100%);overflow:hidden;border:1px solid #3c4d5e;border-top:4px solid #f7b64c;border-radius:8px;background:#0e1823f2;padding:28px 32px;box-shadow:0 24px 70px #000a}
-#briefing .eyebrow{display:block;font-size:10px;letter-spacing:4px;color:#f7b64c;margin-bottom:10px}
-#briefing h2{margin:0 0 14px;font-size:26px;letter-spacing:1px}
-#briefing .briefing-text{min-height:118px;font:14px/1.75 Consolas,monospace;color:#cfdbe2;white-space:pre-wrap}
-#briefing .briefing-text::after{content:'▌';color:#f7b64c;animation:radio-pulse 1s steps(2) infinite}
-#briefing .briefing-objectives{margin:16px 0 0;padding:12px 16px;list-style:none;border-left:3px solid #8fe3cf;background:#101f2b;font-size:12px;line-height:1.9;color:#bfe9df}
-#briefing .briefing-objectives[hidden]{display:none}
-#briefing .briefing-actions{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
-#briefing .briefing-step{font-size:10px;letter-spacing:2px;color:#7f93a4}
-#briefing button{font:inherit;font-weight:700;font-size:13px;padding:10px 22px;border-radius:4px;cursor:pointer}
-#briefing .briefing-next{background:#f7b64c;border:1px solid #f7b64c;color:#1a1408}
-#briefing .briefing-skip{background:transparent;border:1px solid #4a5b6b;color:#b8c5d0}
-@media (prefers-reduced-motion:reduce){#radio .radio-icon,#briefing .briefing-text::after{animation:none}}
+#briefing [hidden]{display:none!important}
+#briefing .story-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;image-rendering:crisp-edges;image-rendering:pixelated;background:#05080d}
+#briefing button{font:700 11px/1 Consolas,'Courier New',monospace;cursor:pointer}
+#briefing .story-next{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;outline:none;-webkit-tap-highlight-color:transparent}
+#briefing .story-bar{position:absolute;left:0;right:0;background:#05080d;pointer-events:none}
+#briefing .story-bar-top{top:0;height:var(--story-top);box-shadow:0 1px 0 #ffffff12}
+#briefing .story-bar-bottom{bottom:0;height:var(--story-bottom);display:flex;align-items:center;justify-content:center;padding:0 max(6vw,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(6vw,env(safe-area-inset-left));box-shadow:0 -1px 0 #ffffff12}
+#briefing .story-subtitle{margin:0;max-width:62em;text-align:center;font:600 clamp(12px,calc(1.9vh + .55vw),24px)/1.4 Consolas,'Courier New',monospace;letter-spacing:.02em;color:#f1f4f2;text-wrap:balance}
+#briefing .story-subtitle:not(:empty)::after{content:'▌';margin-left:2px;color:#f7b64c;animation:story-blink 1s steps(2) infinite}
+#briefing.story-ready .story-subtitle::after{content:none}
+#briefing .story-live{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#briefing .story-hint{position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom));font:700 clamp(12px,2.2vh,18px)/1 Consolas,monospace;color:#f7b64c;opacity:0}
+#briefing.story-ready .story-hint{opacity:.9;animation:story-blink 1.1s steps(2) infinite}
+#briefing .story-next:focus-visible~.story-bar-bottom .story-hint{opacity:1;text-shadow:0 0 0 #f7b64c,0 0 10px #f7b64c}
+#briefing .story-skip{position:absolute;top:max(8px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));min-height:28px;padding:7px 14px;border:1px solid #ffffff38;border-radius:3px;background:#0a1018b3;color:#b8c5d0;letter-spacing:2px;text-transform:uppercase;opacity:.7;transition:opacity .2s,border-color .2s}
+#briefing .story-skip:hover,#briefing .story-skip:focus-visible{opacity:1;border-color:#f7b64c;color:#fff;outline:none}
+/* Rótulo de la misión y título del final. */
+#briefing .story-title{position:absolute;left:0;right:0;top:calc(var(--story-top) + (100% - var(--story-top) - var(--story-bottom))/2);transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:1.2vh;padding:5vh 6vw;text-align:center;pointer-events:none;background:radial-gradient(ellipse at center,#05080dd9 0,#05080d99 45%,#05080d00 72%);animation:story-title-in .9s ease-out both}
+#briefing .story-kicker{font:700 clamp(11px,2.3vh,20px)/1 Consolas,'Courier New',monospace;letter-spacing:.5em;text-indent:.5em;color:#f7b64c}
+#briefing .story-kicker:empty,#briefing .story-sub:empty{display:none}
+#briefing .story-name{font:900 clamp(26px,calc(4vw + 3.4vh),86px)/1.02 Impact,'Arial Black',system-ui,sans-serif;letter-spacing:.05em;color:#fff;text-shadow:0 .06em 0 #05080d,0 0 .6em #000c;text-wrap:balance}
+#briefing .story-sub{font:700 clamp(12px,2.8vh,26px)/1 Consolas,'Courier New',monospace;letter-spacing:.6em;text-indent:.6em;color:#dfe7ea}
+#briefing .story-title-big .story-name{font-size:clamp(34px,calc(6.4vw + 4.4vh),132px);color:#ffd77a;background:linear-gradient(#fff3c4 8%,#f7b64c 52%,#b8651c 96%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:none;filter:drop-shadow(0 .05em 0 #2a1204) drop-shadow(0 0 .35em #f7b64c66)}
+#briefing .story-title-big .story-sub{font-size:clamp(14px,3.6vh,34px);color:#fff}
+/* Créditos del final: suben entre las dos franjas. */
+#briefing .story-credits{position:absolute;left:0;right:0;top:var(--story-top);bottom:var(--story-bottom);overflow:hidden;pointer-events:none;text-align:center;background:linear-gradient(#05080dcc,#05080d8c 45%,#05080dcc)}
+#briefing .story-credits-roll{position:absolute;left:0;right:0;top:0;padding:0 6vw;will-change:transform}
+#briefing .story-credit{margin:0 0 1.4vh;font:600 clamp(12px,2.5vh,21px)/1.5 Consolas,'Courier New',monospace;letter-spacing:.08em;color:#d6e0e5}
+#briefing .story-credit-head{margin-top:4.5vh;font-size:clamp(10px,2vh,16px);letter-spacing:.45em;color:#f7b64c}
+#briefing .story-credit-title{margin:1vh 0 2vh;font:900 clamp(24px,6.5vh,64px)/1.1 Impact,'Arial Black',system-ui,sans-serif;letter-spacing:.05em;color:#fff}
+#briefing .story-credit-gap{height:3vh;margin:0}
+#briefing .story-credit-stat{display:flex;justify-content:center;gap:1.4em}
+#briefing .story-credit-stat span{flex:0 1 15em;text-align:right;color:#9fb1bd}
+#briefing .story-credit-stat strong{flex:0 1 9em;text-align:left;color:#ffd77a}
+@keyframes story-blink{50%{opacity:.2}}
+@keyframes story-title-in{from{opacity:0;transform:translateY(-46%) scale(.96)}to{opacity:1;transform:translateY(-50%) scale(1)}}
+@media (max-height:420px){#briefing{--story-top:9%;--story-bottom:19%}}
+@media (prefers-reduced-motion:reduce){#radio .radio-icon,#briefing .story-subtitle::after,#briefing .story-hint,#briefing .story-title{animation:none}}
 
 /* El aviso vacío del arranque no debe dibujar una caja oscura sobre el suelo. */
 .toast:empty{display:none}

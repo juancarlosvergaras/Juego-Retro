@@ -29,7 +29,9 @@
  function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Sin fuerzas en el abismo':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
  // La misión cierra con el mismo parte que las misiones 1 a 4; el panel antiguo queda de respaldo.
  function finish(){ArcadeCampaign.markCompleted(store,5);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
-  if(window.ArcadeMissionResults?.show){ArcadeMissionResults.show({kicker:'MISIÓN 05 COMPLETADA',title:'BAJO EL ABISMO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 4'],['Luchador','Conseguido']],next:{label:'Continuar · Misión 06',run:()=>$('victory-next').click()},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});return;}
+  if(window.ArcadeMissionResults?.show){const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 05 COMPLETADA',title:'BAJO EL ABISMO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 4'],['Luchador','Conseguido']],next:{label:'Continuar · Misión 06',run:()=>$('victory-next').click()},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
+   // Epílogo a pantalla completa antes del parte.
+   if(story?.outro)story.outro(debrief);else debrief();return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}
  play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(s.complete){finish();return;}
   // Una inmersión nueva abre con el informe animado; reanudar o volver de la pausa va directo al agua.

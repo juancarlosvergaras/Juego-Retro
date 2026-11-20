@@ -31,7 +31,9 @@
  // Desde aquí el mapa se bifurca: la misión 07 o uno de los dos especiales.
  function leaveFor(page){save();leaving=true;location.assign(page);}
  function finish(){ArcadeCampaign.markCompleted(store,6);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
-  if(window.ArcadeMissionResults?.show){ArcadeMissionResults.show({kicker:'MISIÓN 06 COMPLETADA',title:'EL ÚLTIMO CENTRO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 3'],['Antena del Consorcio','Localizada']],next:{label:'Continuar · Misión 07',run:()=>$('victory-next').click()},routes:[{label:'Especial · Distrito Quimera',run:()=>leaveFor('quimera.html')},{label:'Especial · Fuga del Sol',run:()=>leaveFor('fuga.html')}],retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});return;}
+  if(window.ArcadeMissionResults?.show){const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 06 COMPLETADA',title:'EL ÚLTIMO CENTRO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 3'],['Antena del Consorcio','Localizada']],next:{label:'Continuar · Misión 07',run:()=>$('victory-next').click()},routes:[{label:'Especial · Distrito Quimera',run:()=>leaveFor('quimera.html')},{label:'Especial · Fuga del Sol',run:()=>leaveFor('fuga.html')}],retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
+  // Epílogo a pantalla completa antes del parte.
+  if(story?.outro)story.outro(debrief);else debrief();return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}
  play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(s.complete){finish();return;}
   // Una partida nueva abre con el informe animado; reanudar o volver de la pausa va directo al centro.

@@ -40,9 +40,11 @@
   let score=ArcadeScore.create(),challenges=ArcadeChallenges.create(platforms);
   const victory=window.ArcadeVictory?.create({drawHelicopter:ArcadeExtraction.drawFlyby,onFinish(){ArcadeCampaign.markCompleted(saveStore,1);sound.setRunning(false);
     // All three missions close on the same debrief card.
-    if(window.ArcadeMissionResults?.show){ui.overlay.hidden=true;ArcadeMissionResults.show({kicker:'MISIÓN 01 COMPLETADA',title:'LA OBRA',epilogue:story?.epilogue||'',
+    if(window.ArcadeMissionResults?.show){ui.overlay.hidden=true;const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 01 COMPLETADA',title:'LA OBRA',epilogue:story?.epilogue||'',
       stats:ArcadeMissionResults.rows(score,{enemies:encounter.enemies,seconds:challenges.elapsed,extra:[['Estrellas',challenges.stars.filter(s=>s.taken).length+' / '+challenges.stars.length],['Sin recibir daño',challenges.damaged?'No':'Sí']]}),
-      next:{label:'Continuar · Misión 02',run:()=>document.getElementById('next-mission').click()},retry:{label:'Repetir misión',run:()=>{respawn(true);sound.setRunning(true);}}});return;}
+      next:{label:'Continuar · Misión 02',run:()=>document.getElementById('next-mission').click()},retry:{label:'Repetir misión',run:()=>{respawn(true);sound.setRunning(true);}}});
+      // Tras el vuelo de victoria, el epílogo a pantalla completa y después el parte.
+      if(story?.outro)story.outro(debrief);else debrief();return;}
     overlay('¡Misión cumplida!','El helicóptero te ha sacado de la obra.\n\n'+(story?story.epilogue+'\n\n':'')+ArcadeScore.summary(score),'Reiniciar aventura');document.getElementById('next-mission').hidden=false;ui.resume.focus({preventScroll:true});}});
   window.ArcadeRobotForm&&(window.ArcadeRobotForm.refreshDock=()=>{if(!window.ArcadeRobotForm.dock)window.ArcadeRobotForm.dock=window.ArcadeRobotForm.installDock(player,encounter,persist);window.ArcadeRobotForm.dock?.();});
   const nextMission=document.createElement('button');nextMission.id='next-mission';nextMission.className='primary';nextMission.hidden=true;nextMission.textContent='Continuar · Misión 02';nextMission.onclick=()=>{window.ArcadeCampaign?.transfer(saveStore,player,encounter,score,powers);location.assign('level-two.html?entry=campaign');};ui.resume.after(nextMission);

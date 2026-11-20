@@ -1,193 +1,284 @@
 (function(root){
   'use strict';
-  // Viñetas de los informes de las misiones 05 a 08. Cada una encuadra un fondo
-  // que la misión ya usa y le añade luz y movimiento dibujados; los jefes
-  // aparecen con un cuadro de su propia hoja, sin ciclos nuevos de animación.
+  // Planos de las historias de las misiones 05 a 08 (intro y epílogo a pantalla
+  // completa). Cada plano encuadra un fondo que la misión ya usa y le añade luz,
+  // movimiento y los sprites del juego. Reglas del escenario en mission-one-scenes.js.
   const Scenes=root.ArcadeStoryScenes;if(!Scenes)return;
-  const {clamp,hash,vignette}=Scenes.tools,images=Scenes.images,TAU=Math.PI*2;
-  // Encuadre de una franja del fondo que llena la viñeta. `u` y `v` (0 a 1)
-  // mueven la cámara dentro de la franja; devuelve cómo pasar de imagen a lienzo.
-  function plate(c,img,w,h,band,u=.5,v=.5,zoom=1){
-    if(!img)return null;
-    const [bx,by,bw,bh]=band||[0,0,img.width,img.height],k=Math.max(w/bw,h/bh)*zoom,sw=w/k,sh=h/k,sx=bx+(bw-sw)*clamp(u),sy=by+(bh-sh)*clamp(v);
-    c.drawImage(img,sx,sy,sw,sh,0,0,w,h);
-    return{k,x:sx,y:sy};
-  }
-  function fill(c,w,h,top,bottom){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,top);g.addColorStop(1,bottom);c.fillStyle=g;c.fillRect(0,0,w,h);}
-  // Las hojas que el juego limpia antes de dibujar se limpian aquí igual, una sola vez.
-  const clean={};
-  function sheet(id){const img=images[id];if(!img)return null;return clean[id]||(clean[id]=root.prepareWhiteDeath?root.prepareWhiteDeath(img):img);}
-  // Un cuadro apoyado en el suelo: (x, y) es el punto entre los pies.
-  function cell(c,img,f,x,y,k,flip=false){
-    if(!img)return;c.save();c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);
-    c.drawImage(img,f[0],f[1],f[2],f[3],-Math.round(f[2]*k/2),-Math.round(f[3]*k),Math.round(f[2]*k),Math.round(f[3]*k));c.restore();
-  }
-  function glow(c,x,y,r,color,alpha){
-    if(alpha<=0)return;c.save();c.globalCompositeOperation='screen';const g=c.createRadialGradient(x,y,0,x,y,r);
-    g.addColorStop(0,'rgba('+color+','+alpha.toFixed(3)+')');g.addColorStop(1,'rgba('+color+',0)');c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);c.restore();
-  }
-  function bubbles(c,w,h,t,count){
+  const {TOP,FLOOR,TAU,clamp,lerp,ease,ramp,drift,hash,atlas,fill,shade,plate,cut,put,glow,beam,smoke,stars,shadow,boom,flash,vignette,hunter,heli,seal}=Scenes.tools,images=Scenes.images;
+
+  function bubbles(c,v,t,count=40){
     c.fillStyle='#bfefff';
-    for(let i=0;i<count;i++){const u=(t*(.08+hash(i)*.08)+hash(i+40))%1,x=hash(i+11)*w+Math.sin(t*1.3+i)*5,size=1+Math.floor(hash(i+7)*2.4);c.globalAlpha=.5*(1-u);c.fillRect(Math.round(x),Math.round(h-u*(h+20)),size,size);}
+    for(let i=0;i<count;i++){const u=(t*(.07+hash(i)*.08)+hash(i+40))%1,x=hash(i+11)*v.w+Math.sin(t*1.3+i)*8,s=2+Math.floor(hash(i+7)*3);c.globalAlpha=.55*(1-u);c.fillRect(Math.round(x),Math.round(v.h-u*(v.h+30)),s,s);}
     c.globalAlpha=1;
   }
-  function sunRays(c,w,h,t,strength){
+  function sunRays(c,v,t,strength=1){
     if(strength<=0)return;c.save();c.globalCompositeOperation='screen';
-    for(let i=0;i<5;i++){const x=w*(.12+i*.19)+Math.sin(t*.3+i)*14,g=c.createLinearGradient(0,0,0,h*.9);g.addColorStop(0,'rgba(150,240,255,'+(.2*strength).toFixed(3)+')');g.addColorStop(1,'rgba(150,240,255,0)');c.fillStyle=g;c.beginPath();c.moveTo(x-8,0);c.lineTo(x+8,0);c.lineTo(x+70,h*.9);c.lineTo(x+18,h*.9);c.fill();}
+    for(let i=0;i<6;i++){const x=v.w*(.08+i*.17)+Math.sin(t*.3+i)*24,g=c.createLinearGradient(0,0,0,v.h*.9);g.addColorStop(0,'rgba(150,240,255,'+(.2*strength).toFixed(3)+')');g.addColorStop(1,'rgba(150,240,255,0)');c.fillStyle=g;c.beginPath();c.moveTo(x-12,0);c.lineTo(x+12,0);c.lineTo(x+120,v.h*.9);c.lineTo(x+30,v.h*.9);c.fill();}
     c.restore();
   }
-  // Eco de sonar: anillos que se abren desde un contacto.
-  function ping(c,x,y,t,color,reach=70){
-    c.save();c.lineWidth=1.5;
-    for(let i=0;i<3;i++){const u=(t*.45+i/3)%1;c.strokeStyle='rgba('+color+','+(.7*(1-u)).toFixed(3)+')';c.beginPath();c.arc(x,y,4+u*reach,0,TAU);c.stroke();}
-    c.restore();
-  }
+  function ping(c,x,y,t,rgb,reach=120){c.save();c.lineWidth=2;for(let i=0;i<3;i++){const u=(t*.45+i/3)%1;c.strokeStyle='rgba('+rgb+','+(.7*(1-u)).toFixed(3)+')';c.beginPath();c.arc(x,y,6+u*reach,0,TAU);c.stroke();}c.restore();}
   // Marco de cámara de seguridad: el centro comercial vigila a quien entra.
-  function camera(c,w,h,t,label){
-    c.fillStyle='rgba(8,14,22,.34)';c.fillRect(0,0,w,h);
-    c.fillStyle='rgba(180,220,255,.06)';for(let y=(Math.floor(t*30)%4);y<h;y+=4)c.fillRect(0,y,w,1);
-    c.strokeStyle='#d7e6ee';c.lineWidth=2;const m=14,l=22;
-    for(const [x,y,dx,dy] of [[m,m,1,1],[w-m,m,-1,1],[m,h-m,1,-1],[w-m,h-m,-1,-1]]){c.beginPath();c.moveTo(x+dx*l,y);c.lineTo(x,y);c.lineTo(x,y+dy*l);c.stroke();}
-    if(Math.floor(t*2)%2){c.fillStyle='#ff5148';c.fillRect(m+10,m+9,7,7);}
-    c.fillStyle='#e8f1f4';c.font='bold 10px monospace';c.textAlign='left';c.fillText('REC',m+22,m+16);c.textAlign='right';c.fillText(label,w-m-10,h-m-8);c.textAlign='left';
-  }
-  // Haz de una antena: columna de luz con pulsos que suben.
-  function beam(c,x,top,bottom,width,t,color){
-    c.save();c.globalCompositeOperation='screen';
-    const g=c.createLinearGradient(x-width,0,x+width,0);g.addColorStop(0,'rgba('+color+',0)');g.addColorStop(.5,'rgba('+color+',.5)');g.addColorStop(1,'rgba('+color+',0)');c.fillStyle=g;c.fillRect(x-width,top,width*2,bottom-top);
-    c.fillStyle='rgba('+color+',.85)';for(let i=0;i<6;i++){const u=(t*.5+i/6)%1;c.fillRect(Math.round(x-1),Math.round(bottom-u*(bottom-top)),3,9);}
-    c.restore();
-  }
-  function stars(c,w,h,t,count){
-    c.fillStyle='#e6ecff';for(let i=0;i<count;i++){c.globalAlpha=.25+.6*Math.abs(Math.sin(t*(.6+hash(i)*1.4)+i));c.fillRect(Math.round(hash(i+3)*w),Math.round(hash(i+70)*h),1+(i%7===0?1:0),1+(i%7===0?1:0));}c.globalAlpha=1;
+  function camera(c,v,t,label){
+    shade(c,v,'rgba(8,14,22,.28)');c.fillStyle='rgba(180,220,255,.06)';for(let y=Math.floor(t*30)%5;y<v.h;y+=5)c.fillRect(0,y,v.w,2);
+    const m=v.cx-Math.min(v.w/2,640)+26,r=v.cx+Math.min(v.w/2,640)-26,top=TOP+16,bottom=FLOOR-6,l=34;c.strokeStyle='#d7e6ee';c.lineWidth=3;
+    for(const [x,y,dx,dy] of [[m,top,1,1],[r,top,-1,1],[m,bottom,1,-1],[r,bottom,-1,-1]]){c.beginPath();c.moveTo(x+dx*l,y);c.lineTo(x,y);c.lineTo(x,y+dy*l);c.stroke();}
+    if(Math.floor(t*2)%2){c.fillStyle='#ff5148';c.fillRect(m+14,top+12,10,10);}
+    c.fillStyle='#e8f1f4';c.font='bold 15px Consolas, monospace';c.fillText('REC',m+32,top+22);c.textAlign='right';c.fillText(label,r-12,bottom-12);c.fillText('CONSORCIO · SEGURIDAD',r-12,top+22);c.textAlign='left';
   }
   // Torre de celosía con baliza: la antena repetidora de la azotea.
   function mast(c,x,base,top,t){
-    c.strokeStyle='#0a0e16';c.lineWidth=2;c.beginPath();c.moveTo(x-14,base);c.lineTo(x-3,top);c.moveTo(x+14,base);c.lineTo(x+3,top);
-    for(let i=0;i<7;i++){const a=i/7,b=(i+1)/7,ya=base+(top-base)*a,yb=base+(top-base)*b,ha=14-11*a,hb=14-11*b;c.moveTo(x-ha,ya);c.lineTo(x+hb,yb);c.moveTo(x+ha,ya);c.lineTo(x-hb,yb);}
-    c.stroke();c.fillStyle='#0a0e16';c.fillRect(x-1,top-22,3,22);c.fillRect(x-12,top-8,25,3);
-    if(Math.floor(t*1.6)%2){c.fillStyle='#ff4a3a';c.fillRect(x-1,top-25,3,3);glow(c,x,top-24,16,'255,90,70',.7);}
+    c.strokeStyle='#0a0e16';c.lineWidth=3;c.beginPath();c.moveTo(x-24,base);c.lineTo(x-5,top);c.moveTo(x+24,base);c.lineTo(x+5,top);
+    for(let i=0;i<8;i++){const a=i/8,b=(i+1)/8,ya=base+(top-base)*a,yb=base+(top-base)*b,ha=24-19*a,hb=24-19*b;c.moveTo(x-ha,ya);c.lineTo(x+hb,yb);c.moveTo(x+ha,ya);c.lineTo(x-hb,yb);}
+    c.stroke();c.fillStyle='#0a0e16';c.fillRect(x-2,top-34,5,34);c.fillRect(x-20,top-12,41,4);
+    if(Math.floor(t*1.6)%2){c.fillStyle='#ff4a3a';c.fillRect(x-2,top-40,5,5);glow(c,x,top-38,26,'255,90,70',.8);}
   }
-  function smoke(c,x,base,t,seed){
-    for(let i=0;i<7;i++){const u=(t*.09+i/7+hash(seed))%1,size=6+u*26;c.globalAlpha=(1-u)*.38;c.fillStyle=i%2?'#2b2a31':'#3b3940';c.fillRect(Math.round(x+u*38-size/2),Math.round(base-u*150),Math.round(size),Math.round(size*.8));}
-    c.globalAlpha=1;
+  // Columna de luz con pulsos que suben (el haz de la antena).
+  function shaft(c,x,top,bottom,width,t,rgb,alpha=.5){
+    c.save();c.globalCompositeOperation='screen';const g=c.createLinearGradient(x-width,0,x+width,0);g.addColorStop(0,'rgba('+rgb+',0)');g.addColorStop(.5,'rgba('+rgb+','+alpha+')');g.addColorStop(1,'rgba('+rgb+',0)');c.fillStyle=g;c.fillRect(x-width,top,width*2,bottom-top);
+    c.fillStyle='rgba('+rgb+',.9)';for(let i=0;i<8;i++){const u=(t*.55+i/8)%1;c.fillRect(Math.round(x-2),Math.round(bottom-u*(bottom-top)),5,14);}c.restore();
   }
-  const ease=u=>u*u*(3-2*u);
+  // Curva del planeta vista desde la órbita.
+  function planet(c,v,t,y,glowAlpha=.5){
+    const r=v.w*1.6,cx=v.cx,cy=y+r;const g=c.createRadialGradient(cx,cy,r*.96,cx,cy,r*1.04);g.addColorStop(0,'#1d4f8a');g.addColorStop(.5,'#5fa8e8');g.addColorStop(1,'rgba(120,200,255,0)');
+    c.fillStyle=g;c.beginPath();c.arc(cx,cy,r*1.04,0,TAU);c.fill();c.fillStyle='#0d2a4c';c.beginPath();c.arc(cx,cy,r*.985,0,TAU);c.fill();
+    c.fillStyle='rgba(255,210,140,.5)';for(let i=0;i<40;i++){const a=-Math.PI/2+(hash(i)-.5)*.5,d=r*(.985-hash(i+3)*.004);c.fillRect(Math.round(cx+Math.cos(a)*d),Math.round(cy+Math.sin(a)*d),2,2);}
+    glow(c,cx,y,v.w*.6,'120,200,255',glowAlpha*.4);
+  }
+  // Libro de cuentas abierto, con el dibujo de una antena en la última página.
+  function ledger(c,v,t){
+    const x=v.cx,y=258,w=660,h=330;
+    c.save();c.translate(x,y);c.rotate(.02);
+    c.fillStyle='#3a1f18';c.fillRect(-w/2-14,-h/2-12,w+28,h+24);
+    for(const side of [-1,1]){c.fillStyle='#e6dcc0';c.fillRect(side<0?-w/2:4,-h/2,w/2-4,h);c.fillStyle='#b9ad8e';for(let i=0;i<12;i++)c.fillRect(side<0?-w/2+20:24,-h/2+30+i*24,w/2-48,1);}
+    c.fillStyle='#4a3a2a';c.font='bold 13px Consolas, monospace';
+    const rows=['SUERO 7 · 40 u.','CHASIS · 2 u.','CÁPSULAS · 12 u.','LOBOS · 3 u.','ARMAS · 600 u.'];
+    rows.forEach((row,i)=>{if(t>.3+i*.35){c.fillText(row,-w/2+24,-h/2+48+i*48);c.fillText('▸ ANTENA',-w/2+190,-h/2+48+i*48);}});
+    // La antena, dibujada a lápiz en la página derecha, se marca con un círculo rojo.
+    c.strokeStyle='#4a3a2a';c.lineWidth=3;c.beginPath();c.moveTo(130,120);c.lineTo(160,-60);c.lineTo(190,120);c.moveTo(142,40);c.lineTo(178,40);c.moveTo(150,-10);c.lineTo(170,-10);c.stroke();
+    c.fillStyle='#4a3a2a';c.fillRect(70,120,180,8);c.fillRect(90,128,140,26);
+    const mark=ease(ramp(t,2.4,3.6));if(mark>0){c.strokeStyle='rgba(176,32,24,.9)';c.lineWidth=5;c.beginPath();c.arc(160,40,110,0,TAU*mark);c.stroke();}
+    seal(c,-50,h/2-50,26,'#8a5a20',.8);
+    c.restore();
+    const lx=x+Math.sin(t*.5)*140,ly=y+Math.cos(t*.4)*40,dark=c.createRadialGradient(lx,ly,100,lx,ly,440);
+    dark.addColorStop(0,'rgba(10,4,6,0)');dark.addColorStop(1,'rgba(10,4,6,.9)');c.fillStyle=dark;c.fillRect(0,0,v.w,v.h);
+    glow(c,v.cx,v.h*.15,300,'255,60,50',.12+.08*Math.sin(t*3));
+  }
+  // Azotea del centro comercial al anochecer (mitad baja de centro-comercial-v1).
+  const ROOF=[0,830,1254,424];
+  function roof(c,v,t,id,o={}){
+    fill(c,v,'#241a52','#e0603a');
+    const bg=plate(c,images[id],v,{band:ROOF,ground:[1090,FLOOR],u:o.u??.5,zoom:o.zoom||1});
+    return bg;
+  }
 
-  Scenes.register('five',{m5trench:'assets/worlds/mission-05/fosa-panoramica.webp',m5sub:'assets/worlds/mission-05/abismo-submarino-v1.png',m5captain:'assets/sprites/capitan-abismo-combate.webp'},[
-    // 1 · El contrabandista: la fosa, de la luz de la superficie al fondo donde espera la nave.
-    function(c,w,h,t){
-      const depth=.5-.5*Math.cos(t*.14);fill(c,w,h,'#0b5a78','#04101e');
-      plate(c,images.m5trench,w,h,null,.5+.06*Math.sin(t*.1),depth*.94);
-      sunRays(c,w,h,t,1-depth);c.fillStyle='rgba(3,10,24,'+(.1+.42*depth).toFixed(3)+')';c.fillRect(0,0,w,h);
-      // El contacto del sonar solo aparece cuando la cámara llega al fondo.
-      if(depth>.55){c.globalAlpha=clamp((depth-.55)/.2);ping(c,w*.7,h*.62,t,'120,255,214');c.fillStyle=Math.floor(t*3)%2?'#ff5148':'#7a1f1c';c.fillRect(Math.round(w*.7)-1,Math.round(h*.62)-1,3,3);c.globalAlpha=1;}
-      bubbles(c,w,h,t,26);vignette(c,w,h);
-    },
-    // 2 · La fosa: restos de la flota y un campo de minas entre el cazador y la esclusa.
-    function(c,w,h,t){
-      fill(c,w,h,'#0a4d7a','#05142a');const view=plate(c,images.m5sub,w,h,[0,0,1536,504],.5-.5*Math.cos(t*.11),.5);
-      sunRays(c,w,h,t,.7);
-      for(let i=0;i<5;i++){
-        const x=view?(240+i*265-view.x)*view.k:w*(.15+i*.18),y=h*(.34+(i%2)*.2)+Math.sin(t*1.1+i*2)*4;
-        if(x<-20||x>w+20)continue;
-        c.strokeStyle='rgba(12,22,34,.8)';c.lineWidth=1;c.beginPath();c.moveTo(x,y+7);c.lineTo(x+3,h);c.stroke();
-        c.fillStyle='#16222e';c.beginPath();c.arc(x,y,8,0,TAU);c.fill();c.fillRect(x-11,y-1,22,2);c.fillRect(x-1,y-11,2,22);c.fillStyle='#31465a';c.fillRect(x-4,y-5,3,3);
-        if(Math.floor(t*2.5+i)%2){c.fillStyle='#ff5148';c.fillRect(Math.round(x)-1,Math.round(y)-1,3,3);glow(c,x,y,14,'255,80,70',.5);}
-      }
-      c.fillStyle='rgba(3,10,24,.28)';c.fillRect(0,0,w,h);bubbles(c,w,h,t,34);vignette(c,w,h);
-    },
-    // 3 · El Capitán del Abismo: su cámara, con la alarma encendida.
-    function(c,w,h,t){
-      fill(c,w,h,'#1a2026','#0a0d12');plate(c,images.m5sub,w,h,[0,516,1536,508],.5,.6,1.7);
-      const alarm=.5+.5*Math.sin(t*4);c.fillStyle='rgba(120,10,10,'+(.1+.16*alarm).toFixed(3)+')';c.fillRect(0,0,w,h);
-      // Mismo ciclo de reposo y misma cadencia que en el combate.
-      cell(c,images.m5captain,[(Math.floor(t*8)%8)*200,0,200,144],w*.62,212,.95);
-      glow(c,w*.14,22,90,'255,70,60',.25+.3*alarm);glow(c,w*.86,22,90,'255,70,60',.25+.3*(1-alarm));
-      vignette(c,w,h);
-    }
-  ]);
+  // ═════════════════════ MISIÓN 05 · BAJO EL ABISMO ═════════════════════
+  Scenes.register('five',{m5trench:'assets/worlds/mission-05/fosa-panoramica.webp',m5sub:'assets/worlds/mission-05/abismo-submarino-v1.png',m5captain:'assets/sprites/capitan-abismo-combate.webp',m5boats:'assets/sprites/submarinos-abismo-8.webp',m5divers:'assets/sprites/personajes-buceo-v1.png',m5roof:'assets/worlds/mission-06/centro-comercial-v1.png'},{
+    intro:[
+      // 1 · El mercado: de la luz de la superficie al fondo de la fosa.
+      {id:'fosa',dur:8,draw(c,t,v){
+        const depth=drift(t,v.dur);fill(c,v,'#0b5a78','#04101e');
+        plate(c,images.m5trench,v,{u:.5+.06*Math.sin(t*.1),vy:depth*.9,zoom:1.05});
+        sunRays(c,v,t,1-depth);shade(c,v,'rgba(3,10,24,'+(.1+.4*depth).toFixed(3)+')');
+        bubbles(c,v,t,46);vignette(c,v,.75);
+      }},
+      // 2 · El submarino: la bodega del Consorcio cruza entre los restos de la flota.
+      {id:'submarino',dur:8,draw(c,t,v){
+        fill(c,v,'#0a4d7a','#05142a');plate(c,images.m5sub,v,{band:[0,0,1536,504],u:lerp(.2,.7,drift(t,v.dur)),vy:.5});
+        sunRays(c,v,t,.5);shade(c,v,'rgba(3,10,24,.38)');
+        const boats=atlas('m5boats',8,3),x=v.cx+lerp(380,-80,ease(t/v.dur)),y=300+Math.sin(t*.8)*6;
+        put(c,boats,16+Math.floor(t*6)%8,x,y,180,{flip:true});
+        glow(c,x-150,y-90,70,'255,220,140',.5);ping(c,x,y-90,t,'120,255,214',200);
+        for(let i=0;i<3;i++)put(c,boats,Math.floor(t*8+i)%8,x+180+i*90,y-170+i*40,34,{flip:true});
+        bubbles(c,v,t,30);vignette(c,v,.75);
+      }},
+      // 3 · El Capitán del Abismo, en su cámara, con la alarma encendida.
+      {id:'capitan',dur:7.5,draw(c,t,v){
+        fill(c,v,'#1a2026','#0a0d12');const bg=plate(c,images.m5sub,v,{band:[0,516,1536,508],ground:[905,FLOOR],u:.5,zoom:1.25});
+        const alarm=.5+.5*Math.sin(t*4);shade(c,v,'rgba(120,10,10,'+(.1+.16*alarm).toFixed(3)+')');
+        const x=v.cx+90,k=lerp(250,290,drift(t,v.dur));
+        shadow(c,x,FLOOR,k*.9,.6);put(c,atlas('m5captain',8,6),Math.floor(t*8)%8,x,FLOOR+2,k,{flip:true});
+        glow(c,v.cx-v.w*.36,TOP+20,150,'255,70,60',.25+.3*alarm);glow(c,v.cx+v.w*.36,TOP+20,150,'255,70,60',.25+.3*(1-alarm));
+        vignette(c,v,.75);
+      }},
+      // 4 · La inmersión: el cazador baja hacia lo oscuro con la linterna encendida.
+      {id:'inmersion',dur:7,draw(c,t,v){
+        fill(c,v,'#06304a','#020812');plate(c,images.m5trench,v,{vy:.95,zoom:1.3,u:.4});shade(c,v,'rgba(2,8,20,.55)');
+        const x=v.cx-60+Math.sin(t*.6)*30,y=lerp(200,300,drift(t,v.dur))+Math.sin(t*1.4)*6;
+        beam(c,x+90,y-40,Math.PI/2+.25,560,120,'200,240,255',.28);
+        put(c,atlas('m5divers',4,4),Math.floor(t*6)%4,x,y,96);
+        for(let i=0;i<6;i++){const u=(t*.5+i/6)%1;c.fillStyle='rgba(200,240,255,'+(.6*(1-u)).toFixed(3)+')';c.fillRect(Math.round(x+30+Math.sin(u*9+i)*6),Math.round(y-90-u*170),3,3);}
+        bubbles(c,v,t,22);vignette(c,v,.85);
+      }}
+    ],
+    outro:[
+      // 1 · Los libros de cuentas, a la luz de una linterna.
+      {id:'libros',dur:8,draw(c,t,v){fill(c,v,'#12080a','#050304');ledger(c,v,t);}},
+      // 2 · La antena: la azotea del último centro comercial, con su baliza.
+      {id:'antena',dur:8,draw(c,t,v){
+        roof(c,v,t,'m5roof',{u:lerp(.3,.6,drift(t,v.dur))});shade(c,v,'rgba(26,16,46,.3)');
+        const x=v.cx+120;mast(c,x,FLOOR-20,TOP+60,t);shaft(c,x,0,TOP+30,18,t,'120,230,255');
+        vignette(c,v,.7);
+      }}
+    ]
+  });
 
-  Scenes.register('six',{m6atrium:'assets/worlds/mission-06/atrio.webp',m6gallery:'assets/worlds/mission-06/galeria.webp',m6city:'assets/worlds/mission-06/ciudad.webp',m6giant:'assets/sprites/coloso-exterior.webp'},[
-    // 1 · El último centro: el atrio, visto por las cámaras del Consorcio.
-    function(c,w,h,t){
-      fill(c,w,h,'#2a3350','#141a26');plate(c,images.m6atrium,w,h,null,.5,.5-.5*Math.cos(t*.16));
-      camera(c,w,h,t,'CAM 01 · ATRIO');vignette(c,w,h);
-    },
-    // 2 · Tres plantas: las galerías, con las vitrinas rotas tras la fachada limpia.
-    function(c,w,h,t){
-      fill(c,w,h,'#3a2f52','#15131f');plate(c,images.m6gallery,w,h,null,.5-.5*Math.cos(t*.12),.86,1.5);
-      camera(c,w,h,t,'CAM 07 · GALERÍAS');vignette(c,w,h);
-    },
-    // 3 · La antena: la azotea al anochecer y el Coloso que trepa por la fachada.
-    function(c,w,h,t){
-      fill(c,w,h,'#241a52','#e0603a');plate(c,images.m6city,w,h,[0,40,1152,600],.5,.3);
-      const edge=h-34,rise=ease(clamp((t%16)/4));
-      cell(c,images.m6giant,[0,0,256,224],w*.62,edge+26+(1-rise)*170,.86);
-      c.fillStyle='rgba(26,16,46,.42)';c.fillRect(0,0,w,h);
-      // Pretil de la azotea, por delante del gigante.
-      c.fillStyle='#0c1018';c.fillRect(0,edge,w,h-edge);c.fillStyle='#232b3a';c.fillRect(0,edge,w,3);
-      for(let x=24;x<w;x+=88){c.fillStyle='#0c1018';c.fillRect(x,edge-9,5,9);}
-      mast(c,w*.2,edge,46,t);beam(c,w*.2,0,22,10,t,'120,230,255');
-      vignette(c,w,h);
-    }
-  ]);
+  // ═════════════════════ MISIÓN 06 · EL ÚLTIMO CENTRO ═════════════════════
+  // Compradores: filas 0 y 3 caminan, ocho cuadros cada una (hoja de 8 × 6).
+  function shoppers(c,v,t,floor,count,size){
+    const crowd=atlas('m6shoppers',8,6);if(!crowd)return;
+    for(let i=0;i<count;i++){const dir=i%2?1:-1,span=v.w+200,x=((hash(i)*span+dir*t*(40+hash(i+4)*30))%span+span)%span-100,row=(i%3===0?0:3)*8;
+      put(c,crowd,row+Math.floor(t*8+i)%8,x,floor+(i%3)*6,size*(.9+hash(i+2)*.2),{flip:dir<0});}
+  }
+  Scenes.register('six',{m6atrium:'assets/worlds/mission-06/atrio.webp',m6gallery:'assets/worlds/mission-06/galeria.webp',m6city:'assets/worlds/mission-06/ciudad.webp',m6giant:'assets/sprites/coloso-exterior.webp',m6shoppers:'assets/sprites/compradores-centro.webp',m6roof:'assets/worlds/mission-06/centro-comercial-v1.png'},{
+    intro:[
+      // 1 · El atrio: compradores bajo la cúpula, como si nada hubiera pasado.
+      {id:'atrio',dur:8,draw(c,t,v){
+        fill(c,v,'#2a3350','#141a26');plate(c,images.m6atrium,v,{ground:[700,FLOOR+20],u:lerp(.3,.7,drift(t,v.dur))});
+        shoppers(c,v,t,FLOOR-4,9,92);vignette(c,v,.6);
+      }},
+      // 2 · Las cámaras: las galerías, vistas por la seguridad del Consorcio.
+      {id:'camaras',dur:8,draw(c,t,v){
+        fill(c,v,'#3a2f52','#15131f');const cam=Math.floor(t/2.7)%3;
+        if(cam===1)plate(c,images.m6atrium,v,{ground:[700,FLOOR+20],u:.15,zoom:1.3});else plate(c,images.m6gallery,v,{u:cam?.85:.3,vy:.8,zoom:1.35});
+        shoppers(c,v,t+cam*5,FLOOR-4,6,104);
+        camera(c,v,t,['CAM 07 · GALERÍAS','CAM 01 · ATRIO','CAM 12 · RESTAURANTES'][cam]);vignette(c,v,.6);
+      }},
+      // 3 · La azotea: la antena al anochecer, y algo enorme que trepa por la fachada.
+      {id:'azotea',dur:8,draw(c,t,v){
+        fill(c,v,'#241a52','#e0603a');plate(c,images.m6city,v,{band:[0,40,1152,600],u:.5,vy:.3});
+        const edge=FLOOR-10,rise=ease(ramp(t,1.5,5.5)),gx=v.cx+170;
+        put(c,atlas('m6giant',8,5),Math.floor(t*6)%8,gx,edge+90+(1-rise)*260,300,{flip:true});
+        shade(c,v,'rgba(26,16,46,.36)');
+        c.fillStyle='#0c1018';c.fillRect(0,edge,v.w,v.h-edge);c.fillStyle='#232b3a';c.fillRect(0,edge,v.w,4);
+        for(let x=30;x<v.w;x+=120){c.fillStyle='#0c1018';c.fillRect(x,edge-14,7,14);}
+        const mx=v.cx-220;mast(c,mx,edge,TOP+50,t);shaft(c,mx,0,TOP+20,16,t,'120,230,255');
+        vignette(c,v,.7);
+      }}
+    ],
+    outro:[
+      // 1 · La señal: el haz de la antena sube y la cámara lo sigue hasta las estrellas.
+      {id:'senal',dur:8,draw(c,t,v){
+        const up=ease(ramp(t,1,7.2));
+        c.save();c.translate(0,up*v.h*1.1);
+        fill(c,v,'#241a52','#e0603a');const bg=plate(c,images.m6roof,v,{band:ROOF,ground:[1090,FLOOR],u:.45});
+        shade(c,v,'rgba(26,16,46,.3)');const x=v.cx-40;mast(c,x,FLOOR-20,TOP+60,t);
+        c.restore();
+        // Encima, el cielo de la noche que se abre a medida que sube la cámara.
+        const sky=c.createLinearGradient(0,0,0,v.h);sky.addColorStop(0,'#03040d');sky.addColorStop(1,'#141a3e');c.save();c.globalAlpha=up;c.fillStyle=sky;c.fillRect(0,0,v.w,up*v.h*1.1);c.globalAlpha=1;c.restore();
+        c.save();c.globalAlpha=up;stars(c,v,t,70,up*v.h*1.1);c.restore();
+        shaft(c,v.cx-40,0,FLOOR-80+up*v.h*1.1,22,t,'120,230,255',.55);
+        vignette(c,v,.7);
+      }},
+      // 2 · La órbita: más allá de las nubes, la señal encuentra quien la escuche.
+      {id:'orbita',dur:8,draw(c,t,v){
+        fill(c,v,'#02030a','#07091a');stars(c,v,t,90);
+        planet(c,v,t,FLOOR-30);
+        const push=drift(t,v.dur),x=v.cx+160,y=lerp(180,200,push);
+        shaft(c,v.cx-120,y,FLOOR-30,10,t,'120,230,255',.4);
+        // La nave: una silueta oscura con sus luces, recortada del casco de la misión 07.
+        c.save();c.globalAlpha=ease(ramp(t,1,3));
+        const w=lerp(360,460,push),h=w*.36;c.fillStyle='#0b0a16';c.beginPath();c.ellipse(x,y,w/2,h/2,-.08,0,TAU);c.fill();
+        c.fillStyle='#151327';c.beginPath();c.ellipse(x+w*.1,y-h*.18,w*.3,h*.22,-.08,0,TAU);c.fill();
+        for(let i=0;i<9;i++){const a=i/9;c.fillStyle=Math.floor(t*3+i)%4?'#6ef0ff':'#2a6f80';c.fillRect(Math.round(x-w*.42+a*w*.84),Math.round(y+h*.12-Math.sin(a*Math.PI)*h*.18),6,3);}
+        glow(c,x,y,w*.6,'150,90,255',.25+.1*Math.sin(t*2));c.restore();
+        vignette(c,v,.7);
+      }}
+    ]
+  });
 
-  Scenes.register('seven',{m7city:'assets/worlds/mission-06/ciudad.webp',m7ship:'assets/worlds/mission-07/nave-alienigena-v1.png',m7boss:'assets/sprites/soberano-horror-v2.png'},[
-    // 1 · La señal: el haz de la antena sube de la ciudad al espacio, y el helicóptero con él.
-    function(c,w,h,t){
-      const climb=.5-.5*Math.cos(t*.2);fill(c,w,h,'#05071a','#3a2a6a');
-      plate(c,images.m7city,w,h,[0,0,1152,560],.5,1-climb);
-      c.fillStyle='rgba(4,6,22,'+(.25+.55*climb).toFixed(3)+')';c.fillRect(0,0,w,h);
-      c.globalAlpha=climb;stars(c,w,h*.8,t,46);c.globalAlpha=1;
-      beam(c,w*.5,0,h,16,t,'120,230,255');
-      // El helicóptero de Vega, pequeño, enganchado al haz.
-      const y=h*(.72-.36*climb)+Math.sin(t*2.2)*2,x=Math.round(w*.5);
-      c.fillStyle='#0b1019';c.fillRect(x-9,Math.round(y),18,6);c.fillRect(x+8,Math.round(y)+1,10,2);c.fillStyle='#cfd8e2';const rotor=Math.round(Math.abs(Math.sin(t*40))*14)+3;c.fillRect(x-rotor,Math.round(y)-3,rotor*2,1);
-      vignette(c,w,h);
-    },
-    // 2 · El casco: la nave nodriza y su flota, con el planeta al fondo.
-    function(c,w,h,t){
-      fill(c,w,h,'#090b1c','#17122c');plate(c,images.m7ship,w,h,[0,0,1536,504],.5-.5*Math.cos(t*.12),.4);
-      stars(c,w,h*.5,t,18);
-      const sweep=(t*.16)%1;c.save();c.globalCompositeOperation='screen';const g=c.createLinearGradient(w*sweep-60,0,w*sweep+60,0);g.addColorStop(0,'rgba(110,230,255,0)');g.addColorStop(.5,'rgba(110,230,255,.16)');g.addColorStop(1,'rgba(110,230,255,0)');c.fillStyle=g;c.fillRect(w*sweep-60,0,120,h);c.restore();
-      vignette(c,w,h);
-    },
-    // 3 · El Soberano del Vacío: el proveedor, en su núcleo.
-    function(c,w,h,t){
-      fill(c,w,h,'#140f26','#07060f');plate(c,images.m7ship,w,h,[0,516,1536,508],.5,.544,1.5);
-      const pulse=.5+.5*Math.sin(t*2.4);glow(c,w*.64,120,150,'150,90,255',.22+.2*pulse);
-      cell(c,sheet('m7boss'),[332,318,333,269],w*.64,207,.7);
-      glow(c,w*.6,96,34,'90,240,255',.25+.3*pulse);
-      c.fillStyle='rgba(10,6,24,.22)';c.fillRect(0,0,w,h);vignette(c,w,h);
-    }
-  ]);
+  // ═════════════════════ MISIÓN 07 · EL SOBERANO DEL VACÍO ═════════════════════
+  Scenes.register('seven',{m7city:'assets/worlds/mission-06/ciudad.webp',m7ship:'assets/worlds/mission-07/nave-alienigena-v1.png',m7boss:'assets/sprites/soberano-horror-v2.png',m7crew:'assets/sprites/aliens-tripulacion-v1.png',m7ny:'assets/worlds/mission-08/manhattan-v1.png'},{
+    intro:[
+      // 1 · La respuesta: la señal vuelve del cielo y la nave aparece sobre la ciudad.
+      {id:'respuesta',dur:8,draw(c,t,v){
+        const climb=drift(t,v.dur);fill(c,v,'#05071a','#3a2a6a');
+        plate(c,images.m7city,v,{band:[0,0,1152,560],u:.5,vy:1-climb*.9});
+        shade(c,v,'rgba(4,6,22,'+(.25+.45*climb).toFixed(3)+')');c.save();c.globalAlpha=climb;stars(c,v,t,60,v.h*.6);c.restore();
+        shaft(c,v.cx,0,v.h,24,t,'120,230,255');
+        const pulse=(t*.6)%1;c.strokeStyle='rgba(150,240,255,'+(.8*(1-pulse)).toFixed(3)+')';c.lineWidth=3;c.beginPath();c.ellipse(v.cx,TOP+30,40+pulse*280,10+pulse*60,0,0,TAU);c.stroke();
+        vignette(c,v,.7);
+      }},
+      // 2 · Lo que bajó de ahí arriba: tanques con cosas dentro, en el vientre de la nave.
+      {id:'vientre',dur:9,draw(c,t,v){
+        fill(c,v,'#140f26','#07060f');plate(c,images.m7ship,v,{band:[0,516,1536,508],ground:[860,FLOOR],u:lerp(.15,.75,drift(t,v.dur))});
+        const pulse=.5+.5*Math.sin(t*2.2);shade(c,v,'rgba(10,6,24,.28)');
+        for(const fx of [.18,.5,.82])glow(c,v.w*fx,260,130,'90,240,255',.18+.14*pulse);
+        const crew=atlas('m7crew',4,4);for(let i=0;i<2;i++){const x=((t*50+i*v.w*.55)%(v.w+200))-100;put(c,crew,Math.floor(t*6+i)%3,x,FLOOR,128,{flip:false});}
+        vignette(c,v,.75);
+      }},
+      // 3 · El haz: Vega engancha el helicóptero y sube hasta donde se acaba el aire.
+      {id:'haz',dur:8,draw(c,t,v){
+        fill(c,v,'#02030a','#0a1030');stars(c,v,t,80);planet(c,v,t,FLOOR+lerp(-10,120,drift(t,v.dur)),.7);
+        shaft(c,v.cx,0,v.h,30,t,'120,230,255',.5);
+        const y=lerp(380,200,drift(t,v.dur))+Math.sin(t*2)*4;heli(c,v.cx+40,y,300,t,{tilt:-.25});
+        glow(c,v.cx,y-30,120,'150,240,255',.3);vignette(c,v,.7);
+      }},
+      // 4 · El Soberano del Vacío, en su núcleo.
+      {id:'soberano',dur:7.5,draw(c,t,v){
+        fill(c,v,'#140f26','#07060f');plate(c,images.m7ship,v,{band:[0,516,1536,508],ground:[860,FLOOR],u:.5,zoom:1.2});
+        const pulse=.5+.5*Math.sin(t*2.4),x=v.cx+80;glow(c,x,FLOOR-180,260,'150,90,255',.22+.2*pulse);
+        put(c,atlas('m7boss',4,4),4+Math.floor(t*4)%4,x,FLOOR+6,lerp(300,330,drift(t,v.dur)));
+        glow(c,x-20,FLOOR-230,60,'90,240,255',.25+.3*pulse);shade(c,v,'rgba(10,6,24,.2)');vignette(c,v,.8);
+      }}
+    ],
+    outro:[
+      // 1 · El apagón: las luces del casco se apagan por sectores y la nave se parte.
+      {id:'apagon',dur:8,draw(c,t,v){
+        fill(c,v,'#090b1c','#17122c');plate(c,images.m7ship,v,{band:[0,0,1536,504],u:.5,vy:.4,zoom:1.1});
+        const dark=ease(ramp(t,1,6));shade(c,v,'rgba(2,2,8,'+(.15+.6*dark).toFixed(3)+')');
+        for(let k=0;k<5;k++){const at=1.4+k*1.1;if(t>at)boom(c,v.cx+(hash(k*7)-.5)*v.w*.8,170+hash(k*3)*180,180+hash(k)*80,(t-at)/1.2,.95);}
+        flash(c,v,t>5.6&&t<6.2?(1-(t-5.6)/.6)*.6:0,'200,160,255');
+        vignette(c,v,.75);
+      }},
+      // 2 · El rumbo: Nueva York de noche y una torre que no apaga sus luces.
+      {id:'rumbo',dur:8,draw(c,t,v){
+        fill(c,v,'#0a1028','#1a1a2a');plate(c,images.m7ny,v,{u:.5,vy:lerp(.1,.45,drift(t,v.dur)),zoom:1.15});
+        shade(c,v,'rgba(6,10,34,.62)');
+        for(let i=0;i<40;i++){if(hash(i+1)>.55)continue;c.fillStyle=Math.floor(t*.5+i)%7?'#ffd98a':'#6a5a3a';c.fillRect(Math.round(v.w*hash(i)),Math.round(140+hash(i+9)*200),4,5);}
+        const tower=v.cx+40;glow(c,tower,190,90,'255,70,60',.3+.2*Math.sin(t*3));seal(c,tower,190,24,'#ff6a5a',.8);
+        heli(c,v.cx-300+drift(t,v.dur)*220,320+Math.sin(t*1.6)*5,240,t,{tilt:-.05});
+        vignette(c,v,.75);
+      }}
+    ]
+  });
 
-  Scenes.register('eight',{m8city:'assets/worlds/mission-08/manhattan-v1.png',m8midtown:'assets/worlds/mission-08/midtown-v1.png',m8plaza:'assets/worlds/mission-08/plaza-final-v1.png',m8titan:'assets/sprites/titan-nueva-york-v1.png'},[
-    // 1 · La sede: Manhattan tomada, de las torres a la calle.
-    function(c,w,h,t){
-      fill(c,w,h,'#3e6fb8','#1d2430');const view=plate(c,images.m8city,w,h,null,.5,.5-.5*Math.cos(t*.15));
-      if(view)for(const [i,x] of [260,820,1290].entries())smoke(c,(x-view.x)*view.k,(700-view.y)*view.k,t,i*5+1);
-      c.fillStyle='rgba(40,14,10,.26)';c.fillRect(0,0,w,h);vignette(c,w,h);
-    },
-    // 2 · La policía: las luces de las patrullas en una avenida cortada.
-    function(c,w,h,t){
-      fill(c,w,h,'#35507c','#141a24');plate(c,images.m8midtown,w,h,[0,380,1536,644],.5-.5*Math.cos(t*.1),1,1.3);
-      c.fillStyle='rgba(8,12,30,.4)';c.fillRect(0,0,w,h);
-      const red=Math.floor(t*4)%2;
-      glow(c,w*.1,h-30,130,'255,60,60',red?.55:.12);glow(c,w*.2,h-30,130,'70,110,255',red?.12:.55);
-      glow(c,w*.9,h-30,130,'70,110,255',red?.55:.12);glow(c,w*.8,h-30,130,'255,60,60',red?.12:.55);
-      vignette(c,w,h);
-    },
-    // 3 · El Titán de Acero: el último prototipo, apagado, esperando a su piloto.
-    function(c,w,h,t){
-      fill(c,w,h,'#5a3a78','#e0703a');plate(c,images.m8plaza,w,h,[0,380,1536,644],.5,.835,1.25);
-      // Reflectores que barren el cielo desde la calle.
-      c.save();c.globalCompositeOperation='screen';
-      for(const [x,phase] of [[w*.08,0],[w*.94,2.1]]){const a=Math.sin(t*.5+phase)*.45,tx=x+Math.sin(a)*h*1.3,g=c.createLinearGradient(x,h,tx,0);g.addColorStop(0,'rgba(210,225,255,.3)');g.addColorStop(1,'rgba(210,225,255,0)');c.fillStyle=g;c.beginPath();c.moveTo(x-2,h);c.lineTo(x+2,h);c.lineTo(tx+34,0);c.lineTo(tx-34,0);c.fill();}
-      c.restore();
-      cell(c,sheet('m8titan'),[0,0,384,256],w*.62,218,.68);
-      c.fillStyle='rgba(24,10,30,.3)';c.fillRect(0,0,w,h);vignette(c,w,h);
-    }
-  ]);
+  // ═════════════════════ MISIÓN 08 · NUEVA YORK ═════════════════════
+  // Las avenidas de Nueva York: el asfalto de la imagen (y≈920) se apoya en FLOOR.
+  const STREET=[920,FLOOR+12];
+  Scenes.register('eight',{m8city:'assets/worlds/mission-08/manhattan-v1.png',m8midtown:'assets/worlds/mission-08/midtown-v1.png',m8plaza:'assets/worlds/mission-08/plaza-final-v1.png',m8titan:'assets/sprites/titan-nueva-york-v1.png',m8boss:'assets/sprites/comandante-nueva-york-v1.png',m8troops:'assets/sprites/nueva-york-policias-soldados-v1.png'},{
+    intro:[
+      // 1 · La sede: Manhattan tomada, de las torres a la calle.
+      {id:'sede',dur:8,draw(c,t,v){
+        fill(c,v,'#3e6fb8','#1d2430');const bg=plate(c,images.m8city,v,{u:.5,vy:lerp(.15,.7,drift(t,v.dur)),zoom:1.15});
+        if(bg)for(const [i,x] of [280,800,1300].entries())smoke(c,bg.px(x),bg.py(780),t,i*5+1,1.4);
+        shade(c,v,'rgba(40,14,10,.24)');vignette(c,v,.6);
+      }},
+      // 2 · El Comandante: el hombre que firma las órdenes, entre sus soldados.
+      {id:'comandante',dur:8,draw(c,t,v){
+        fill(c,v,'#35507c','#141a24');plate(c,images.m8midtown,v,{ground:STREET,u:lerp(.4,.6,drift(t,v.dur)),zoom:1.1});
+        shade(c,v,'rgba(8,12,30,.42)');
+        const troops=atlas('m8troops',4,4);
+        for(const [dx,f] of [[-250,8],[-150,9],[170,8],[260,9]]){shadow(c,v.cx+dx,FLOOR,70);put(c,troops,f,v.cx+dx,FLOOR,112,{flip:dx>0});}
+        const x=v.cx+10;shadow(c,x,FLOOR,110,.6);put(c,atlas('m8boss',4,4),Math.floor(t*1.2)%4===3?3:0,x,FLOOR,lerp(132,142,drift(t,v.dur)),{flip:true});
+        glow(c,x-6,FLOOR-140,30,'255,60,50',.4+.2*Math.sin(t*3));
+        vignette(c,v,.7);
+      }},
+      // 3 · La avenida: el helicóptero de Vega entra en Midtown con el sol bajo.
+      {id:'avenida',dur:7.5,draw(c,t,v){
+        fill(c,v,'#35507c','#141a24');plate(c,images.m8midtown,v,{ground:STREET,u:.5,zoom:1.25});
+        shade(c,v,'rgba(30,14,30,.22)');
+        const go=drift(t,v.dur),x=v.cx+lerp(-200,40,go),y=lerp(180,240,go)+Math.sin(t*1.5)*5;
+        heli(c,x,y,lerp(240,420,go),t,{tilt:-.04});
+        const red=Math.floor(t*4)%2;glow(c,v.cx-v.w*.4,FLOOR,160,'255,60,60',red?.5:.1);glow(c,v.cx+v.w*.4,FLOOR,160,'70,110,255',red?.1:.5);
+        vignette(c,v,.65);
+      }},
+      // 4 · El Titán de Acero: el último prototipo, apagado en la plaza, esperando a su piloto.
+      {id:'titan',dur:7.5,draw(c,t,v){
+        fill(c,v,'#5a3a78','#e0703a');plate(c,images.m8plaza,v,{ground:STREET,u:.5,zoom:1.15});
+        for(const [x,phase] of [[v.cx-v.w*.42,0],[v.cx+v.w*.44,2.1]])beam(c,x,v.h,Math.sin(t*.5+phase)*.45,v.h*1.4,60,'210,225,255',.28);
+        const x=v.cx+60;shadow(c,x,FLOOR,360,.6);put(c,atlas('m8titan',4,4),0,x,FLOOR+4,lerp(330,360,drift(t,v.dur)));
+        shade(c,v,'rgba(24,10,30,.32)');glow(c,x+60,FLOOR-250,24,'255,60,50',.25*(1+Math.sin(t*2)));vignette(c,v,.7);
+      }}
+    ]
+  });
 })(typeof window!=='undefined'?window:globalThis);

@@ -1,11 +1,19 @@
 (function(root){
   'use strict';
-  // Guion de la misión 02. El informe y la radio usan el mismo sistema que la
+  // Guion de la misión 02. La historia y la radio usan el mismo sistema que la
   // misión 01 (mission-one-story.js); aquí solo vive el texto y sus disparadores.
+  // Cada página es el subtítulo de un plano (mission-one-scenes.js, conjunto 'two').
   const briefing=[
-    {title:'El salto',text:'El Capataz solo era un perro guardián. Antes de caer habló de un rey enterrado al otro lado de la ciudad.\n\nLa artillería no deja aterrizar a Vega: saltas en paracaídas sobre las ruinas, entre los que todavía huyen.'},
-    {title:'Los caídos',text:'La milicia defiende la avenida con torretas, barricadas y un tanque de asedio. Más allá, donde empieza a llover, está el cementerio de los caídos.\n\nDicen que allí los muertos ya no descansan. Algo los despierta desde abajo.'},
-    {title:'El umbral',text:'La puerta del mausoleo la guarda un heraldo que respira electricidad. Nadie ha entrado desde que apareció.\n\nDetrás espera el rey. Acaba con él y Vega te sacará de aquí.',objectives:['Cruza la ciudad en ruinas y destruye el tanque de asedio','Atraviesa el cementerio y derrota al Heraldo Eléctrico','Entra al mausoleo y da caza al rey']}
+    {text:'El Capataz solo cuidaba una puerta. Al otro lado de la ciudad, alguien le pagaba.'},
+    {text:'Vega no puede aterrizar donde todavía manda la artillería. Cap nunca le pidió que lo hiciera.'},
+    {text:'Dicen que bajo el cementerio de los caídos despertó un rey. Y que el rey despertó a los demás.'},
+    {text:''}
+  ];
+  // Tras la salida del mausoleo (mission-two-outro.js): lo que había en la cripta.
+  const outro=[
+    {text:'El rey cayó. En su cripta había cajas que no tenían siglos.'},
+    {text:'Todas llevaban el mismo sello: el Consorcio, la empresa militar que compró la ciudad cuando acabó la guerra.'},
+    {text:'Sus envíos llegaron por aire, por carretera y por mar. Cap tendrá que elegir qué rastro sigue.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -31,7 +39,7 @@
     {id:'rot',who:VEGA,text:'¡La coraza ha caído y lo de dentro sigue vivo! ¡No pares, Cap!',when:c=>c.kingStage===2},
     {id:'done',who:VEGA,text:'El rey ha caído. Te recojo en la puerta. En su cripta hay cajas con un sello: el Consorcio. Llegaron por aire, por carretera y por mar.',when:c=>c.kingDown}
   ];
-  const config={briefing,beats,eyebrow:'MISIÓN 02 · EL UMBRAL DEL REY',scenes:'two',startLabel:'Saltar sobre la ciudad',ambient:/^(militia|hurt|giants|avenue|airship|cemetery|barricade|storm)/,series:/^(giants|avenue|cemetery|barricade)/};
+  const config={briefing,outro,beats,eyebrow:'MISIÓN 02 · EL UMBRAL DEL REY',scenes:'two',startLabel:'Saltar sobre la ciudad',ambient:/^(militia|hurt|giants|avenue|airship|cemetery|barricade|storm)/,series:/^(giants|avenue|cemetery|barricade)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionTwoStory=api;
 })(typeof window!=='undefined'?window:globalThis);

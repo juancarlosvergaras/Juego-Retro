@@ -67,8 +67,9 @@ test('al reanudar una partida no se repite lo ya vivido',()=>{
   assert.equal(radio.state.current.id,'floor15');
 });
 test('el informe y los avisos tienen texto y hablante',()=>{
-  assert.equal(Story.briefing.length,3);
-  for(const page of Story.briefing)assert.ok(page.title&&page.text.length>60);
+  // La historia se cuenta en subtítulos breves (story-cinema.js): uno por plano, sin objetivos.
+  assert.ok(Story.briefing.length>=3&&Story.briefing.length<=5);
+  for(const page of [...Story.briefing,...Story.outro])assert.ok(!page.objectives&&page.text.length<=150,page.text);
   for(const beat of Story.beats)assert.ok(beat.who&&beat.text.length>20&&beat.text.length<140,beat.id);
   assert.equal(new Set(Story.beats.map(b=>b.id)).size,Story.beats.length);
 });

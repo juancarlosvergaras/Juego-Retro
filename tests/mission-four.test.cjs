@@ -163,7 +163,7 @@ test('the dusk lighting follows the bike, the boss, the shots and the fire',()=>
 });
 
 test('mission 4 has its briefing, objectives and a radio that follows the chase',()=>{
- assert.equal(Story.briefing.length,3);assert.equal(Story.briefing[2].objectives.length,3);for(const page of Story.briefing){assert.ok(page.title);assert.ok(page.text.length>120);}
+ assert.ok(Story.briefing.length>=3&&Story.briefing.length<=5);for(const page of Story.briefing)assert.ok(!page.objectives&&page.text.length<=150,'narration, no objectives');assert.ok(Story.config.outro.length>=2);
  assert.equal(Story.config.scenes,'four');assert.match(Story.config.eyebrow,/^MISIÓN 04/);assert.ok(Story.config.epilogue.length>40);
  const ids=Story.beats.map(b=>b.id);assert.equal(new Set(ids).size,ids.length);
  const base={riding:false,vehicles:0,jets:0,rampNear:false,crashed:false,hp:8,distance:0,bossActive:false,bossStage:0,reward:false},fired=c=>Story.beats.filter(b=>b.when({...base,...c})).map(b=>b.id);

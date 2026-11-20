@@ -1,10 +1,17 @@
 (function(root){
   'use strict';
-  // Guion de la misión 03. Informe y radio reutilizan el sistema de la misión 01.
+  // Guion de la misión 03. Historia y radio reutilizan el sistema de la misión 01.
+  // Cada página es el subtítulo de un plano (mission-one-scenes.js, conjunto 'three').
   const briefing=[
-    {title:'El Consorcio',text:'El rey del mausoleo no despertó solo. Alguien lo fue a buscar, igual que alguien pagaba al Capataz: el Consorcio, la empresa militar que compró la ciudad cuando acabó la guerra.\n\nSus órdenes salen de un portaaviones que no toca el agua: vuela sobre la costa con cuatro motores y una flota de escolta.'},
-    {title:'El asalto',text:'Vega te acercará por debajo de las nubes. La artillería antiaérea abrirá fuego en cuanto los vean, así que no habrá segunda pasada.\n\nBajas a cubierta y avanzas hacia proa entre torretas, cazas estacionados y soldados con mochila propulsora.'},
-    {title:'El Centinela',text:'La cubierta de proa la vigila una máquina de guerra de dos pisos. Mientras siga en pie, nadie despega ni aterriza.\n\nSu chasis es un prototipo. Si lo tumbas, lo que quede dentro será tuyo.',objectives:['Cruza la cubierta del portaaviones hasta proa','Destruye al Centinela','Hazte con el chasis robot y sal por la zona de extracción']}
+    {text:'El Consorcio no tiene bandera. Tiene un ejército, y sus órdenes salen de un portaaviones que no toca el agua.'},
+    {text:'Vega conoce una sola forma de acercarse: por debajo de las nubes, y sin segunda pasada.'},
+    {text:'Cap baja primero. Siempre baja primero.'},
+    {text:''}
+  ];
+  // Tras la cinemática de cierre (mission-endings.js): la caída y los dos rastros.
+  const outro=[
+    {text:'Sin su guardián, el portaaviones del Consorcio pierde el rumbo. Y la altura.'},
+    {text:'Lo que pudieron salvar huye por tierra. Lo que no, deja un rastro hasta la ciudad.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -19,7 +26,7 @@
     {id:'robot',who:CAP,text:'El chasis sigue entero. Dos brazos, dos armas… puedo usar esto.',when:c=>c.mechaDown},
     {id:'exit',who:VEGA,text:'¡Centinela fuera de combate! Te recojo en la zona de extracción, a tu derecha. El Consorcio evacúa por carretera.',when:c=>c.mechaDown,after:'robot'}
   ];
-  const config={briefing,beats,eyebrow:'MISIÓN 03 · GUERRA EN EL AIRE',scenes:'three',startLabel:'Despegar',ambient:/^(militia|jets|hurt|mid|bow)/,series:/^(mid|bow)/};
+  const config={briefing,outro,beats,eyebrow:'MISIÓN 03 · GUERRA EN EL AIRE',scenes:'three',startLabel:'Despegar',ambient:/^(militia|jets|hurt|mid|bow)/,series:/^(mid|bow)/};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionThreeStory=api;
 })(typeof window!=='undefined'?window:globalThis);

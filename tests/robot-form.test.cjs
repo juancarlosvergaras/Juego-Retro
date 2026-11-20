@@ -32,7 +32,7 @@ test('the robot breathes, bobs, squashes on landing and kicks when it fires',()=
  const lights=R.lights(robot(),{flash:.1});assert.equal(lights.length,1);assert.ok(lights[0].r>60);assert.deepEqual(R.lights({form:'soldier'}),[]);
 });
 test('mission three has a three-page briefing and a radio that follows the assault',()=>{
- assert.equal(S.briefing.length,3);for(const page of S.briefing)assert.ok(page.title&&page.text.length>60);
+ assert.ok(S.briefing.length>=3&&S.briefing.length<=5);for(const page of S.briefing)assert.ok(!page.objectives&&page.text.length<=150);
  assert.equal(new Set(S.beats.map(b=>b.id)).size,S.beats.length);for(const b of S.beats)assert.ok(b.who&&b.text.length>20&&b.text.length<150,b.id);
  const radio=Story.createRadio(S.beats,S.config.ambient,S.config.series),base={landed:false,x:160,hp:8,enemyAlert:false,jetSeen:false,mechaActive:false,mechaHalf:false,mechaDown:false};
  radio.reset();const seen=[];const run=(c,seconds)=>{for(let i=0;i<seconds*60;i++){const cur=radio.update(c,1/60);if(cur&&seen.at(-1)!==cur.id)seen.push(cur.id);}};

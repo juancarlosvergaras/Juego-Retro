@@ -162,11 +162,13 @@
     const targetX=Math.max(0,Math.min(P.WORLD.width-canvas.width,s.pick-canvas.width*.5));camera.x+=(targetX-camera.x)*(1-Math.exp(-5*dt));
     const rise=Math.max(0,Math.min(1,(outro.age-O.BOARD-.4)/3)),targetY=620-canvas.height*.84-rise*70;camera.y+=(targetY-camera.y)*(1-Math.exp(-4*dt));
     if(outro.age>=O.DURATION&&!outro.shown){outro.shown=true;audio.loop('helicopter',0);
-      ArcadeMissionResults.show({kicker:'MISIÓN 02 COMPLETADA',title:'EL UMBRAL DEL REY',epilogue:'El rey ha caído. Vega espera tus coordenadas. Elige por dónde seguir la cacería.',
+      // Tras la salida del mausoleo, el epílogo a pantalla completa y después el parte.
+      const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 02 COMPLETADA',title:'EL UMBRAL DEL REY',epilogue:'El rey ha caído. Vega espera tus coordenadas. Elige por dónde seguir la cacería.',
         stats:ArcadeMissionResults.rows(score,{enemies:[...cityEnemies,...interiorEnemies],seconds:state.time,extra:[['Estrellas',loot.stars.filter(x=>x.taken).length+' / '+loot.stars.length],['Traje de zombi',profile.zombieUnlocked?'Conseguido':'—']]}),
         next:{label:'Aire · Misión 03',run:()=>leaveForRoute(3)},
         routes:[{label:'Carretera · Misión 04',run:()=>leaveForRoute(4)},{label:'Mar · Misión 05',run:()=>leaveForRoute(5)}],
-        retry:{label:'Repetir misión',run:()=>document.getElementById('restart').click()}});}
+        retry:{label:'Repetir misión',run:()=>document.getElementById('restart').click()}});
+      if(story?.outro)story.outro(debrief);else debrief();}
   }
   function narrate(dt){stage();story?.update({pit:cemetery?.pit.state,strikes:cemetery?.strikes||0,landed:!arrival?.active,x:player.x,inside:state.inside,hp:stats.hp,enemyAlert:stats.enemies.some(n=>n.hp>0&&n.alert&&(n.kind==='rifle'||n.kind==='knife'||n.kind==='turret')),tankNear:!state.inside&&cityTank.hp>0&&Math.abs(player.x-cityTank.x)<700,tankDown:cityTank.hp<=0,mk2:!!profile.jetpackMk2,mk2Now:gotMk2,zombieAwake:!state.inside&&cityEnemies.some(n=>n.kind==='zombie'&&n.hp>0&&n.phase!=='dormant'),heraldNear:!state.inside&&storm.hp>0&&Math.abs(player.x-storm.x)<700,heraldDown:storm.hp<=0&&storm.death<=0&&!!profile.zombieUnlocked,kingActive:state.inside&&king.active&&!king.defeated,kingStage:king.stage,kingDown:!!king.defeated},dt);}
   function follow(dt){

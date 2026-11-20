@@ -27,11 +27,13 @@
  const dock=ArcadeRobotForm.installDock(p,e,save);
  function clear(){keys.clear();queue.clear();pointers.clear();}
  function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Has caído en Nueva York':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
- // Final de la campaña: primero el parte de misión y después el panel con el epílogo y los créditos.
- // Sin el parte cargado, el panel se muestra directamente.
+ // Final de la campaña: al caer el Titán se reproduce sola la secuencia final a pantalla
+ // completa (créditos con los datos de la campaña) y, al terminar o saltarla, el panel
+ // con «Volver al menú» y «Repetir misión». Sin reproductor queda el parte de antes.
  function finale(){$('victory-screen').hidden=false;$('victory-menu').focus();}
- function finish(){ArcadeCampaign.markCompleted(store,8);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;if(!$('victory-screen').hidden)return;
-  if(window.ArcadeMissionResults?.show){ArcadeMissionResults.show({kicker:'MISIÓN 08 COMPLETADA',title:'LA ÚLTIMA BATALLA',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 4'],['Policías a tu lado',String(s.recruited.size)],['Campaña','Completada']],next:{label:'Ver el final',run:finale},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});return;}
+ function finish(){ArcadeCampaign.markCompleted(store,8);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;if(!$('victory-screen').hidden||story?.briefingOpen())return;
+  if(story?.finale){story.finale({store,player:p,stats:[['Puntuación final',(score.total||0).toLocaleString('es-CO')],['Estrellas en Nueva York',s.stars.size+' / 4'],['Policías a tu lado',String(s.recruited.size)]]},finale);return;}
+  if(window.ArcadeMissionResults?.show){ArcadeMissionResults.show({kicker:'MISIÓN 08 COMPLETADA',title:'LA ÚLTIMA BATALLA',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 4'],['Policías a tu lado',String(s.recruited.size)],['Campaña','Completada']],next:{label:'Continuar',run:finale},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});return;}
   finale();}
  play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(s.complete){finish();return;}
   // Una partida nueva abre con el informe animado; reanudar o volver de la pausa va directo a la calle.

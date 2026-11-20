@@ -1,11 +1,19 @@
 (function(root){
   'use strict';
-  // Historia de la misión 01. El informe previo plantea el contrato y las
-  // transmisiones de radio acompañan el ascenso sin detener la partida.
+  // Historia de la misión 01. La intro y el epílogo se ven a pantalla completa
+  // (story-cinema.js, planos en mission-one-scenes.js); la radio acompaña el
+  // ascenso sin detener la partida. Cada página es un subtítulo de su plano, en
+  // orden; una página sin texto deja el plano en silencio.
   const briefing=[
-    {title:'El contrato',text:'La guerra dejó la ciudad sin ley y con demasiadas recompensas por cobrar.\n\nTe llaman Cap Dollar. Cazas a quien nadie más se atreve a buscar, y esta noche el nombre del contrato es EL CAPATAZ.'},
-    {title:'La Obra',text:'Una torre de veinte pisos que nunca se terminó. El Capataz la tomó con su milicia y desde entonces los obreros desaparecen en el turno de noche.\n\nLos que escaparon no hablan de un hombre. Hablan de un lobo blanco.'},
-    {title:'La extracción',text:'Vega, tu piloto, no puede aterrizar mientras él siga vivo. Sube, encuéntralo y acaba el trabajo.\n\nEl helicóptero te espera en la azotea. Si llegas.',objectives:['Asciende los 20 pisos de la obra','Da caza al Capataz','Alcanza la azotea y el helicóptero de Vega']}
+    {text:'La guerra terminó. La ciudad se quedó sin ley y con demasiadas recompensas por cobrar.'},
+    {text:'Lo llaman Cap Dollar. Caza a quien nadie más se atreve a buscar. Vega pilota; él cobra.'},
+    {text:'El contrato de esta noche se llama el Capataz. Tomó una torre a medio construir, y los obreros dejaron de volver a casa.'},
+    {text:'Los que escaparon no hablan de un hombre. Hablan de un lobo blanco.'}
+  ];
+  // Tras el vuelo de victoria: la mordida y el rastro que deja.
+  const outro=[
+    {text:'El Capataz cayó. Pero antes de caer alcanzó a morder, y esa mordida no sangra: arde.'},
+    {text:'Sus últimas palabras hablaban de un rey enterrado al otro lado de la ciudad. Vega ya puso rumbo.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -44,34 +52,43 @@
       }
     };
   }
-  // Otras misiones reutilizan el informe y la radio pasando su propio guion.
-  function mount(host,config={}){
-    const doc=root.document,briefing=config.briefing||api.briefing,radio=createRadio(config.beats,config.ambient,config.series),sceneSet=config.scenes||'one';
+  // Otras misiones reutilizan la historia y la radio pasando su propio guion:
+  // config = {briefing, outro, beats, eyebrow, scenes, epilogue, ambient, series}.
+  // La API que usan los motores no cambia: briefing(cb), briefingOpen(), reset(),
+  // update(), render() y epilogue; outro(cb) y finale(datos, cb) son nuevas y, sin
+  // reproductor o sin planos, llaman al callback en el acto.
+  function mount(host,config=api.config){
+    const doc=root.document,pages=config.briefing||api.briefing,radio=createRadio(config.beats,config.ambient,config.series),set=config.scenes||'one';
     const panel=doc.createElement('aside');panel.id='radio';panel.hidden=true;panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');
     panel.innerHTML='<span class="radio-icon" aria-hidden="true">◉</span><div><span class="radio-speaker"></span><span class="radio-text"></span></div>';
     host.append(panel);
     const speaker=panel.querySelector('.radio-speaker'),text=panel.querySelector('.radio-text');let shown=null;
-    const layer=doc.createElement('section');layer.id='briefing';layer.hidden=true;layer.setAttribute('role','dialog');layer.setAttribute('aria-modal','true');layer.setAttribute('aria-label','Informe de misión');
-    layer.innerHTML='<div class="briefing-card"><canvas class="briefing-scene" width="640" height="250" aria-hidden="true"></canvas><span class="eyebrow"></span><h2></h2><div class="briefing-text" aria-live="polite"></div><ul class="briefing-objectives" hidden></ul><div class="briefing-actions"><button type="button" class="briefing-skip">Saltar informe</button><span class="briefing-step"></span><button type="button" class="briefing-next">Continuar</button></div></div>';
-    doc.body.append(layer);
-    layer.querySelector('.eyebrow').textContent=config.eyebrow||'MISIÓN 01 · LA OBRA';const scene=layer.querySelector('.briefing-scene'),title=layer.querySelector('h2'),body=layer.querySelector('.briefing-text'),goals=layer.querySelector('.briefing-objectives'),step=layer.querySelector('.briefing-step'),next=layer.querySelector('.briefing-next'),skip=layer.querySelector('.briefing-skip');
-    let page=0,typed=0,timer=null,done=null;
-    function finish(){if(layer.hidden)return;clearInterval(timer);timer=null;root.ArcadeStoryScenes?.stop();layer.hidden=true;const callback=done;done=null;callback?.();}
-    function reveal(){const p=briefing[page];clearInterval(timer);timer=null;typed=p.text.length;body.textContent=p.text;goals.hidden=!p.objectives;}
-    function show(){const p=briefing[page];root.ArcadeStoryScenes?.show(scene,page,sceneSet);title.textContent=p.title;step.textContent=(page+1)+' / '+briefing.length;next.textContent=page===briefing.length-1?(config.startLabel||'Comenzar la cacería'):'Continuar';goals.hidden=true;goals.replaceChildren(...(p.objectives||[]).map(o=>{const li=doc.createElement('li');li.textContent='▸ '+o;return li;}));typed=0;body.textContent='';clearInterval(timer);
-      if(root.matchMedia?.('(prefers-reduced-motion: reduce)').matches){reveal();return;}
-      timer=setInterval(()=>{typed=Math.min(p.text.length,typed+2);body.textContent=p.text.slice(0,typed);if(typed>=p.text.length)reveal();},22);}
-    function advance(){if(typed<briefing[page].text.length){reveal();return;}if(page<briefing.length-1){page++;show();}else finish();}
-    next.onclick=advance;skip.onclick=finish;
-    layer.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Escape'){e.preventDefault();finish();}else if(e.key==='Tab'){e.preventDefault();(doc.activeElement===next?skip:next).focus();}});
-    return{radio,epilogue:config.epilogue||epilogue,
-      briefingOpen:()=>!layer.hidden,
-      briefing(callback){done=callback;page=0;layer.hidden=false;show();next.focus({preventScroll:true});},
+    const Cinema=root.ArcadeStoryCinema,Scenes=root.ArcadeStoryScenes,player=Cinema?.create(doc)||null;
+    // Las imágenes de los planos se piden ya, sin esperar: un plano dibuja lo que haya llegado.
+    try{Scenes?.load(set);}catch{}
+    const eyebrow=config.eyebrow||'MISIÓN 01 · LA OBRA';
+    // Una sola llamada al callback, aunque se salte, se cierre o falle el reproductor.
+    function run(kind,list,options,label,callback,extra={}){
+      let called=false;const done=()=>{if(called)return;called=true;callback?.();};
+      // Las imágenes que solo usa esta secuencia (p. ej. 'eight:finale') se piden ahora.
+      try{Scenes?.load(set+':'+kind);}catch{}
+      const shots=Scenes?.sequence?.(set,kind)||[];
+      if(!player||!Cinema||!shots.length||!list?.length){done();return false;}
+      const cues=Cinema.buildCues(list,shots,options);
+      if(!cues.length||!player.play({cues,label,theme:extra.theme,data:extra.data,onDone:done})){done();return false;}
+      return true;
+    }
+    return{radio,epilogue:config.epilogue||epilogue,player,
+      briefingOpen:()=>!!player?.isOpen(),
+      briefing(callback){return run('intro',pages,{title:Cinema?.titleFrom(eyebrow)},'Historia · '+eyebrow,callback);},
+      outro(callback){return run('outro',config.outro,{},'Epílogo · '+eyebrow,callback);},
+      finale(data,callback){const script=typeof config.finale?.script==='function'?config.finale.script(data||{}):config.finale?.script;return run('finale',script,{},'Final de la campaña',callback,{theme:config.finale?.theme,data});},
       reset(){radio.reset();panel.hidden=true;shown=null;},
       update(c,dt){radio.update(c,dt);},
       render(blocked){const current=blocked?null:radio.state.current;if(current?.id!==shown?.id){shown=current;if(current){speaker.textContent=current.who;text.textContent=current.text;}}panel.hidden=!current;if(current)panel.classList.toggle('leaving',radio.state.age>current.duration-.35);}
     };
   }
-  const api={briefing,beats,epilogue,createRadio,mount};
+  const config={briefing,outro,beats,epilogue,eyebrow:'MISIÓN 01 · LA OBRA',scenes:'one'};
+  const api={briefing,outro,beats,epilogue,config,createRadio,mount};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionOneStory=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -12,13 +12,16 @@ const missions=[
  {n:8,name:'eight',page:'level-eight.html',game:'level-eight-game.js',story:require('../mission-eight-story.js'),eyebrow:/^MISIÓN 08 · NUEVA YORK/,
   fire:{start:{playing:true,floor:0},traffic:{traffic:true},soldiers:{soldiers:3},police:{policeNear:true},joined:{allies:1},hurt:{hp:3},midtown:{floor:1},plaza:{floor:2},boss:{bossActive:true},retreat:{retreat:true},titan:{titan:true},half:{titanHalf:true},down:{bossDown:true},wrap:{wrap:true}}}
 ];
-const allText=story=>[...story.briefing.flatMap(p=>[p.title,p.text,...(p.objectives||[])]),...story.beats.map(b=>b.text),story.config.epilogue||'',...(story.finale?[story.finale.title,...story.finale.paragraphs,...story.finale.credits]:[])];
+const finaleText=story=>story.finaleScript?story.finaleScript({}).flatMap(p=>[p.text||'',p.title?.title||'',...(p.credits||[]).map(l=>l.text||l.label||'')]):[];
+const allText=story=>[...story.briefing.flatMap(p=>[p.title||'',p.text,...(p.objectives||[])]),...(story.config.outro||[]).map(p=>p.text),...story.beats.map(b=>b.text),story.config.epilogue||'',...(story.finale?[story.finale.title,...story.finale.paragraphs,...story.finale.credits]:[]),...finaleText(story)];
 
-test('las misiones 5 a 8 tienen informe de tres páginas, objetivos, radio con Vega y epílogo',()=>{
+test('las misiones 5 a 8 cuentan su historia en subtítulos, con radio de Vega y epílogo',()=>{
  for(const {n,story,eyebrow} of missions){
-  assert.equal(story.briefing.length,3,'misión '+n+': tres páginas');
-  for(const [i,page] of story.briefing.entries()){assert.ok(page.title.length>3,'título '+n+'.'+i);assert.ok(page.text.length>120,'texto '+n+'.'+i);assert.ok(page.text.includes('\n\n'),'dos párrafos '+n+'.'+i);assert.equal(!!page.objectives,i===2,'solo la última página lleva objetivos: '+n+'.'+i);}
-  assert.equal(story.briefing[2].objectives.length,3);
+  const lines=story.briefing.filter(p=>p.text);
+  assert.ok(story.briefing.length>=3&&story.briefing.length<=5,'misión '+n+': de tres a cinco planos');
+  assert.ok(lines.length>=2&&lines.length<=4,'misión '+n+': de dos a cuatro subtítulos');
+  for(const page of story.briefing){assert.ok(!page.objectives,'sin objetivos: '+n);assert.ok(page.text.length<=150,'subtítulo breve: '+n);}
+  if(n<8)assert.ok(story.config.outro.length>=2&&story.config.outro.length<=3,'epílogo animado de dos o tres planos: '+n);
   assert.match(story.config.eyebrow,eyebrow);assert.ok(story.config.startLabel.length>3);assert.ok(story.config.epilogue.length>60,'epílogo '+n);
   assert.equal(story.config.briefing,story.briefing);assert.equal(story.config.beats,story.beats);assert.equal(typeof story.mount,'function');
   const ids=story.beats.map(b=>b.id);assert.equal(new Set(ids).size,ids.length,'avisos sin repetir en la misión '+n);assert.equal(ids[0],'start');
@@ -89,7 +92,8 @@ test('las páginas 5 a 8 cargan estilos y guiones en orden, con los marcadores d
  for(const {n,name,page,story} of missions){
   const html=read(page),order=file=>{const tag='<script src="'+file+'"></script>',i=html.indexOf(tag);assert.ok(i>0,page+' carga '+file);assert.equal(html.indexOf(tag,i+1),-1,page+' carga '+file+' una sola vez');return i;};
   const game=order('level-'+name+'-game.js');
-  for(const file of ['mission-results.js','mission-one-scenes.js','mission-one-story.js','mission-late-scenes.js','mission-'+name+'-story.js'])assert.ok(order(file)<game,page+': '+file+' antes del motor');
+  for(const file of ['mission-results.js','story-cinema.js','mission-one-scenes.js','mission-one-story.js','mission-late-scenes.js','mission-'+name+'-story.js'])assert.ok(order(file)<game,page+': '+file+' antes del motor');
+  if(n===8)assert.ok(order('mission-late-scenes.js')<order('mission-finale-scenes.js')&&order('mission-finale-scenes.js')<game,'el final se registra tras las escenas de la misión');
   assert.ok(order('mission-one-scenes.js')<order('mission-late-scenes.js'),'las viñetas se registran sobre el sistema común');
   assert.ok(order('mission-one-story.js')<order('mission-'+name+'-story.js'));assert.ok(order('white-death-atlas.js')<order('mission-late-scenes.js'));
   const sheet='<link rel="stylesheet" href="mission-one-polish.css">';assert.equal(html.split(sheet).length,2,page+' enlaza la hoja una vez');
@@ -114,27 +118,23 @@ test('las páginas 5 a 8 cargan estilos y guiones en orden, con los marcadores d
  for(const id of ['#radio{','#briefing{','#mission-results{'])assert.ok(css.includes('\n'+id),'la radio, el informe y el parte siguen sin acotar: '+id);
 });
 
-test('las viñetas de los informes se registran, usan arte que existe y dibujan con o sin imágenes',()=>{
- const sets={},images={},grad={addColorStop(){}};
- const ctx=()=>new Proxy({},{get:(t,k)=>k in t?t[k]:k==='measureText'?()=>({width:10}):()=>grad,set:(t,k,v)=>{t[k]=v;return true;}});
- const root={ArcadeStoryScenes:{images,tools:{clamp:(x,a=0,b=1)=>Math.max(a,Math.min(b,x)),hash:n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);},vignette(){}},register(set,files,list){sets[set]={files,list};}}};
+test('los planos de las misiones 5 a 8 se registran y hay uno por subtítulo',()=>{
+ const sets={};const root={ArcadeStoryScenes:{images:{},tools:new Proxy({},{get:()=>()=>{}}),register(set,files,list){sets[set]={files,list};}}};
  vm.runInNewContext(read('mission-late-scenes.js'),{window:root,globalThis:root,Math});
  assert.deepEqual(Object.keys(sets),['five','six','seven','eight']);
- const ids=new Set();
- for(const [set,{files,list}] of Object.entries(sets)){
-  assert.equal(list.length,3,set+': una viñeta por página');
-  for(const [id,path] of Object.entries(files)){assert.ok(fs.statSync(path).size>1000,path);assert.ok(!ids.has(id)&&!['soldier','heli','fx','city','road'].includes(id),'identificador propio: '+id);ids.add(id);}
-  for(const draw of list)for(const t of [0,.4,6,23.7])assert.doesNotThrow(()=>draw(ctx(),640,250,t),set+' sin imágenes, t='+t);
+ for(const {n,name,story} of missions){
+  const {files,list}=sets[name];assert.equal(list.intro.length,story.briefing.length,'misión '+n+': un plano por página de la intro');
+  if(n<8)assert.equal(list.outro.length,story.config.outro.length,'misión '+n+': un plano por página del epílogo');
+  for(const path of Object.values(files))assert.ok(fs.statSync(path).size>1000,path);
  }
- for(const {files} of Object.values(sets))for(const id of Object.keys(files))images[id]={width:1536,height:1024};
- for(const [set,{list}] of Object.entries(sets))for(const draw of list)for(const t of [0,.4,6,23.7])assert.doesNotThrow(()=>draw(ctx(),640,250,t),set+' con imágenes, t='+t);
  const source=read('mission-late-scenes.js');for(const path of source.match(/assets\/[^'"]+/g))assert.ok(fs.existsSync(path),path);
 });
 
 // Arnés: el motor real de cada misión, con la radio real y un informe que la prueba abre y cierra.
 function fakeStory(story){
- const radio=One.createRadio(story.beats,story.config.ambient,story.config.series),state={open:false,opened:0,done:null,blocked:null,shown:new Set(),missing:new Set(),updates:0};
+ const radio=One.createRadio(story.beats,story.config.ambient,story.config.series),state={open:false,opened:0,done:null,blocked:null,shown:new Set(),missing:new Set(),updates:0,outros:0,finales:[]};
  const api={radio,epilogue:story.config.epilogue,briefingOpen:()=>state.open,briefing(callback){state.open=true;state.opened++;state.done=callback;},reset(){radio.reset();},
+  outro(callback){state.open=true;state.outros++;state.done=callback;},finale(data,callback){state.open=true;state.finales.push(data);state.done=callback;},
   update(c,dt){state.updates++;radio.update(new Proxy(c,{get(t,k){if(typeof k==='string'&&!(k in t))state.missing.add(k);return t[k];}}),dt);if(radio.state.current)state.shown.add(radio.state.current.id);},
   render(blocked){state.blocked=!!blocked;}};
  return{api,state,close(){state.open=false;const done=state.done;state.done=null;done?.();}};
@@ -212,15 +212,24 @@ test('la radio acompaña al jefe y cierra cada misión antes del parte, que sust
   g.tick(ending[m.n]+.3);
   for(const id of closing[m.n])assert.ok(story.state.shown.has(id),'misión '+m.n+': se llega a oír «'+id+'»');
   assert.equal(story.state.blocked,true,'sin radio en la victoria');
-  assert.equal(results.shown.length,1,'misión '+m.n+': un parte');const card=results.shown[0];
+  if(m.n===8){
+   // La misión 08 no pasa por el parte: el final se reproduce solo y deja paso al panel.
+   assert.equal(story.state.finales.length,1,'el final arranca solo');assert.equal(results.shown.length,0);assert.equal(g.el('victory-screen').hidden,true,'el panel espera al final');
+   const data=story.state.finales[0];assert.ok(data.store&&data.player&&data.stats.length>=3,'el final recibe los datos de la campaña');
+   g.play();g.tick(.3);assert.equal(story.state.finales.length,1,'el final no se repite');
+   story.close();assert.equal(g.el('victory-screen').hidden,false,'al terminar o saltar el final, el panel con los botones');assert.equal(results.shown.length,0);
+   g.play();assert.equal(story.state.finales.length,1);assert.deepEqual([...story.state.missing],[]);continue;
+  }
+  assert.equal(story.state.outros,1,'misión '+m.n+': el epílogo se abre al terminar');assert.equal(results.shown.length,0,'el parte espera al epílogo');
+  g.tick(.5);assert.equal(story.state.outros,1,'un solo epílogo');story.close();
+  assert.equal(results.shown.length,1,'misión '+m.n+': un parte, después del epílogo');const card=results.shown[0];
   assert.equal(card.kicker,'MISIÓN 0'+m.n+' COMPLETADA');assert.equal(card.epilogue,m.story.config.epilogue);assert.ok(card.stats.length>=3&&card.stats.every(row=>row.length===2&&typeof row[1]==='string'));
   assert.equal(g.el('victory-screen').hidden,true,'el parte sustituye al panel antiguo');
   const x=g.view.p.x;g.key('ArrowRight');g.key('Escape');g.tick(.3);assert.equal(g.view.p.x,x,'el teclado del juego calla con el parte abierto');assert.equal(results.shown.length,1);
   assert.deepEqual([...story.state.missing],[],'misión '+m.n+': contexto completo también en el combate final');
   if(m.n===6){assert.deepEqual(Array.from(card.routes,r=>r.label),['Especial · Distrito Quimera','Especial · Fuga del Sol']);}
-  if(m.n===8){assert.equal(card.next.label,'Ver el final');results.open=false;card.next.run();assert.equal(g.el('victory-screen').hidden,false,'el parte da paso al epílogo y los créditos');g.play();assert.equal(results.shown.length,1,'el final no vuelve a abrir el parte');}
-  else{results.open=false;card.next.run();assert.equal(g.navigation,next[m.n]);}
+  results.open=false;card.next.run();assert.equal(g.navigation,next[m.n]);
  }
- const fork=fakeResults(),six=missions[1],g=await game(6,'?entry=resume',{[saveKey(six)]:JSON.stringify({hp:8,mall:{floor:3,checkpoint:3,started:true,complete:true,ending:true}})},{story:fakeStory(six.story),results:fork});
- g.play();fork.shown.at(-1).routes[1].run();assert.equal(g.navigation,'fuga.html');
+ const fork=fakeResults(),six=missions[1],sixStory=fakeStory(six.story),g=await game(6,'?entry=resume',{[saveKey(six)]:JSON.stringify({hp:8,mall:{floor:3,checkpoint:3,started:true,complete:true,ending:true}})},{story:sixStory,results:fork});
+ g.play();sixStory.close();fork.shown.at(-1).routes[1].run();assert.equal(g.navigation,'fuga.html');
 });

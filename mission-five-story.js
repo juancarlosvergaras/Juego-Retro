@@ -3,10 +3,17 @@
   // Guion de la misión 05. Informe y radio reutilizan el sistema de la misión 01.
   // El mapa permite llegar aquí sin haber jugado la 03 ni la 04: el texto solo da
   // por vividas las misiones 01 y 02. Bajo el agua la señal de Vega llega a pedazos.
+  // Cada página es el subtítulo de un plano (mission-late-scenes.js, conjunto 'five').
   const briefing=[
-    {title:'El contrabandista',text:'El Consorcio compró la ciudad cuando acabó la guerra: una empresa militar privada, con ejército propio y cuentas que nadie revisa.\n\nNo fabrica sus monstruos. Los compra. Y todo lo que compra entra por mar, de noche, en la bodega de un submarino.'},
-    {title:'La fosa',text:'El submarino espera en el fondo de la fosa, detrás de los restos de la flota. Lo protegen buzos, minisubmarinos, campos de minas y lo que el abismo ya tenía dentro.\n\nVega te suelta sobre el agua y se queda arriba. A esa profundidad su radio te llegará a pedazos.'},
-    {title:'El Capitán del Abismo',text:'Manda la nave el Capitán del Abismo, el contrabandista del Consorcio. Ametralladora, misiles, granadas eléctricas y ninguna intención de volver a la superficie.\n\nEn su cámara guarda la carga y los libros de cuentas. Quien lea esos libros sabrá adónde van los pedidos.',objectives:['Desciende por la fosa hasta la esclusa del submarino','Derrota al Capitán del Abismo en su cámara','Recupera los libros de cuentas del Consorcio']}
+    {text:'El Consorcio es una empresa militar con ejército propio y cuentas que nadie revisa. No fabrica sus monstruos: los compra.'},
+    {text:'Todo lo que compra entra por mar, de noche, en la bodega de un submarino.'},
+    {text:'Lo manda el Capitán del Abismo. Hace años que no sube a la superficie, y no piensa hacerlo hoy.'},
+    {text:''}
+  ];
+  // Tras el cierre bajo el agua (sea-renderer.js): los libros de cuentas y adónde llevan.
+  const outro=[
+    {text:'Los libros del Capitán anotan cada pedido del Consorcio. Todos salen por el mismo lugar.'},
+    {text:'Una antena en la azotea del último centro comercial que sigue en pie.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -24,7 +31,7 @@
     {id:'books',who:CAP,text:'Sus libros de cuentas. Los pedidos salen por una antena… en una azotea.',when:c=>c.bossDown},
     {id:'next',who:VEGA,text:'Te copio… El último centro comercial en pie. Yo pongo el rumbo.',when:c=>c.reward,after:'books'}
   ];
-  const config={briefing,beats,eyebrow:'MISIÓN 05 · BAJO EL ABISMO',scenes:'five',startLabel:'Sumergirse',ambient:/^(hull|mines|shark|hurt|sonar|reef|trench)/,series:/^(reef|trench)/,
+  const config={briefing,outro,beats,eyebrow:'MISIÓN 05 · BAJO EL ABISMO',scenes:'five',startLabel:'Sumergirse',ambient:/^(hull|mines|shark|hurt|sonar|reef|trench)/,series:/^(reef|trench)/,
     epilogue:'El Capitán ha caído y su carga ya no llegará a nadie. Entre los sueros sin estrenar había uno de combate: ahora es tuyo. Sus libros de cuentas señalan una antena repetidora en la azotea del último centro comercial en pie.'};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionFiveStory=api;

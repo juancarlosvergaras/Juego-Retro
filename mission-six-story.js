@@ -2,10 +2,17 @@
   'use strict';
   // Guion de la misión 06. Informe y radio reutilizan el sistema de la misión 01.
   // Aquí se llega desde la 03, la 04 o la 05: el texto no da por jugada ninguna.
+  // Cada página es el subtítulo de un plano (mission-late-scenes.js, conjunto 'six').
   const briefing=[
-    {title:'El último centro',text:'Todas las pistas llevan al mismo sitio: el último centro comercial que sigue en pie. Luces encendidas, vitrinas llenas y gente comprando, como si la guerra no hubiera pasado.\n\nEs del Consorcio. La empresa que compró la ciudad necesitaba una fachada limpia, y la tiene.'},
-    {title:'Tres plantas',text:'Atrio, galerías y restaurantes. Entre los clientes patrullan guardias, celadores y torretas, y por el pasillo que dejes atrás llegarán refuerzos.\n\nLas escaleras mecánicas están al fondo de cada planta. Vega te deja en la puerta y sube a esperarte: desde el aire no puede sacar a nadie de ahí dentro.'},
-    {title:'La antena',text:'En la azotea hay una antena repetidora. Por ahí entran las órdenes del Consorcio y por ahí salen sus pedidos. La guarda el Coloso, un gigante gris que trepa por la fachada.\n\nTúmbalo, y la antena dirá con quién habla.',objectives:['Cruza el atrio, las galerías y los restaurantes','Sube a la azotea y derriba al Coloso','Averigua adónde apunta la antena del Consorcio']}
+    {text:'Luces encendidas, vitrinas llenas, gente comprando. Como si la guerra nunca hubiera pasado.'},
+    {text:'Es la fachada limpia del Consorcio, la empresa que compró la ciudad. Y desde aquí lo vigila todo.'},
+    {text:'Todas las pistas terminan en el mismo sitio: su azotea.'}
+  ];
+  // Tras la caída del Coloso (mall-renderer.js). Desde aquí el mapa se bifurca:
+  // el texto no da por jugada la misión 07 ni ningún especial.
+  const outro=[
+    {text:'La antena no le habla a la ciudad. Su señal sube más allá de las nubes.'},
+    {text:'Allá arriba, alguien le vende al Consorcio todo lo que Cap ha tenido que cazar.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -22,7 +29,7 @@
     {id:'signal',who:CAP,text:'Coloso abajo. La antena apunta hacia arriba.',when:c=>c.bossDown},
     {id:'orbit',who:VEGA,text:'La señal sale de la atmósfera. Hay una nave en órbita.',when:c=>c.bossDown,after:'signal'}
   ];
-  const config={briefing,beats,eyebrow:'MISIÓN 06 · EL ÚLTIMO CENTRO',scenes:'six',startLabel:'Entrar al centro',ambient:/^(guards|rear|arcade|hurt|floor)/,series:/^floor/,
+  const config={briefing,outro,beats,eyebrow:'MISIÓN 06 · EL ÚLTIMO CENTRO',scenes:'six',startLabel:'Entrar al centro',ambient:/^(guards|rear|arcade|hurt|floor)/,series:/^floor/,
     epilogue:'El Coloso ha caído y la azotea es tuya. La antena del Consorcio no habla con la ciudad: su señal sube hasta una nave en órbita. Alguien, allá arriba, le vende los monstruos.'};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionSixStory=api;

@@ -1,10 +1,18 @@
 (function(root){
   'use strict';
-  // Guion de la misión 04. Informe y radio reutilizan el sistema de la misión 01.
+  // Guion de la misión 04. Historia y radio reutilizan el sistema de la misión 01.
+  // Se llega desde la 02 o la 03: el texto no da por jugada ninguna otra de la bifurcación.
+  // Cada página es el subtítulo de un plano (mission-four-scenes.js).
   const briefing=[
-    {title:'Huyen por carretera',text:'El Consorcio, la empresa militar que compró la ciudad tras la guerra, está sacando lo suyo antes de que lo alcances. Sale por tierra, en un convoy blindado.\n\nLleva consigo lo único que le importa salvar: un prototipo que pensaba estrenar contra la ciudad.'},
-    {title:'La persecución',text:'Vega te deja en la Autopista 04 con una moto del ejército y el depósito lleno. Desde el aire no puede seguirlos: la escolta lleva soldados con mochila propulsora.\n\nLa calzada está rota. Las rampas te lanzan por encima de lo que venga; los baches te tiran al suelo.'},
-    {title:'El Devorador de Asfalto',text:'Cierra el convoy un camión de seis ruedas con tres torretas. Dispara, siembra minas y frena en seco para aplastar a quien lo siga.\n\nCada torreta que pierde es un arma menos. Cuando no le quede ninguna, lo que guarda dentro será tuyo.',objectives:['Alcanza al convoy por la Autopista 04','Destruye las tres torretas del Devorador de Asfalto','Hazte con el prototipo: el mini tanque']}
+    {text:'El Consorcio, la empresa militar que compró la ciudad, saca lo suyo antes de que alguien le pase la cuenta.'},
+    {text:'Un convoy blindado por la Autopista 04. Lleva lo único que le importa salvar.'},
+    {text:'Desde el aire, Vega no puede seguirlo. Así que Cap lo seguirá por tierra.'},
+    {text:''}
+  ];
+  // Tras el frenazo y el incendio del Devorador (road-war.js): el botín y lo que señala.
+  const outro=[
+    {text:'Dentro del Devorador viajaba el prototipo que el Consorcio quería salvar. Ahora viaja con Cap.'},
+    {text:'Sus papeles nombran dos lugares: un puerto con un submarino y el último centro comercial en pie.'}
   ];
   const VEGA='VEGA · PILOTO',CAP='CAP DOLLAR';
   const beats=[
@@ -22,7 +30,7 @@
     {id:'tank',who:CAP,text:'Así que esto era lo que escondían. Pequeño, blindado… y con un cañón que no cabe en él.',when:c=>c.reward},
     {id:'sea',who:VEGA,text:'Convoy neutralizado. Sus papeles nombran un puerto y un centro comercial. Y ese juguete tuyo también flota.',when:c=>c.reward,after:'tank'}
   ];
-  const config={briefing,beats,eyebrow:'MISIÓN 04 · FURIA EN LA CARRETERA',scenes:'four',startLabel:'Arrancar',ambient:/^(escort|ramp|crash|jets|hurt|mid|near)/,series:/^(mid|near)/,
+  const config={briefing,outro,beats,eyebrow:'MISIÓN 04 · FURIA EN LA CARRETERA',scenes:'four',startLabel:'Arrancar',ambient:/^(escort|ramp|crash|jets|hurt|mid|near)/,series:/^(mid|near)/,
     epilogue:'El Devorador ha caído y su prototipo es tuyo. El Consorcio aún tiene dos salidas: un submarino en el puerto y el último centro comercial en pie. Elige por dónde seguir.'};
   const api={briefing,beats,config,mount:host=>root.ArcadeMissionOneStory?.mount(host,config)};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeMissionFourStory=api;

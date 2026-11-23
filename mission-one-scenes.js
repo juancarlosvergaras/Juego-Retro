@@ -131,9 +131,14 @@
   // Helicóptero de Vega. (x, y) es el umbral de la puerta; size, el largo del fuselaje. Morro a la derecha salvo flip.
   const HELI=[[8,242,504,211,332,174],[512,237,500,216,336,179],[1035,203,485,250,318,213]];
   function heli(c,x,y,size,t,o={}){
-    const sheet=atlas('heli',3,2);if(!sheet)return;const f=HELI[Math.floor(Math.max(0,t)*14)%3],k=size/504;
+    const sheet=atlas('heli',3,2);if(!sheet)return;
     c.save();c.translate(Math.round(x),Math.round(y));if(o.flip)c.scale(-1,1);if(o.tilt)c.rotate(o.tilt);if(o.alpha!=null)c.globalAlpha*=o.alpha;
-    c.drawImage(sheet.image,f[0],f[1],f[2],f[3],Math.round(-f[4]*k),Math.round(-f[5]*k),Math.round(f[2]*k),Math.round(f[3]*k));c.restore();
+    if(root.ArcadeRescueHelicopter)root.ArcadeRescueHelicopter.draw(c,sheet.image,0,0,size,t);
+    else {
+      const f=HELI[Math.floor(Math.max(0,t)*14)%3],k=size/504;
+      c.drawImage(sheet.image,f[0],f[1],f[2],f[3],Math.round(-f[4]*k),Math.round(-f[5]*k),Math.round(f[2]*k),Math.round(f[3]*k));
+    }
+    c.restore();
   }
   // Ambiente animado (fuego 3, humo 4, salpicadura 6…): celda centrada en (x, y).
   function fx(c,row,index,x,y,w,h,alpha=1){
@@ -451,10 +456,14 @@
         fill(c,v,'#1a1410','#0c0a0c');
         const bg=plate(c,images.crypt,v,{u:lerp(.3,.55,drift(t,v.dur)),ground:[592,FLOOR]}),floor=bg?bg.py(592):FLOOR;
         shade(c,v,'rgba(10,8,20,.38)');
-        put(c,atlas('king',6,5),28,v.cx+40,floor+4,150);
+        const king=images.kingFallen;
+        if(king){
+          const width=332,height=Math.round(width*king.height/king.width);
+          c.drawImage(king,Math.round(v.cx-width/2),Math.round(floor-height),width,height);
+        }
         for(const [dx,w,h,up] of [[250,96,74,0],[338,84,66,0],[292,78,58,70]])crate(c,v.cx+dx,floor-up,w,h,.9);
         const walk=clamp(t/3.2),distance=walk*92,x=v.cx-270+distance;
-        shadow(c,x,floor,80);cityHunter(c,x,floor,128,t,distance,walk<1,v.data);
+        shadow(c,x,floor,80);cityHunter(c,x,floor,110,t,distance,walk<1,v.data);
         for(const dx of [-420,-120,180,470])glow(c,v.cx+dx,floor-150,90,'255,170,80',.22+.08*Math.sin(t*7+dx));
         vignette(c,v,.85);
       }},
@@ -552,16 +561,19 @@
         const floor=397;
         cut(c,images.air,JET,v.cx-175,floor-38,225);
         deck(c,v,floor,130);
-        const walk=Math.min(t,2),x=v.cx+125-walk*37;
+        const distance=Math.min(t,2)*42,x=v.cx+125-distance;
         let pose;
-        if(t<2)pose=Math.floor(t*4)%4;
+        if(t<2)pose=0;
         else if(t<2.6)pose=6;
         else if(t<2.92)pose=7;
         else if(t<3.45)pose=0;
         else if(t<4.3)pose=Math.floor((t-3.45)*9)%2?0:4;
         else if(t<4.75)pose=5;
         else pose=0;
-        shadow(c,x,floor,148,.37);sentry(c,x,floor,205,pose);sentryMissiles(c,x,floor,t);
+        shadow(c,x,floor,148,.37);
+        if(t<2&&images.mechaWalk&&root.ArcadeAirMecha)root.ArcadeAirMecha.drawWalk(c,images.mechaWalk,x,floor,205/321,distance);
+        else sentry(c,x,floor,205,pose);
+        sentryMissiles(c,x,floor,t);
         vignette(c,v,.52);
       }},
       {id:'aproximacion',dur:5,draw(c,t,v){
@@ -611,7 +623,7 @@
   const files={
     one:{city:'assets/worlds/ciudad-fondo-v2.png',tower:'assets/worlds/mundo-01-edificio-v1.png',workers:'assets/sprites/trabajadores-carrera-v4.png',wolfWalk:'assets/sprites/lobo-caminata-v2.png',wolf:'assets/sprites/soldado-lobo-v1.png',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp',capSalute:'assets/sprites/cine-cap-saludo-12.webp'},
     two:{ruins:'assets/worlds/mission-02/city-day-v1.png',graves:'assets/worlds/mission-02/cemetery-dusk-v1.png',chute:'assets/sprites/paracaidas-v1.png',chuteSoldier:'assets/sprites/soldado-escalada-v2.png',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp',zombie:'assets/sprites/zombi-cementerio-v1.png',atlas02:'assets/worlds/mission-02/environment-atlas-v1.png'},
-    three:{carrier:'assets/worlds/mission-03/portaaviones-v1.png',air:'assets/worlds/mission-03/cubierta-atlas-v1.png',mecha:'assets/sprites/mecha-aereo-v1.png',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp'}
+    three:{carrier:'assets/worlds/mission-03/portaaviones-v1.png',air:'assets/worlds/mission-03/cubierta-atlas-v1.png',mecha:'assets/sprites/mecha-aereo-v1.png',mechaWalk:'assets/sprites/centinela-marcha-16.webp',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp'}
   };
 
   // Otras misiones aportan sus planos sin engordar este archivo. `list` es
@@ -623,7 +635,7 @@
   const api={register,sequence,load,images,sources,tools,span,sets:[]};
   register('one',files.one,one);register('two',files.two,two);register('three',files.three,three);
   sources['one:outro']={ruins:'assets/worlds/mission-02/city-day-v1.png',transformation:'assets/sprites/soldado-transformacion-v2.png',wolfActions:'assets/sprites/lobo-reposo-patadas-v2.png'};
-  sources['two:outro']={crypt:'assets/worlds/mission-02/mausoleum-interior-v1.png',king:'assets/sprites/rey-zombi-v3.png'};
+  sources['two:outro']={crypt:'assets/worlds/mission-02/mausoleum-interior-v1.png',kingFallen:'assets/sprites/rey-zombi-caido.webp'};
   sources['three:outro']={trench:'assets/worlds/mission-05/fosa-panoramica.webp',submarines:'assets/sprites/submarinos-abismo-8.webp'};
   root.ArcadeStoryScenes=api;
 })(typeof window!=='undefined'?window:globalThis);

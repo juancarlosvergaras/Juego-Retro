@@ -51,7 +51,13 @@
   // Recover interrupted/old zero-health states before freeze or attack logic can stall them.
   if(k.hp<=0&&!['crack','death','defeated'].includes(k.phase)){enter(k,k.stage===1?'crack':'death');k.frozen=0;clearHazards(k);}
   k.floorY=supportY(k,k.x,platforms);
-  if(!['dormant','descend','leap'].includes(k.phase))k.y=k.floorY;
+  if(!['dormant','descend','leap'].includes(k.phase)){
+   if(k.y<k.floorY){
+    k.fallSpeed=(k.fallSpeed||0)+820*dt;
+    k.y=Math.min(k.floorY,k.y+k.fallSpeed*dt);
+   }else k.y=k.floorY;
+   if(k.y===k.floorY)k.fallSpeed=0;
+  }
   updateHazards(k,p,dt,hurt);
   if(k.phase==='dormant'){
    // Nearby sleepers also count: they can wake on the same step as the player arrives.
@@ -66,7 +72,13 @@
   if(k.phase==='death'){if(before<.2&&k.age>=.2)k.events.push('wolfDeath');if(k.age>=durations.death){enter(k,'defeated');k.defeated=true;k.active=false;clearHazards(k);}return;}
   if(k.phase==='walk'){
    k.cooldown=Math.max(0,k.cooldown-dt);const dx=p.x-k.x;k.facing=Math.sign(dx)||k.facing;const speed=k.stage===1?27:41;
-   if(Math.abs(dx)>135){const step=k.facing*speed*dt,nextX=clamp(k.x+step,LEFT,RIGHT),nextY=supportY(k,nextX,platforms);if(nextY<k.y-2){beginAttack(k,'leap',p);k.targetX=clamp(nextX+k.facing*360,LEFT,RIGHT);k.startY=k.y;k.targetY=supportY(k,k.targetX,platforms);return;}k.x=nextX;k.y=nextY;k.cycle+=Math.abs(step)/110;}
+   if(Math.abs(dx)>135){
+    const nextX=clamp(k.x+k.facing*speed*dt,LEFT,RIGHT),nextY=supportY(k,nextX,platforms);
+    if(nextY<k.y-2){beginAttack(k,'leap',p);k.targetX=clamp(nextX+k.facing*360,LEFT,RIGHT);k.startY=k.y;k.targetY=supportY(k,k.targetX,platforms);return;}
+    if(k.y===nextY)k.cycle+=Math.abs(nextX-k.x)/110;
+    k.x=nextX;k.floorY=nextY;
+   }
+   if(k.y<k.floorY)return;
    if(k.cooldown<=0){const phase=k.stage===1?(Math.abs(dx)>340||p.y<FLOOR-140?'rock':k.sequence%2?'stomp':'sword'):(p.y<FLOOR-130||Math.abs(dx)>370?(k.sequence%2?'leap':'vomit'):['vomit','leap','claw'][k.sequence%3]);k.sequence++;beginAttack(k,phase,p);if(phase==='leap'){k.startY=k.y;k.targetY=supportY(k,k.targetX,platforms);}}return;
   }
   if(k.phase==='sword'&&before<.83&&k.age>=.83){horizontalHit(k,p,190,175,hurt,2);k.events.push('axe');}
@@ -108,12 +120,17 @@
    [208,548,875,1220,1510,1870]
   ];
   const frames=images.map((image,row)=>{
+   // The leap's altitude already comes from physics. Its painted arc in the
+   // source strip must not lift the sprite a second time.
+   const anchorAtSole=row===2||row===4;
    const packed=root.ArcadeKingStrips?.[(image.src||'').split('/').pop()];
    if(packed){
      const baseline=Math.max(...packed.frames.map(([, ,top, ,height])=>top+height));
      const ratio=packed.width/2172;
+     // draw() measures from an anchor in source-image coordinates. Each packed
+     // silhouette starts at x in the shared texture, not at its original left.
      return packed.frames.map(([x,left,top,w,h],i)=>({image,x,y:0,left,top,w,h,
-       pivot:pivots[row][i]*ratio-left,base:row===4?h:baseline-top,bodyHeight:bodyHeights[row]*ratio}));
+       pivot:x+pivots[row][i]*ratio-left,base:anchorAtSole?h:baseline-top,bodyHeight:bodyHeights[row]*ratio}));
    }
    const source=document.createElement('canvas');source.width=image.width;source.height=image.height;
    const sc=source.getContext('2d');sc.drawImage(image,0,0);
@@ -133,7 +150,7 @@
    }
    parts.sort((a,b)=>a.left-b.left);if(parts.length!==6)throw Error('Rey zombi: se esperaban seis poses en la tira '+row);
    const baseline=Math.max(...parts.map(f=>f.top+f.h)),ratio=w/2172;
-   return parts.map((f,i)=>({...f,pivot:pivots[row][i]*ratio-f.left,base:row===4?f.h:baseline-f.top,bodyHeight:bodyHeights[row]*ratio}));
+   return parts.map((f,i)=>({...f,pivot:pivots[row][i]*ratio-f.left,base:anchorAtSole?f.h:baseline-f.top,bodyHeight:bodyHeights[row]*ratio}));
   });
   return{frames,scale:ZOMBIE_HEIGHT/frames[0][0].bodyHeight,detailStrips:true};
  }

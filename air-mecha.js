@@ -6,14 +6,18 @@
  function create(saved={},scale=1){
   const maxHp=Math.round(100*scale),hp=saved.defeated?0:maxHp*(Number.isFinite(saved.health)?Math.max(0,Math.min(1,saved.health)):1);
   const active=hp>0&&!!saved.active,deathAge=saved.defeated?4:hp===0?Math.min(4,Math.max(0,Number(saved.deathAge)||0)):0;
-  return {kind:'mecha',baseHp:100,id:'air-mecha',x:Number.isFinite(saved.x)?Math.max(6390,Math.min(7400,saved.x)):6980,y:620,w:112,h:158,hp,maxHp,active,phase:saved.defeated?'wreck':hp===0?'destroy':active?'approach':'idle',age:0,cycle:Number.isSafeInteger(saved.cycle)&&saved.cycle>=0?saved.cycle:0,shot:0,anim:0,hit:0,death:4-deathAge,deathAge,defeated:!!saved.defeated,facing:-1,markers:[],waves:[]};
+  return {kind:'mecha',baseHp:100,id:'air-mecha',x:Number.isFinite(saved.x)?Math.max(6390,Math.min(7400,saved.x)):6980,y:620,w:112,h:158,hp,maxHp,active,phase:saved.defeated?'wreck':hp===0?'destroy':active?'approach':'idle',age:0,cycle:Number.isSafeInteger(saved.cycle)&&saved.cycle>=0?saved.cycle:0,shot:0,anim:0,walkDistance:0,hit:0,death:4-deathAge,deathAge,defeated:!!saved.defeated,facing:-1,markers:[],waves:[]};
  }
  function update(n,p,dt,bullets,view){
   n.anim+=dt;n.hit=Math.max(0,n.hit-dt);
   if(n.hp<=0){n.active=false;n.markers=[];n.waves=[];n.deathAge+=dt;n.death=Math.max(0,4-n.deathAge);n.phase=n.deathAge<4?'destroy':'wreck';if(n.deathAge>=4)n.defeated=true;return;}
   if(!n.active){if(p.x<6170||view&&p.x<n.x&&n.x-n.w/2>view.right-40)return;n.active=true;n.phase='approach';n.age=0;}
   n.age+=dt;n.shot-=dt;n.facing=p.x<n.x?-1:1;
-  if(n.phase==='approach'){const dx=p.x-n.x;n.x=Math.max(6390,Math.min(7400,n.x+Math.sign(dx)*28*dt));if(n.age>2){const attacks=p.y<n.y-100||Math.abs(dx)>600?['volley','missiles']:['volley','missiles','stomp'];n.phase=attacks[n.cycle++%attacks.length];n.age=0;n.shot=.8;n.fired=false;}}
+  if(n.phase==='approach'){
+   const dx=p.x-n.x,previousX=n.x;
+   if(Math.abs(dx)>n.w/2)n.x=Math.max(6390,Math.min(7400,n.x+Math.sign(dx)*Math.min(28*dt,Math.abs(dx)-n.w/2)));
+   n.walkDistance+=Math.abs(n.x-previousX);
+   if(n.age>2){const attacks=p.y<n.y-100||Math.abs(dx)>600?['volley','missiles']:['volley','missiles','stomp'];n.phase=attacks[n.cycle++%attacks.length];n.age=0;n.shot=.8;n.fired=false;}}
   else if(n.phase==='volley'){if(n.age>.9&&n.age<2.3&&n.shot<=0){const x=n.x+n.facing*62,y=n.y-86,dx=p.x-x,dy=p.y-24-y,d=Math.hypot(dx,dy)||1;bullets.push({x,y,vx:dx/d*300,vy:dy/d*300,life:Math.max(3,d/300+.2),enemy:true,fromTurret:true,damage:1});n.shot=.25;}if(n.age>3)n.phase='recover',n.age=0;}
   else if(n.phase==='missiles'){if(!n.fired){n.fired=true;n.markers=[-100,0,100].map(dx=>({x:Math.max(6170,Math.min(7610,p.x+dx)),y:Math.min(240,p.y-(p.h||46)-100),aimY:p.y,age:0}));}if(n.age>1.4&&n.markers.length){for(const m of n.markers)bullets.push({x:m.x,y:m.y,vx:0,vy:340,life:(n.y-m.y)/340+.2,enemy:true,tankShell:true,damage:2});n.markers=[];}if(n.age>3)n.phase='recover',n.age=0;}
   else if(n.phase==='stomp'){if(n.age>1&&!n.fired){n.fired=true;n.waves=[-1,1].map(dir=>({x:n.x,dir,life:2.5}));}if(n.age>2.2)n.phase='recover',n.age=0;}
@@ -64,7 +68,22 @@
  }
  // Light sources of the burning hull for the scene's light map.
  function lights(n){if(n.hp>0)return[];const dir=-n.facing,flick=.75+rnd(Math.floor(n.anim*14))*.25;return HOT.slice(0,3).map(([dx,dy])=>({x:n.x+dir*dx,y:620+dy,r:110,a:.7*flick,glow:'255,150,70',ga:.2*flick}));}
- function draw(c,n,sheet){const row=n.hp<=0?2:n.phase==='volley'||n.phase==='missiles'||n.phase==='stomp'?1:0,col=n.hp<=0?Math.min(3,Math.floor(n.deathAge)):row===0?Math.floor(n.anim*5)%4:n.phase==='volley'?0:n.phase==='missiles'?1:n.age<1?2:3,w=sheet.width/4,h=sheet.height/3;const scale=.52,quake=n.hp<=0&&n.deathAge<4?Math.round((rnd(Math.floor(n.anim*30))-.5)*4*(1-n.deathAge/4)):0;c.save();c.imageSmoothingEnabled=false;c.fillStyle='#0b111680';c.fillRect(Math.round(n.x-78),619,156,4);c.fillStyle='#0b111650';c.fillRect(Math.round(n.x-92),621,184,3);c.translate(Math.round(n.x)+quake,620);c.scale(-n.facing,1);const impact=(typeof module!=='undefined'&&module.exports?require('./impact-effects'):root.ArcadeImpact);const f=frames?.[row]?.[col]||[col*w,row*h,w,h];impact.hitSprite(c,n.hit,sheet,...f,(f[0]-col*w-w/2)*scale,-f[3]*scale,f[2]*scale,f[3]*scale);c.restore();wreckage(c,n);for(const m of n.markers){c.fillStyle='#ff533944';c.fillRect(m.x-35,614,70,6);c.strokeStyle='#ffcf85';c.strokeRect(m.x-28,610,56,9);c.fillStyle='#ffc1a0';c.font='bold 11px monospace';c.fillText('▼',m.x-4,Math.min(593,m.aimY-60));}for(const w of n.waves)root.ArcadeBossAttackSprites?.draw(c,'electric',2.5-w.life,w.x,620,65,40,{ground:true});if(n.phase==='volley'&&n.age>.9&&n.age<2.3&&n.shot>.14)root.ArcadeBossAttackSprites?.draw(c,'blast',.25-n.shot,n.x+n.facing*62,n.y-86,33,24,{duration:.25,loop:false});}
+ // One stride travels 128 source pixels. The planted foot stays on the deck
+ // as the actor advances, at either the combat or the cinematic scale.
+ function drawWalk(c,sheet,x,floor,scale,distance,hit=0){
+  const frame=(8+Math.floor(distance/(128*scale)*16))%16;
+  const w=sheet.width/4,h=sheet.height/4;
+  const impact=typeof module!=='undefined'&&module.exports?require('./impact-effects'):root.ArcadeImpact;
+  impact.hitSprite(c,hit,sheet,frame%4*w,Math.floor(frame/4)*h,w,h,
+   Math.round(x-208*scale),Math.round(floor-329*scale),Math.round(384*scale),Math.round(341*scale));
+ }
+ function draw(c,n,sheet,walkSheet){const row=n.hp<=0?2:n.phase==='volley'||n.phase==='missiles'||n.phase==='stomp'?1:0,col=n.hp<=0?Math.min(3,Math.floor(n.deathAge)):row===0?0:n.phase==='volley'?0:n.phase==='missiles'?1:n.age<1?2:3,w=sheet.width/4,h=sheet.height/3;const scale=.52,quake=n.hp<=0&&n.deathAge<4?Math.round((rnd(Math.floor(n.anim*30))-.5)*4*(1-n.deathAge/4)):0;c.save();c.imageSmoothingEnabled=false;c.fillStyle='#0b111680';c.fillRect(Math.round(n.x-78),619,156,4);c.fillStyle='#0b111650';c.fillRect(Math.round(n.x-92),621,184,3);c.translate(Math.round(n.x)+quake,620);c.scale(-n.facing,1);const impact=(typeof module!=='undefined'&&module.exports?require('./impact-effects'):root.ArcadeImpact);if(row===0&&walkSheet){
+   drawWalk(c,walkSheet,0,0,scale,n.phase==='approach'?n.walkDistance:0,n.hit);
+  }else{
+   const f=frames?.[row]?.[col]||[col*w,row*h,w,h];
+   impact.hitSprite(c,n.hit,sheet,...f,(f[0]-col*w-w/2)*scale,-f[3]*scale,f[2]*scale,f[3]*scale);
+  }
+  c.restore();wreckage(c,n);for(const m of n.markers){c.fillStyle='#ff533944';c.fillRect(m.x-35,614,70,6);c.strokeStyle='#ffcf85';c.strokeRect(m.x-28,610,56,9);c.fillStyle='#ffc1a0';c.font='bold 11px monospace';c.fillText('▼',m.x-4,Math.min(593,m.aimY-60));}for(const w of n.waves)root.ArcadeBossAttackSprites?.draw(c,'electric',2.5-w.life,w.x,620,65,40,{ground:true});if(n.phase==='volley'&&n.age>.9&&n.age<2.3&&n.shot>.14)root.ArcadeBossAttackSprites?.draw(c,'blast',.25-n.shot,n.x+n.facing*62,n.y-86,33,24,{duration:.25,loop:false});}
  // Llama, humo y detonación se comparten con otros restos en llamas del juego.
- const api={create,snapshot,update,draw,setSheet,wreckage,lights,flame,smoke,blast};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeAirMecha=api;
+ const api={create,snapshot,update,draw,drawWalk,setSheet,wreckage,lights,flame,smoke,blast};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeAirMecha=api;
 })(typeof window!=='undefined'?window:globalThis);

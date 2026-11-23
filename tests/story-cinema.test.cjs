@@ -126,7 +126,7 @@ test('con movimiento reducido los planos quedan fijos y solo avanza el jugador',
 // Todas las escenas, montadas sobre la página de mentira con sus atlas reales.
 function scenes(){
  const box=sandbox();
- for(const file of ['story-cinema.js','soldier-v2-atlas.js','action-atlas.js','white-death-atlas.js','helicopter-atlas.js','mission-one-scenes.js','mission-four-scenes.js','mission-late-scenes.js','mission-finale-scenes.js'])box.run(file);
+ for(const file of ['story-cinema.js','soldier-v2-atlas.js','action-atlas.js','white-death-atlas.js','helicopter-atlas.js','impact-effects.js','air-mecha.js','mission-one-scenes.js','mission-four-scenes.js','mission-late-scenes.js','mission-finale-scenes.js'])box.run(file);
  return box;
 }
 test('cada plano usa arte que existe y dibuja sin errores, con o sin imágenes, en cualquier ventana',()=>{
@@ -317,17 +317,20 @@ test('los planos ilustrados conservan sus ocho poses y la obra conserva sus acto
   calls.length=0;lever.draw(ctx,8,{w:720,h:540,still:true});
   assert.ok(calls[0][0].path.includes('nine-outro'));
 });
-test('el Centinela usa ocho poses y sus misiles salen de la hombrera como sprites independientes',()=>{
+test('el Centinela completa los 16 pasos del atlas y los misiles salen de la hombrera como sprites independientes',()=>{
  const S=scenes().win.ArcadeStoryScenes,robot=S.images.mecha={width:1536,height:1024};
+ const walk=S.images.mechaWalk={width:1024,height:912},steps=new Set();
  const shot=S.sequence('three').find(s=>s.id==='centinela'),v={w:960,h:540,cx:480,dur:shot.dur};
  const poses=new Set(),missiles=[];
  for(let tick=0;tick<shot.dur*60;tick++){
    const calls=[];shot.draw(fakeContext(calls),tick/60,v);
-   const body=calls.filter(([img,,,width])=>img===robot&&width===384);
-   assert.equal(body.length,1);poses.add(body[0][1]+','+body[0][2]);
+   const body=calls.filter(([img,,,width])=>img===walk||(img===robot&&width===384));
+   assert.equal(body.length,1);
+   assert.equal(body[0][0],tick<120?walk:robot);
+   (tick<120?steps:poses).add(body[0][1]+','+body[0][2]);
    const rocket=calls.find(([img,,,width])=>img===robot&&width===114);
    if(rocket)missiles.push(rocket[5]);
  }
- assert.equal(poses.size,8);assert.ok(missiles.length>60);
+ assert.equal(steps.size,16);assert.equal(poses.size,5);assert.ok(missiles.length>60);
  assert.ok(missiles[0]-Math.min(...missiles)>400);
 });

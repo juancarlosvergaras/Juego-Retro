@@ -13,3 +13,33 @@ function capture(k,a=atlases){const calls=[],c={save(){},restore(){},translate()
 test('every combat action uses its new strip even when a legacy atlas is supplied',()=>{for(const [row,phase]of ['walk','vomit','leap','claw','death'].entries()){const k={phase,stage:2,age:0,cycle:0,x:1800,y:620,facing:-1},calls=capture(k,{...atlases,kingZombieLegacy:{}});assert.equal(calls[0].args[0],atlas.frames[row][0].image);assert.equal(calls[0].smooth,false);assert.ok(calls[0].args.slice(-4).every(Number.isInteger));}});
 test('final transformation settles onto the combat art before control resumes',()=>{const k={phase:'roar',stage:2,age:2.6,cycle:0,x:1800,y:620,facing:1},calls=capture(k);assert.equal(calls[0].alpha,0);assert.equal(calls[1].alpha,1);assert.equal(calls[1].args[0],atlas.frames[0][5].image);const walk=capture({...k,phase:'walk',cycle:5/6});assert.deepEqual(calls[1].args,walk[0].args);});
 test('live transition starts combat on that exact settled pose',()=>{const k=K.create({stage:2,phase:'roar',active:true});k.age=2.59;K.update(k,{x:k.x-135,y:620},.02);assert.equal(k.phase,'walk');assert.equal(K.pose(k).frame,5);});
+test('packed production strips draw every pose at the same world pivot and height as the source art',()=>{
+ const manifest={},packedImages=atlas.frames.map((row,i)=>{
+  const src='king-'+i+'.webp';let offset=0;
+  manifest[src]={width:images[i].width,frames:row.map(f=>{
+   const cell=[offset,f.left,f.top,f.w,f.h];offset+=f.w;return cell;
+  })};
+  return {src:'https://game.test/'+src};
+ });
+ const previousManifest=global.ArcadeKingStrips;
+ let packed;
+ try{global.ArcadeKingStrips=manifest;packed=K.prepareZombieStrips(packedImages);}
+ finally{if(previousManifest===undefined)delete global.ArcadeKingStrips;else global.ArcadeKingStrips=previousManifest;}
+ for(const phase of ['walk','vomit','leap','claw','death','roar']){
+  const seen=new Set();
+  for(let i=0;i<180;i++){
+   const k={phase,stage:2,age:i/180*(K.durations[phase]||1),cycle:i/180,x:500,y:620,facing:-1};
+   const expected=capture(k),actual=capture(k,{...atlases,kingZombie:packed});
+   assert.deepEqual(actual.map(c=>c.args.slice(5)),expected.map(c=>c.args.slice(5)),phase+' '+i);
+   seen.add(K.pose(k).frame);
+  }
+  assert.equal(seen.size,6,phase);
+ }
+});
+test('la tira de salto sigue la altura física sin sumar la altura pintada en la hoja',()=>{
+ const k={phase:'leap',stage:2,cycle:0,x:500,y:410,facing:-1};
+ for(const age of [0,.31,.66,1.21,1.71,2.06]){
+  const [call]=capture({...k,age}),[,dy,,height]=call.args.slice(5);
+  assert.equal(dy+height,0);
+ }
+});

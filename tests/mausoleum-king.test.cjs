@@ -87,3 +87,14 @@ test('interruption and save/reload preserve phase boundaries and difficulty heal
 });
 
 
+test('el rey baja del andamio con una caída continua en su segunda forma',()=>{
+ const k=K.create({active:true,stage:2,x:999}),p=player(1850);
+ const ledge={x:800,y:450,w:150,solid:true};
+ k.cooldown=99;k.y=ledge.y;const heights=[];
+ for(let i=0;i<150;i++){
+  K.update(k,p,1/120,()=>{},[],[ledge]);heights.push(k.y);
+ }
+ assert.equal(heights[0],450);assert.equal(heights.at(-1),620);
+ assert.ok(heights.filter(y=>y>450&&y<620).length>40);
+ assert.ok(heights.every((y,i)=>!i||(y>=heights[i-1]&&y-heights[i-1]<6)));
+});

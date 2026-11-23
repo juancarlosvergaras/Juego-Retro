@@ -23,3 +23,13 @@ test('la carga sólida deja accesibles las armas y los soldados de cubierta',()=
   assert.ok(!boxes.some(box=>actor.x>box.x&&actor.x<box.x+box.w&&actor.y>box.y),'objeto dentro de un contenedor '+actor.id);
  }
 });
+test('el paso del Centinela sigue la distancia y se detiene al llegar a ambos límites',()=>{
+ for(const [x,px] of [[6390,6175],[7400,7600],[7000,7020]]){
+  const n=M.create({x,active:true});M.update(n,{x:px,y:620},.2,[]);
+  assert.equal(n.x,x);assert.equal(n.walkDistance,0);
+ }
+ const n=M.create({x:7000,active:true});
+ for(let i=0;i<60;i++)M.update(n,{x:6500,y:620},1/60,[]);
+ assert.ok(Math.abs(n.walkDistance-28)<1e-8);
+ assert.ok(Math.abs(7000-n.x-n.walkDistance)<1e-8);
+});

@@ -45,7 +45,7 @@
     dark.addColorStop(0,'rgba(6,5,8,0)');dark.addColorStop(1,'rgba(6,5,8,.9)');c.fillStyle=dark;c.fillRect(0,0,v.w,v.h);
   }
 
-  Scenes.register('four',{road:'assets/worlds/mission-04/carretera-atardecer-v1.png',riders:'assets/sprites/motos-carretera-v3.webp',rig:'assets/sprites/jefe-convoy-v3.png',tank:'assets/sprites/mini-tanque-salto-v1.png'},{
+  Scenes.register('four',{convoyFoes:'assets/sprites/enemigos-motorizados-v3.webp',road:'assets/worlds/mission-04/carretera-atardecer-v1.png',riders:'assets/sprites/motos-carretera-v3.webp',rig:'assets/sprites/jefe-convoy-v3.png',tank:'assets/sprites/mini-tanque-salto-v1.png'},{
     intro:[
       // 1 · La huida: el convoy se aleja por la autopista, visto desde lejos.
       {id:'huida',dur:8,draw(c,t,v){
@@ -53,8 +53,8 @@
         for(let i=0;i<3;i++)smoke(c,v.w*(.12+i*.36),HORIZON-6,t,i*4,.7,'#4b3f41');
         const drift4=Math.sin(t*.5)*12,rx=v.cx+120+drift4;
         shadow(c,rx,LANE[0],300);dust(c,rx-150,LANE[0],t,3,1.6);put(c,rig(),Math.floor(t*3)%7===0?1:0,rx,LANE[0]+Math.sin(t*15),190);
-        shadow(c,v.cx-230-drift4*.6,LANE[1],110);dust(c,v.cx-280,LANE[1],t,9);put(c,riders(),9,v.cx-230-drift4*.6,LANE[1]+Math.sin(t*19),112);
-        shadow(c,v.cx+300+drift4*.4,LANE[1]-8,80);put(c,riders(),8,v.cx+300+drift4*.4,LANE[1]-8+Math.sin(t*21),96);
+        shadow(c,v.cx-230-drift4*.6,LANE[1],110);dust(c,v.cx-280,LANE[1],t,9);put(c,atlas('convoyFoes',3,2),1,v.cx-230-drift4*.6,LANE[1]+Math.sin(t*19),124,{anchor:'box'});
+        shadow(c,v.cx+300+drift4*.4,LANE[1]-8,80);put(c,atlas('convoyFoes',3,2),0,v.cx+300+drift4*.4,LANE[1]-8+Math.sin(t*21),112,{anchor:'box'});
         shade(c,v,'rgba(255,120,60,.08)');vignette(c,v,.6);
       }},
       // 2 · El convoy de cerca: la cámara corre junto al camión blindado.
@@ -63,7 +63,7 @@
         const rx=v.cx+lerp(260,60,drift(t,v.dur))+Math.sin(t*.7)*8,y=LANE[1]+14;
         shadow(c,rx,y,640,.55);dust(c,rx-320,y,t,2,2.4);put(c,rig(),Math.floor(t*2.4)%5===0?1:0,rx,y+Math.sin(t*14)*1.5,280);
         glow(c,rx-30,y-210,120,'255,170,70',.45+.15*Math.sin(t*5));
-        put(c,riders(),8,rx-470+Math.sin(t*.9)*20,LANE[0]+Math.sin(t*20),92);
+        put(c,atlas('convoyFoes',3,2),0,rx-470+Math.sin(t*.9)*20,LANE[0]+Math.sin(t*20),102,{anchor:'box'});
         vignette(c,v,.6);
       }},
       // 3 · La persecución: Vega suelta al cazador en la autopista y la moto arranca.

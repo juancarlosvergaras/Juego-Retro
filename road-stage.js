@@ -52,7 +52,7 @@
   }
   for(const n of s.enemies){if(n.hp<=0){if(n.type==='jeep')list.push({x:n.x,y:n.y-30,r:90,a:.6,glow:'255,150,70',ga:.2});continue;}
    if(n.type!=='jetSoldier')list.push({x:n.x-n.w*.42,y:n.y-26,r:24,a:.4,glow:'255,70,50',ga:.22});
-   if(n.flash>0)list.push({x:n.x-n.w*.4,y:n.y-n.h*.7,r:110,a:.9,glow:'255,180,120',ga:.26});}
+   if(n.flash>0)list.push({...War.enemyMuzzle(n),r:110,a:.9,glow:'255,180,120',ga:.26});}
   const b=s.boss;
   if(b.active&&!end){const heat=.75+rnd(Math.floor(s.time*12))*.25;list.push({x:b.x-12,y:b.y-112,r:92,a:.6*heat,glow:'255,150,60',ga:.22*heat});if(b.flash>0)for(let gun=b.stage;gun<3;gun++)list.push({x:b.x-145+gun*100,y:b.y-150-(gun===1?20:0),r:100,a:.9,glow:'255,190,120',ga:.28});
    if(b.phase==='ramWarn'||b.phase==='ram'){const blink=Math.floor(s.time*8)%2?1:.4;list.push({x:b.x-b.w/2,y:b.y-60,r:130,a:.5*blink,glow:'255,80,60',ga:.2*blink});}}

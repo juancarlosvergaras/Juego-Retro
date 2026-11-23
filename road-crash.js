@@ -25,12 +25,12 @@
  function shadow(c,x,lane,halfWidth,alpha){
   c.save();c.globalAlpha*=alpha;c.fillStyle='#19191f';c.beginPath();c.ellipse(x,lane,halfWidth,3,0,0,Math.PI*2);c.fill();c.restore();
  }
- function motion(t,lift=0){
+ function motion(t,lift=0,separation=74){
   // The bike keeps sliding after the rider meets the road. They meet again at the saddle.
-  const bikeX=54*ease(t,0,.64)*(1-ease(t,1.25,2.06));
-  const riderX=7*ease(t,.09,.27)-31*ease(t,.27,.66)+49*ease(t,.93,1.65)-25*ease(t,1.65,2.08);
+  const bikeX=7*arc(t,0,.29)-12*ease(t,.26,.54)*(1-ease(t,.56,.81));
+  const riderX=7*ease(t,.06,.15)-(7+separation)*ease(t,.15,.55)+separation*ease(t,1.43,1.94);
   const bikeLift=lift*(1-ease(t,0,.18))+8*arc(t,.08,.45)+3*arc(t,.45,.64);
-  const riderLift=lift*(1-ease(t,0,.18))+21*ease(t,.05,.19)*(1-ease(t,.34,.57))+64*arc(t,.12,.57)+4*arc(t,.57,.73)+18*ease(t,1.60,1.96);
+  const riderLift=lift*(1-ease(t,0,.18))+21*ease(t,.05,.19)*(1-ease(t,.34,.57))+64*arc(t,.12,.57)+4*arc(t,.57,.73)+32*arc(t,1.43,1.94)+18*ease(t,1.60,1.94);
   const bikeAngle=.26*arc(t,0,.44)-.065*arc(t,.44,.64);
   const riderAngle=-.18*arc(t,.10,.31)+.57*arc(t,.30,.575)-.10*arc(t,.575,.76);
   const bikeFrame=8*ease(t,.14,.62)+8*ease(t,1.22,1.87);
@@ -40,7 +40,7 @@
   return {bikeX,riderX,bikeLift,riderLift,bikeAngle,riderAngle,bikeFrame,riderFrame};
  }
  function draw(c,img,form,x,lane,t,lift,paintMounted){
-  const m=motion(t,lift),bike=x+m.bikeX,rider=x+m.riderX;
+  const m=motion(t,lift,Math.min(74,Math.max(0,x-46))),bike=x+m.bikeX,rider=x+m.riderX;
   const start=1-ease(t,.095,.165),finish=ease(t,1.91,2.10),attached=start+finish;
   shadow(c,bike,lane,43,.42);
   if(form==='tank'){
@@ -66,14 +66,15 @@
   }
   debris(c,bike+24,lane,t,.44,.34,true);debris(c,rider,lane,t,.57,.50,false);
  }
- function convoy(c,img,type,x,y,t,paintMounted){
+ function convoy(c,img,type,x,y,t,paintMounted,width){
   const row=type==='sidecar'?10:9;
   const lean=.17*arc(t,0,.32),bounce=7*arc(t,.19,.51);
   if(t<.08){c.save();c.translate(x+28,y);c.rotate(lean);c.translate(-28,0);paintMounted();c.restore();return;}
   const frame=4*ease(t,.08,.38)+4*ease(t,.38,.67)+4*ease(t,.67,.96)+4*ease(t,.96,1.36);
-  c.save();c.globalAlpha*=1-ease(t,1.95,2.8);
-  cell(c,img,row,frame,x,y-bounce,lean,28,0);
-  debris(c,x+24,y,t,.49,.37,true);debris(c,x-30,y,t,.64,.48,false);c.restore();
+  const nativeWidth=type==='sidecar'?124:104,k=(width||nativeWidth)/nativeWidth;
+  c.save();c.translate(x,y);c.scale(k,k);c.globalAlpha*=1-ease(t,1.95,2.8);
+  cell(c,img,row,frame,0,-bounce,lean,28,0);
+  debris(c,24,0,t,.49,.37,true);debris(c,-30,0,t,.64,.48,false);c.restore();
  }
  const api={draw,motion,mountedHero,convoy};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadCrash=api;

@@ -40,3 +40,43 @@ test('checkpoints retry at the last post, retaining awarded identities and reset
 test('mission 4 campaign transfer carries forms, ammo and cooldowns without modifying first loadout',()=>{const map=new Map([['cap-dollar.mission-one-loadout.v1','original']]),store={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};const g=game(100,'robot');g.p.robotUnlocked=true;g.p.zombieUnlocked=true;C.transferFour(store,g.p,g.e,{total:9000},{cooldowns:{orbital:75}});const c=C.read(store);assert.equal(c.level,4);assert.ok(c.robotUnlocked);assert.equal(c.cooldowns.orbital,75);assert.equal(c.inventory.ammo[3],36);assert.equal(map.get('cap-dollar.mission-one-loadout.v1'),'original');});
 test('interrupted road finale resumes, credits no second reward, and reaches completion',()=>{const g=game(R.LENGTH);g.s.boss.active=true;g.s.boss.hp=0;tick(g,.1);g.s=R.create(R.snapshot(g.s));assert.equal(g.s.ending,0);assert.equal(g.s.boss.hp,0);assert.equal(g.s.boss.active,true);const events=tick(g,14.2);assert.ok(g.s.complete);assert.equal(events.filter(e=>e.type==='points').length,0);assert.equal(events.filter(e=>e.type==='complete').length,1);});
 test('a simultaneous final hit and enemy bullet finishes the boss without trapping the victory behind a death menu',()=>{const g=game(R.LENGTH);g.s.boss.active=true;g.s.boss.hp=0;g.e.invincible=0;g.e.hp=1;g.s.hitWait=0;g.s.bullets.push({x:g.p.x,y:g.p.y-30,vx:0,vy:0,life:2,enemy:true,damage:1});tick(g,.02);assert.equal(g.e.dead,false);assert.ok(g.e.hp>=1);assert.ok(g.s.ending>=0);});
+
+test('la cámara frena al caer y el soldado se incorpora sobre el mismo punto del asfalto',()=>{
+ const Crash=require('../road-crash');
+ for(const hz of [30,60,120])for(const run of [false,true]){
+  const {s,p,e}=game(100);s.obstacles=[{distance:104,lane:p.lane,type:'pothole'}];
+  R.update(s,p,e,{run},1/hz);assert.ok(s.crash>0);
+  const ground=[],bike=[];
+  while(s.crash>0){
+   R.update(s,p,e,{right:true},1/hz);
+   const age=s.crashAge,m=Crash.motion(age);
+   if(age>=.74&&age<1.43)ground.push(s.scroll+p.x+m.riderX);
+   if(age>=.82&&age<2)bike.push(s.scroll+p.x+m.bikeX);
+  }
+  assert.ok(ground.length>16&&Math.max(...ground)-Math.min(...ground)<.01);
+  assert.ok(bike.length>25&&Math.max(...bike)-Math.min(...bike)<.01);
+  assert.equal(Crash.motion(R.CRASH_TIME).riderX,0);assert.equal(Crash.motion(R.CRASH_TIME).bikeX,0);
+ }
+});
+test('los motoristas que se rezagan salen de la pantalla antes de retirar el vehículo',()=>{
+ const {s,p,e}=game(100);s.obstacles=[];
+ const rider=Object.assign(R.spawn(s,0),{age:21.95,x:700,targetX:700});s.enemies=[rider];
+ for(let i=0;i<900&&s.enemies.includes(rider);i++){
+  R.update(s,p,e,{},1/120);
+  if(!s.enemies.includes(rider))assert.ok(rider.x+rider.w/2<0);
+ }
+ assert.ok(!s.enemies.includes(rider));
+});
+test('la escolta entra por fuera del encuadre y la colisión alcanza el casco en cada montura',()=>{
+ const s=R.create({});
+ for(const i of [0,1,2,3,4,7]){
+  const n=R.spawn(s,i);assert.ok(n.rear?n.x+n.w/2<0:n.x-n.w/2>960);
+  if(n.type==='jetSoldier')continue;
+  const [w,h]={bike:[432,320],sidecar:[459,313],jeep:[519,385]}[n.type];
+  assert.ok(Math.abs(n.w*h/w-n.h)<2,n.type);
+  const shot={slot:3,x:n.x+4,y:n.y-n.h+2};
+  assert.ok(R.swept(shot,n,n.x-4,shot.y));
+  assert.equal(R.swept({...shot,y:shot.y-12},n,n.x-4,shot.y-12),false);
+ }
+ assert.equal(R.guard(s,0).w,R.spawn(s,0).w);
+});

@@ -4,16 +4,19 @@
  // El cuadro de los restos trae humo pintado, que quedaría congelado: se borra
  // para poner encima humo y llamas animados.
  function scrub(img,cols,rows,cell){const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const cx=c.getContext('2d');cx.drawImage(img,0,0);const cw=Math.floor(c.width/cols),ch=Math.floor(c.height/rows),x0=(cell%cols)*cw,y0=Math.floor(cell/cols)*ch,h=Math.floor(ch*.62);let data;try{data=cx.getImageData(x0,y0,cw,h);}catch{return img;}const d=data.data;for(let i=0;i<d.length;i+=4)if(d[i+3]>0&&d[i]>72&&Math.abs(d[i]-d[i+1])<16&&Math.abs(d[i+1]-d[i+2])<16)d[i+3]=0;cx.putImageData(data,x0,y0);return c;}
+ // Bounds of the six occupied vehicle poses, registered at the wheel contact line.
+ const convoyFrames=[[47,192,432,320],[520,199,459,313],[1000,128,519,385],
+                    [47,609,433,317],[520,612,459,314],[1000,547,519,381]];
  const AMBIENT=.3;
- function create(images){const Stage=root.ArcadeRoadStage,War=root.ArcadeRoadWar,Fire=root.ArcadeAirMecha,Kit=root.ArcadeMissionKit;images.rig=scrub(images.rig,2,3,5);const mounted=images.mounted?atlas(images.mounted,4,2):null,obstacles=images.obstacles?atlas(images.obstacles,3,2):null,crashes=images.crashes?root.ArcadeAdvancedForms.atlas(images.crashes,4,4,{y:[0,.27,.52,.765,1]}):null,actions=images.actions?atlas(images.actions,3,3):null,riders=atlas(images.riders,4,3),rig=atlas(images.rig,2,3),foes=images.foes?root.ArcadeAdvancedForms.atlas(images.foes,3,2,{x:[[0,1/3,992/1536,1],[0,1/3,992/1536,1]],y:[0,.515,1]}):null,rigAim=images.rigAim?atlas(images.rigAim,2,3):rig,soldierCrash=images.soldierCrash?atlas(images.soldierCrash,4,1):null;
+ function create(images){const Stage=root.ArcadeRoadStage,War=root.ArcadeRoadWar,Fire=root.ArcadeAirMecha,Kit=root.ArcadeMissionKit;images.rig=scrub(images.rig,2,3,5);const mounted=images.mounted?atlas(images.mounted,4,2):null,obstacles=images.obstacles?atlas(images.obstacles,3,2):null,crashes=images.crashes?root.ArcadeAdvancedForms.atlas(images.crashes,4,4,{y:[0,.27,.52,.765,1]}):null,actions=images.actions?atlas(images.actions,3,3):null,riders=atlas(images.riders,4,3),rig=atlas(images.rig,2,3),foes=images.foes?convoyFrames:null,rigAim=images.rigAim?atlas(images.rigAim,2,3):rig,soldierCrash=images.soldierCrash?atlas(images.soldierCrash,4,1):null;
   function sprite(c,img,f,x,y,width,angle=0,alpha=1){c.save();c.globalAlpha*=alpha;c.translate(Math.round(x),Math.round(y));c.rotate(angle);c.drawImage(img,...f,-width/2,-width*f[3]/f[2],width,width*f[3]/f[2]);c.restore();}
   function background(c,s){const {scroll,time}=s;const img=images.road,cut=Math.round(img.height*.48),skyW=1280;for(let x=-(scroll*.05%skyW);x<960;x+=skyW)c.drawImage(img,0,0,img.width,cut,Math.round(x),0,skyW,322);const roadW=1180;for(let x=-(scroll%roadW);x<960;x+=roadW)c.drawImage(img,0,cut,img.width,img.height-cut,Math.round(x),322,roadW+1,218);c.fillStyle='#edcd8f';for(let i=0;i<7;i++){const x=((i*211-scroll*1.5)%1200+1200)%1200-120;c.globalAlpha=.25;c.fillRect(x,506+i%3*8,18+(i%2)*20,2);}c.globalAlpha=1;
    const decor=root.ArcadeSceneryAnimation;
    if(decor){
      if(decor.next&&s.intro>=5){
        const cameo=decor.next(s,'carretera',time);
-       if(cameo?.id==='helicoptero')decor.place(c,cameo,scroll*.05,122+8*Math.sin(cameo.age*.55),960,108,.80,1190);
-       else decor.place(c,cameo,scroll*.12,316,960,68,.91,560);
+       if(cameo?.id==='helicoptero')decor.cross(c,cameo,122+8*Math.sin(cameo.age*.55),960,108,.80);
+       else if(cameo)decor.cross(c,cameo,316,960,68,.91);
      }
      const x=358-(scroll*.05%1280);
      const pumpX=x<-56?x+1280:x;
@@ -84,7 +87,7 @@
   }
   function enemy(c,n,s){if(n.type==='jetSoldier'){root.ArcadeExpansionEnemies.draw(c,{...n,kind:'jetSoldier',death:Math.max(0,1-n.death/2.8),facing:-1,scale:War?.JET_SCALE||1},images.expansion);if(n.hp>0&&Kit)Kit.enemyBar(c,n,n.h+10);return;}const index=n.type==='jeep'?2:n.type==='sidecar'?1:0,crop=foes?.[index+(n.hp<n.maxHp*.5?3:0)],img=foes?images.foes:images.riders,frame=crop||riders[8+index];shadow(c,n.x,n.y,n.w,n.hp<=0?Math.max(0,1-n.death/2):1);
    if(n.hp<=0&&images.stunts&&(n.type==='bike'||n.type==='sidecar')){
-    root.ArcadeRoadCrash.convoy(c,images.stunts,n.type,n.x,n.y,n.death,()=>sprite(c,img,frame,0,0,n.w));return;
+    root.ArcadeRoadCrash.convoy(c,images.stunts,n.type,n.x,n.y,n.death,()=>sprite(c,img,frame,0,0,n.w),n.w);return;
    }
    if(n.hp>0)exhaust(c,n.x-n.w*.45,n.y-16,s.time+n.age);if(n.hp<=0){if(n.type==='jeep'){const k=Math.max(0,1-n.death/3);sprite(c,images.riders,riders[11],n.x,n.y,n.w,0,k);if(Fire&&k>.25){c.save();c.globalAlpha=k;Fire.smoke(c,n.x+8,n.y-52,s.time,7,.5);Fire.flame(c,n.x+10,n.y-30,1,s.time,5);Fire.flame(c,n.x-28,n.y-22,.7,s.time,23);c.restore();}}else sprite(c,img,foes?.[index+3]||frame,n.x,n.y+8,n.w,Math.min(.42,n.death*.4),Math.max(0,1-n.death/3));return;}sprite(c,img,frame,n.x,n.y+Math.sin(s.time*25+n.x)*.6,frame[2]*(n.w/(foes?.[index]||riders[8+index])[2]),0,n.hit>0?.65:1);if(n.escort){}else if(Kit)Kit.enemyBar(c,n,n.h+12);else{c.fillStyle='#1a202dcc';c.fillRect(n.x-26,n.y-n.h-12,52,5);c.fillStyle='#df8262';c.fillRect(n.x-25,n.y-n.h-11,50*n.hp/n.maxHp,3);}if(n.flash>0){c.fillStyle='#fff1aa';const muzzle=War.enemyMuzzle(n);c.fillRect(muzzle.x-12,muzzle.y-2,13,4);}if(n.shock>0){c.strokeStyle='#9ffff0';c.lineWidth=2;c.beginPath();for(let i=0;i<12;i++){const x=n.x-50+i*9,y=n.y-30+Math.sin(i*8+s.time*70)*24;if(i)c.lineTo(x,y);else c.moveTo(x,y);}c.stroke();}}
   // Puntos calientes de los restos, como fracción del cuadro (izquierda→derecha, suelo→arriba).
@@ -116,7 +119,7 @@
    for(const m of s.mines)root.ArcadeBossAttackSprites?.draw(c,'mine',m.age,m.x,m.y,29,21,{ground:true});
    const cut=Stage&&s.intro<Stage.INTRO?Stage.intro(s.intro,p.lane):null,end=Stage&&s.ending>=0?Stage.ending(s.ending,p.x):null;
    const things=s.enemies.map(n=>({y:n.y,draw:()=>enemy(c,n,s)}));if(s.boss.active)things.push({y:s.boss.y,draw:()=>boss(c,s.boss,s,p)});
-   if(cut){for(const n of cut.convoy)things.push({y:n.y,draw:()=>enemy(c,{...n,w:n.type==='sidecar'?124:104,h:76,hp:1,maxHp:1,age:0,hit:0,flash:0,death:0,escort:true},s)});if(cut.rider.visible)things.push({y:p.lane,draw:()=>player(c,p,{...s,jump:0,ram:0,shotFlash:0,wheelie:cut.rider.wheelie,boost:cut.rider.boost?1:0},cut.rider.x,cut.rider.y)});}
+   if(cut){for(const n of cut.convoy)things.push({y:n.y,draw:()=>enemy(c,{...n,...War.vehicleSize[n.type],hp:1,maxHp:1,age:0,hit:0,flash:0,death:0,escort:true},s)});if(cut.rider.visible)things.push({y:p.lane,draw:()=>player(c,p,{...s,jump:0,ram:0,shotFlash:0,wheelie:cut.rider.wheelie,boost:cut.rider.boost?1:0},cut.rider.x,cut.rider.y)});}
    else if(end)things.push({y:p.lane,draw:()=>hero(c,p,s,end)});
    else if(s.ending<4)things.push({y:p.lane,draw:()=>{
     c.save();if(p.respawnProtection>0)c.globalAlpha*=root.ArcadeProgression.respawnAlpha(p);

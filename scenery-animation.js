@@ -104,7 +104,7 @@
     e.age=Math.min(duration,e.age+dt);e.u=e.age/duration;
     const tick=Math.floor(e.age*fps);
     e.frame=oneShot.has(e.id)?Math.min(7,tick):tick%8;
-    e.alpha=building?1:Math.min(1,e.age*3,(duration-e.age)*3);
+    e.alpha=building||scene==='carretera'?1:Math.min(1,e.age*3,(duration-e.age)*3);
     if(e.age>=duration&&!building){
       s.previous=e.id;s.active=null;s.delay=7+Math.random()*11;return null;
     }
@@ -119,9 +119,16 @@
     paint(c,e.id,e.frame,x,floor,width,opacity*e.alpha);
   }
 
+  // Both highway visitors face right. Leave a whole frame beyond either edge,
+  // so the scheduler can retire them without a visible cut, even during turbo.
+  function cross(c,e,floor,span,width,opacity=1){
+    const margin=width/2+4;
+    paint(c,e.id,e.frame,-margin+e.u*(span+2*margin),floor,width,opacity);
+  }
+
   // The wrap happens beyond the edge, including room for a whole flock to exit.
   function pass(distance, span, margin){
     return ((distance % (span + 2 * margin)) + span + 2 * margin) % (span + 2 * margin) - margin;
   }
-  root.ArcadeSceneryAnimation = {draw, pass, next, place, sheet, paint};
+  root.ArcadeSceneryAnimation = {draw, pass, next, place, cross, sheet, paint};
 })(typeof window === 'undefined' ? globalThis : window);

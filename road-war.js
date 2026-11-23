@@ -8,7 +8,10 @@
  const CHECKPOINTS=[3200,7800],WAVES=35,INTRO=5,ENDING=14,CRUISE=360;
  // En la carretera las personas se dibujan más grandes que a pie: el soldado que
  // vuela crece con ellas para no parecer un muñeco al lado de los motoristas.
- const JET_SCALE=1.5;
+ const JET_SCALE=1.64;
+ // Scaled from each occupied sprite, wheels to helmet. Shared by collisions,
+ // gun mounts, health bars, escorts and the staged convoy.
+ const vehicleSize={bike:{w:136,h:102},sidecar:{w:154,h:106},jeep:{w:204,h:151},jetSoldier:{w:52,h:64}};
  const RIDER_WIDTH=104,CRASH_TIME=2.2;
  function riderPose(s,x,y,offset,bob){
   const lunge=s.ram>0?Math.sin(s.ram/.42*Math.PI)*32:0;
@@ -34,7 +37,7 @@
  }
  // Dos motoristas acompañan al camión del jefe: salen con él y no se retiran.
  const GUARDS=2;
- function guard(s,k){const hp=3*s.difficulty;return{id:'road-guard-'+k,kind:'road',type:'bike',guard:true,x:1040+k*110,y:LANES[k?2:0],w:104,h:76,hp,maxHp:hp,age:0,shot:2.4+k*.9,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:470-k*90};}
+ function guard(s,k){const hp=3*s.difficulty;return{id:'road-guard-'+k,kind:'road',type:'bike',guard:true,x:1040+k*110,y:LANES[k?2:0],...vehicleSize.bike,hp,maxHp:hp,age:0,shot:2.4+k*.9,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:470-k*90};}
  const supplyKind=i=>i%6===0?'health':i%7===0?'star':'ammo';
  const STARS=Array.from({length:WAVES},(_,i)=>i+1).filter(i=>supplyKind(i)==='star').length;
  const SOUNDS=['','knife','axe','pistol','shotgun','rifle','rocket','bow','crossbow','grenade'];
@@ -51,7 +54,7 @@
    boss:{id:'road-rig',kind:'road',type:'rig',x:saved.ending?740:1180,y:425,w:410,h:190,hp:saved.complete||saved.ending?0:180*difficulty,maxHp:180*difficulty,active:!!saved.ending||!!saved.complete,stage:0,phase:'entry',age:0,shot:.6,cycle:0,hit:0,frozen:0,slow:0,flash:0,death:0},
    obstacles:Array.from({length:16},(_,i)=>({id:i,distance:440+i*510,lane:LANES[i%3],type:i%3===1?'pothole':'ramp',used:false})),crash:0,crashAge:0,crashLift:0,fatalCrash:false,jump:0,jumpV:0,boost:0,ramWait:0,ram:0,hitWait:2,shotFlash:0};
  }
- function spawn(s,i){const type=i%6===3?'jetSoldier':i%5===4?'jeep':i%3===1?'sidecar':'bike',hp=(type==='jeep'?10:type==='sidecar'?6:3)*s.difficulty;const rear=i%5===2&&(type==='bike'||type==='sidecar');return{id:'road-'+i,kind:'road',type,rear,x:rear?-96:1020+(i%2)*100,y:type==='jetSoldier'?235:LANES[i%3],w:type==='jetSoldier'?48:type==='jeep'?175:type==='sidecar'?124:104,h:type==='jetSoldier'?60:type==='jeep'?94:76,hp,maxHp:hp,age:0,shot:1.8+(i%3)*.3,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:520+((i*2+Math.floor(i/3))%3)*150};}
+ function spawn(s,i){const type=i%6===3?'jetSoldier':i%5===4?'jeep':i%3===1?'sidecar':'bike',hp=(type==='jeep'?10:type==='sidecar'?6:3)*s.difficulty;const rear=i%5===2&&(type==='bike'||type==='sidecar');return{id:'road-'+i,kind:'road',type,rear,x:rear?-vehicleSize[type].w/2-12:972+vehicleSize[type].w/2+(i%2)*100,y:type==='jetSoldier'?235:LANES[i%3],...vehicleSize[type],hp,maxHp:hp,age:0,shot:1.8+(i%3)*.3,hit:0,frozen:0,slow:0,flash:0,death:0,targetX:520+((i*2+Math.floor(i/3))%3)*150};}
  function event(s,type,data={}){s.events.push({type,...data});}
  function damage(n,amount){if(n.hp<=0||!(amount>0))return;n.hp=Math.max(0,n.hp-amount);n.hit=.14;}
  function hurt(s,p,e,amount=1){if(p.respawnProtection>0||s.hitWait>0||e.developerInvulnerable||e.invincible>0||e.dead||s.ram>0||p.transform>0)return false;if(p.shield>0)p.shield--;else e.hp=Math.max(0,e.hp-amount*(e.combatDamage||1)/(p.form==='zombie'||p.form==='tank'?2:1));e.hp=Math.round(e.hp*2)/2;s.hitWait=e.hitProtection??1.2;p.hurt=.3;event(s,'hurt');if(e.hp<=0)e.dead=true;return true;}
@@ -129,14 +132,21 @@
  }
  function collect(s,p,e){for(const item of s.pickups){if(item.taken||Math.abs(item.x-p.x)>65||Math.abs(item.y-p.lane)>36||s.jump>80)continue;item.taken=true;s.taken.add(item.id);if(item.type==='health'){e.hp=Math.min(e.maxHp,e.hp+3);event(s,'pickup',{text:'Botiquín · +3 salud'});}else if(item.type==='star'){s.collected.add(item.id);event(s,'points',{id:item.id,amount:250,text:'Estrella'});}else{const slot=item.slot||3;if(!e.inventory.owned.includes(slot))e.inventory.owned.push(slot);e.inventory.ammo[slot]=(e.inventory.ammo[slot]||0)+(A.weapons[slot].ammo||36);event(s,'pickup',{text:A.weapons[slot].name+' · Munición recogida'});}}}
  function supply(s,type,slot,id,x=1060,y=414){if(s.taken.has(id))return;s.pickups.push({id,type,slot,x,y,taken:false});}
+ // Integral of camera speed: brake to rest at impact, then accelerate once seated.
+ function crashDistance(age,speed){
+  const contact=.55,brake=Math.min(age,contact),restart=Math.max(0,age-2);
+  return speed*brake*(1-brake/(2*contact))+CRUISE*restart*restart/(2*(CRASH_TIME-2));
+ }
  function advanceCrash(s,dt){
   const previous=s.crashAge;
   s.crashAge+=Math.min(s.crash,dt);s.crash=Math.max(0,s.crash-dt);
   if(previous<.55&&s.crashAge>=.55)event(s,'skid');
+  const speed=s.crashSpeed??CRUISE;
+  return crashDistance(s.crashAge,speed)-crashDistance(previous,speed);
  }
  function update(s,p,e,input,dt){
   dt=clamp(dt,0,.05);s.events=[];
-  if(e.dead){if(s.fatalCrash&&s.crash>0){advanceCrash(s,dt);s.time+=dt;s.scroll+=75*dt;}return s.events;}
+  if(e.dead){if(s.fatalCrash&&s.crash>0){s.scroll+=advanceCrash(s,dt);s.time+=dt;}return s.events;}
   s.time+=dt;s.intro=Math.min(INTRO,s.intro+dt);
   if(s.ending>=0){s.boss.hit=Math.max(0,s.boss.hit-dt);s.scroll+=dt*endingSpeed(s.ending);s.ending+=dt;
    // Detonaciones en cadena mientras el camión se deshace.
@@ -145,13 +155,14 @@
   if(s.intro<INTRO){s.scroll+=dt*CRUISE;return s.events;}
   s.elapsed+=dt;
   s.hitWait=Math.max(0,s.hitWait-dt);s.shootWait=Math.max(0,s.shootWait-dt);s.plasmaWait=Math.max(0,s.plasmaWait-dt);s.ramWait=Math.max(0,s.ramWait-dt);s.ram=Math.max(0,s.ram-dt);s.shotFlash=Math.max(0,s.shotFlash-dt);p.hurt=Math.max(0,(p.hurt||0)-dt);e.invincible=Math.max(0,(e.invincible||0)-dt);A.tickRobot(e,dt);
-  if(s.crash>0){advanceCrash(s,dt);input={};s.hitWait=Math.max(s.hitWait,.25);}
+  let crashTravel;
+  if(s.crash>0){const used=Math.min(s.crash,dt);crashTravel=advanceCrash(s,dt)+(dt-used)*CRUISE;input={};s.hitWait=Math.max(s.hitWait,.25);}
   s.boost=!!input.run;
   const speed=210*(p.speedBonus||1);p.x=clamp(p.x+((input.right?1:0)-(input.left?1:0))*speed*dt,85,s.boss.active?650:790);p.lane=clamp((p.lane||414)+((input.down?1:0)-(input.up?1:0))*125*dt,LANES[0],LANES[2]);
   if(!s.jump||s.crash>0)turn.reset(p);
   s.landing=Math.max(0,(s.landing||0)-dt);s.jumpAge=s.jump>0?(s.jumpAge||0)+dt:0;if(input.jumpPressed&&p.jumps<(p.maxJumps||2)){turn.press(p);s.jumpV=310;p.jumps++;event(s,'jump');}if(s.jump>0||s.jumpV>0){s.jumpV-=760*dt;s.jump=Math.max(0,s.jump+s.jumpV*dt);if(!s.jump){s.landing=.24;s.jumpV=0;p.jumps=0;burst(s,p.x,p.lane,24,'dust');event(s,'land');}}
   p.y=p.lane-s.jump;p.grounded=s.jump===0;turn.advance(p,dt);p.facing=1;p.vx=(input.right?speed:0)-(input.left?speed:0);
-  const old=s.distance,travel=dt*(s.crash>0?15:input.run?100:72);s.distance=Math.min(LENGTH,s.distance+travel);
+  const old=s.distance,travel=crashTravel===undefined?dt*(input.run?100:72):crashTravel/5;s.distance=Math.min(LENGTH,s.distance+travel);
   // Asphalt and world obstacles share the same displacement, including turbo and recovery.
   const roadTravel=(s.distance-old)*5;s.scroll+=old<LENGTH?roadTravel:travel*5;
   for(let next=s.wave+1;next<=Math.floor(s.distance/260)&&next<=WAVES;next++){s.wave=next;const n=spawn(s,next);if(!s.awarded.has(n.id)){
@@ -164,7 +175,7 @@
    if(o.type==='ramp'){s.jumpV=input.run?540:460;s.jump=7;p.y=p.lane-s.jump;p.grounded=false;p.jumps=1;event(s,'jump');event(s,'warning',{text:'¡RAMPA! Mantén el impulso en el aire'});}
    // A pothole always throws the bike, even when a shield or a recent hit spares the damage.
    else{
-    hurt(s,p,e,1);s.fatalCrash=e.dead;s.crash=e.dead?.94:CRASH_TIME;s.crashAge=0;s.crashLift=s.jump;
+    hurt(s,p,e,1);s.fatalCrash=e.dead;s.crash=e.dead?.94:CRASH_TIME;s.crashAge=0;s.crashLift=s.jump;s.crashSpeed=input.run?500:CRUISE;
     s.jump=s.jumpV=s.shotFlash=s.ram=0;turn.reset(p);s.boost=false;p.y=p.lane;p.grounded=true;p.jumps=0;
     event(s,'warning',{text:p.form==='tank'?'¡BACHE! Enderezando las orugas…':'¡BACHE! La moto derrapa…'});
     if(e.dead){updateEffects(s,p,dt);return s.events;}
@@ -176,8 +187,8 @@
   for(const n of s.enemies){n.age+=dt;n.hit=Math.max(0,n.hit-dt);n.flash=Math.max(0,n.flash-dt);n.shock=Math.max(0,(n.shock||0)-dt);n.frozen=Math.max(0,n.frozen-dt);n.slow=Math.max(0,n.slow-dt);if(n.poison>0){n.poison-=dt;damage(n,dt*.6);}if(n.hp<=0){if(!s.awarded.has(n.id)){s.awarded.add(n.id);event(s,'points',{id:n.id,amount:n.type==='jeep'?250:100,text:n.type==='jetSoldier'?'Soldado aéreo neutralizado':'Vehículo destruido',wreck:n.type,x:n.x});if(n.type!=='jetSoldier')parts(s,n);burst(s,n.x,n.y-35,65);}n.x-=230*dt;n.death+=dt;if(n.type==='jetSoldier')n.y=Math.min(500,n.y+(100+n.death*320)*dt);continue;}
    if(n.fighterStagger>0){const step=Math.min(dt,n.fighterStagger);n.fighterStagger-=step;n.x+=n.fighterPush*step;continue;}
    // When the rig arrives the escort clears the road for it instead of piling up on top.
-   if(s.boss.active&&!n.guard){if(n.type==='jetSoldier')n.y-=150*dt;else n.x+=(120+n.age*8)*dt;if(n.x>1140||n.y<-70)n.age=99;continue;}
-   if(n.kind==='road'&&n.type==='jetSoldier')n.y=240+Math.sin(n.age*2.2)*35;if(n.frozen>0||p.cloak>0)continue;const factor=n.slow>0?.35:1;if(n.rear&&n.x<p.x+100)n.targetX=Math.max(n.targetX,Math.min(900,p.x+160));
+   if(s.boss.active&&!n.guard){if(n.type==='jetSoldier')n.y-=150*dt;else n.x+=(120+n.age*8)*dt;if(n.x-n.w/2>960||n.y<0)n.leftRoad=true;continue;}
+   if(n.kind==='road'&&n.type==='jetSoldier')n.y=240+Math.sin(n.age*2.2)*35;if(n.frozen>0||p.cloak>0)continue;const factor=n.slow>0?.35:1;if(n.age>16&&!n.guard)n.targetX=-220;else if(n.rear&&n.x<p.x+100)n.targetX=Math.max(n.targetX,Math.min(900,p.x+160));
    n.x+=clamp((n.targetX-n.x)*.65,-780,n.rear?255:780)*dt*factor;n.x+=Math.sin(n.age*1.7)*dt*15;n.shot-=dt*factor;if(n.x<940&&n.x>80&&n.shot<=0&&(!n.rear||enemyMuzzle(n).x>p.x+32)){
       if((n.type==='jetSoldier'||n.type==='sidecar'&&!n.rear)&&!s.grenades.some(g=>!g.friendlyDamage)&&!n.justLobbed){
         const hand=enemyMuzzle(n),flight=.78,fuse=.78,roadSpeed=dt>0?travel*5/dt:0;
@@ -189,9 +200,9 @@
     }
    // Riders can reach across a gap when riding abreast. Overlapping wheel tracks still collide.
    const track=p.form==='fighter'?13:28;
-   if((!n.rear||n.age>1.25)&&Math.abs(p.x-n.x)<n.w/2+35&&Math.abs(p.y-n.y)<track&&s.jump<55)hurt(s,p,e);if(n.age>16&&!n.guard)n.x-=190*dt;
+   if((!n.rear||n.age>1.25)&&Math.abs(p.x-n.x)<n.w/2+35&&Math.abs(p.y-n.y)<track&&s.jump<55)hurt(s,p,e);
   }
-  s.enemies=s.enemies.filter(n=>n.x>-180&&n.death<2.8&&(n.age<22||n.guard));
+  s.enemies=s.enemies.filter(n=>n.x>-180&&n.death<2.8&&!n.leftRoad);
   for(const m of s.mines){m.age+=dt;m.life-=dt;m.x-=travel*5;if(m.age>.65&&Math.abs(m.x-p.x)<32&&Math.abs(m.y-p.lane)<25&&s.jump<38){hurt(s,p,e,2);m.life=0;burst(s,m.x,m.y-5,55);}}s.mines=s.mines.filter(m=>m.life>0&&m.x>-80);
   for(const b of s.bullets){const ox=b.x,oy=b.y;b.life-=dt;b.vy+=(b.gravity||0)*dt;b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.enemy){if(swept(b,{x:p.x,y:p.y,w:70,h:80},ox,oy)){if(p.cloak>0||A.reflect(p,b))continue;hurt(s,p,e,b.damage||1);b.life=0;burst(s,b.x,b.y,18);}}else{const victims=[...s.enemies,...(s.boss.active&&s.boss.phase!=='entry'?[s.boss]:[])];for(const n of victims)if(n.hp>0&&swept(b,n,ox,oy)){if(b.slot===6||b.slot===9)blast(s,b);else{damage(n,b.damage||1);burst(s,b.x,b.y,17);}b.life=0;break;}if(b.life>0&&b.slot===9&&!b.plasma&&b.y>=(b.groundLane??490)&&b.vy>=0){
        s.grenades.push(Grenades.landed(s.scroll+b.x,b.groundLane??490,62,.52,b.damage));b.life=0;
@@ -230,5 +241,5 @@
  function skipIntro(s){if(s.intro<INTRO)s.intro=INTRO;return s;}
  // Cifras del parte final. Los vehículos cuentan por identidad, no por los que hay en pantalla.
  function tally(s){const fallen=[...s.awarded].filter(id=>/^road-\d+$/.test(id)).length;return{fallen,total:WAVES,stars:s.collected.size,starTotal:STARS,seconds:s.elapsed};}
- const api={create,update,snapshot,retry,skipIntro,tally,endingSpeed,spawn,enemyMuzzle,hurt,damage,swept,riderPose,fighterMount,soldierMuzzle,zombiePalm,mountedEyes,RIDER_WIDTH,CRASH_TIME,LENGTH,LANES,CHECKPOINTS,STARS,WAVES,INTRO,ENDING,CRUISE,JET_SCALE,GUARDS,guard};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadWar=api;
+ const api={vehicleSize,create,update,snapshot,retry,skipIntro,tally,endingSpeed,spawn,enemyMuzzle,hurt,damage,swept,riderPose,fighterMount,soldierMuzzle,zombiePalm,mountedEyes,RIDER_WIDTH,CRASH_TIME,LENGTH,LANES,CHECKPOINTS,STARS,WAVES,INTRO,ENDING,CRUISE,JET_SCALE,GUARDS,guard};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeRoadWar=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -81,7 +81,7 @@
     }
     return{radio,epilogue:config.epilogue||epilogue,player,
       briefingOpen:()=>!!player?.isOpen(),
-      briefing(callback){return run('intro',pages,{title:Cinema?.titleFrom(eyebrow)},'Historia · '+eyebrow,callback);},
+      briefing(callback,data){return run('intro',pages,{title:Cinema?.titleFrom(eyebrow)},'Historia · '+eyebrow,callback,{data});},
       outro(callback,data){return run('outro',config.outro,{},'Epílogo · '+eyebrow,callback,{data});},
       finale(data,callback){const script=typeof config.finale?.script==='function'?config.finale.script(data||{}):config.finale?.script;return run('finale',script,{},config.finale?.label||'Epílogo',callback,{theme:config.finale?.theme,data});},
       reset(){radio.reset();panel.hidden=true;shown=null;},

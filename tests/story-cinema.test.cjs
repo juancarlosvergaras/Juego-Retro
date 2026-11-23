@@ -317,3 +317,17 @@ test('los planos ilustrados conservan sus ocho poses y la obra conserva sus acto
   calls.length=0;lever.draw(ctx,8,{w:720,h:540,still:true});
   assert.ok(calls[0][0].path.includes('nine-outro'));
 });
+test('el Centinela usa ocho poses y sus misiles salen de la hombrera como sprites independientes',()=>{
+ const S=scenes().win.ArcadeStoryScenes,robot=S.images.mecha={width:1536,height:1024};
+ const shot=S.sequence('three').find(s=>s.id==='centinela'),v={w:960,h:540,cx:480,dur:shot.dur};
+ const poses=new Set(),missiles=[];
+ for(let tick=0;tick<shot.dur*60;tick++){
+   const calls=[];shot.draw(fakeContext(calls),tick/60,v);
+   const body=calls.filter(([img,,,width])=>img===robot&&width===384);
+   assert.equal(body.length,1);poses.add(body[0][1]+','+body[0][2]);
+   const rocket=calls.find(([img,,,width])=>img===robot&&width===114);
+   if(rocket)missiles.push(rocket[5]);
+ }
+ assert.equal(poses.size,8);assert.ok(missiles.length>60);
+ assert.ok(missiles[0]-Math.min(...missiles)>400);
+});

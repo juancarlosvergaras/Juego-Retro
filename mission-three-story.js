@@ -4,9 +4,8 @@
   // Cada página es el subtítulo de un plano (mission-one-scenes.js, conjunto 'three').
   const briefing=[
     {text:'El Consorcio no tiene bandera. Tiene un ejército, y sus órdenes salen de un portaaviones que no toca el agua.'},
-    {text:'Vega conoce una sola forma de acercarse: por debajo de las nubes, y sin segunda pasada.'},
-    {text:'Cap baja primero. Siempre baja primero.'},
-    {text:''}
+    {text:'El Centinela patrulla la proa. En cuanto detecta el vuelo de Vega, abre fuego.'},
+    {text:'Vega baja al ras de la cubierta. Cap espera en la puerta hasta que el piloto le da la señal.'}
   ];
   // Tras la cinemática de cierre (mission-endings.js): la caída y el rumbo al puerto.
   const outro=[

@@ -54,6 +54,30 @@ test('reanudar conserva el daño del Centinela y termina una destrucción interr
  end.pagehide();const paid=await game('?entry=resume',Object.fromEntries(end.data));paid.tick(.5);
  assert.equal(JSON.parse(paid.data.get('obra10.progress.v1')).wallet,wallet);
 });
+test('la inserción usa el suelo jugable al aterrizar y al saltar la entrada',async()=>{
+ const level=require('../level-three'),floor=level.geometry().platforms[0].y;
+ for(const [width,height] of [[571,293],[749,357],[880,450]]){
+   let lastFeet=-Infinity;
+   for(let t=2.4;t<9;t+=1/120){
+     const drop=level.insertion(t,width,height,floor);
+     assert.ok(drop.y<=floor&&drop.y>=lastFeet-.09);
+     if(t<5.9){assert.ok(drop.heliX-level.INSERTION.heliWidth*294/504>0);assert.ok(height*.84+drop.sill-floor-level.INSERTION.heliWidth*173/504>0);}
+     if(t>level.INSERTION.touchdown)assert.deepEqual([drop.x,drop.y,drop.grounded],[level.INSERTION.x,floor,true]);
+     lastFeet=drop.y;
+   }
+ }
+ const g=await game('?entry=campaign');g.tick(3.8);
+ assert.ok(g.state.player.y<floor&&!g.state.player.grounded);
+ g.key('Space');g.tick(.03);g.key('Space',false);
+ assert.deepEqual([g.state.player.x,g.state.player.y,g.state.player.grounded],[level.INSERTION.x,floor,true]);
+ assert.equal(g.state.player.ground.id,'air-deck');
+});
+
+test('la página de la misión aérea contiene una sola cabecera de documento',()=>{
+ const html=fs.readFileSync(require.resolve('../level-three.html'),'utf8');
+ for(const tag of ['html','head','body'])assert.equal((html.match(new RegExp('<'+tag+'(?:\\s|>)','gi'))||[]).length,1,tag);
+});
+
 async function game(query='?entry=select',initial={}){
  const data=new Map(Object.entries(initial)),listeners={},elements=new Map();let frame,view,wheelState,menuCallbacks,resizeCallback,navigation;
  // Stable loot prevents an unrelated random ammunition pickup during input tests.

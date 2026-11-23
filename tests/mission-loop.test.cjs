@@ -68,7 +68,12 @@ test('all three missions close on the same card, with continue and retry',()=>{
  for(const [file,next] of [['game.js','Continuar · Misión 02'],['level-two-game.js','Aire · Misión 03'],['level-three-game.js','Bajo el abismo · Misión 05']]){
   const source=read(file);assert.match(source,/ArcadeMissionResults\.show\(/,file);
   assert.ok(source.includes("label:'"+next+"'"),file+' continues to '+next);assert.ok(source.includes("retry:{label:'Repetir misión'"),file+' offers a retry');
-  assert.match(source,/presentation\??\.title\('MISIÓN 0\d'/,file+' opens with the shared title card');
+  if(file==='level-three-game.js'){
+    const story=require('../mission-three-story'),cinema=require('../story-cinema');
+    assert.match(source,/story\.briefing\(/);
+    assert.equal(cinema.titleFrom(story.config.eyebrow).title,'GUERRA EN EL AIRE');
+    assert.doesNotMatch(source,/presentation\??\.title\(/,'el rótulo de la historia se muestra antes de bajar a cubierta');
+  }else assert.match(source,/presentation\??\.title\('MISIÓN 0\d'/,file+' opens with the shared title card');
   assert.match(source,/ArcadeMissionKit\.drawEnemy\(/,file);assert.match(source,/ArcadeMissionKit\.debug\(/,file);
  }
  for(const page of ['index.html','level-two.html','level-three.html']){const html=read(page);for(const script of ['mission-kit.js','mission-results.js','boss-presentation.js'])assert.ok(html.includes(script),page+' loads '+script);

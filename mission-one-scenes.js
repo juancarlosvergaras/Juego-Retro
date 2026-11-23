@@ -499,58 +499,81 @@
   function carrier(c,x,y,w,t,o={}){
     const img=images.carrier;if(!img)return;const h=w*SHIP[3]/SHIP[2];
     c.save();c.translate(Math.round(x),Math.round(y));if(o.rotate)c.rotate(o.rotate);if(o.alpha!=null)c.globalAlpha*=o.alpha;
-    c.drawImage(img,SHIP[0],SHIP[1],SHIP[2],SHIP[3],Math.round(-w/2),Math.round(-h/2),Math.round(w),Math.round(h));
-    if(!o.dead)for(const fx of [.12,.32,.52,.72])glow(c,-w/2+w*(fx+.06),h*.36,w*.06,'120,200,255',.5+.3*Math.sin(t*9+fx*20));
+    const k=w/SHIP[2],lip=676,top=-h/2,left=-w/2;
+    c.drawImage(img,0,SHIP[1],1536,lip-SHIP[1],left,top,w,(lip-SHIP[1])*k);
+    // Each plume starts at its painted nozzle and varies independently.
+    for(const [i,cx] of [255,560,870,1177].entries()){
+      const power=o.dead ? .55 : .96+.12*Math.sin(t*10+i*1.9);
+      c.drawImage(img,cx-78,lip,156,150,left+(cx-78)*k,top+(lip-SHIP[1])*k,156*k,150*k*power);
+    }
     c.restore();
+  }
+  // Separate painted poses in the combat atlas. Register the planted foot and pelvis
+  // explicitly: muzzle flashes, missiles and gravel change the size of the silhouette.
+  const sentryPoses=[[208,329],[184,325],[178,325],[201,329],[218,671],[209,671],[179,671],[200,666]];
+  function sentry(c,x,floor,height,pose){
+    const sheet=images.mecha;if(!sheet)return;
+    const sy=pose<4?0:341,[hip,sole]=sentryPoses[pose],k=height/321;
+    c.save();c.translate(Math.round(x-hip*k),Math.round(floor-(sole-sy)*k));c.scale(k,k);
+    if(pose===5){
+      // This cell also contains airborne missiles. Keep the launcher and its exhaust.
+      c.beginPath();c.moveTo(0,81);c.lineTo(165,81);c.lineTo(215,63);c.lineTo(215,39);
+      c.lineTo(265,27);c.lineTo(279,0);c.lineTo(384,0);c.lineTo(384,333);c.lineTo(0,333);c.closePath();c.clip();
+    }
+    c.drawImage(sheet,(pose%4)*384,sy,384,333,0,0,384,333);c.restore();
+  }
+  function sentryMissiles(c,x,floor,t){
+    if(!images.mecha)return;
+    // A single painted projectile leaves the shoulder rack at each ignition.
+    for(const start of [4.3,4.46,4.62]){
+      const flight=t-start;
+      if(flight>=0&&flight<1.55){
+        const px=x+11-470*flight,py=floor-181-57*flight;
+        c.drawImage(images.mecha,437,393,114,29,Math.round(px-60),Math.round(py-8),60,15);
+      }
+    }
   }
   const three={
     intro:[
-      // 1 · El portaaviones que no toca el agua, con su escolta.
-      {id:'portaaviones',dur:8,draw(c,t,v){
-        sky(c,v);c.fillStyle='#ffedba';c.fillRect(Math.round(v.w*.82),84,26,26);glow(c,v.w*.82+13,97,90,'255,240,190',.5);
-        clouds(c,v,t,40,.9,5,460);
-        carrier(c,v.cx+lerp(90,-20,drift(t,v.dur)),258+Math.sin(t*.8)*5,Math.min(v.w*.84,880),t);
-        for(let i=0;i<3;i++){const span=v.w+700,x=v.w+300-((t*260+i*span/3)%span);cut(c,images.air,JET,x,150+i*96,190+i*26);}
-        clouds(c,v,t,300,.55,3,620);vignette(c,v,.5);
+      {id:'portaaviones',dur:5.8,draw(c,t,v){
+        sky(c,v);clouds(c,v,t,22,.65,4,390);
+        const width=Math.min(v.w*.84,910),cx=v.cx+42-48*drift(t,v.dur),y=254+Math.sin(t*.7)*4;
+        carrier(c,cx,y,width,t);
+        // The escort flies beside the parked fighters at the same depth.
+        for(let i=0;i<2;i++){
+          const x=cx+width*(.35+i*.15)-t*(32+i*6);
+          cut(c,images.air,JET,x,y-80-i*27,width*(.078-i*.012));
+        }
+        root.ArcadeRescueHelicopter?.draw(c,images.heli,cx-width*.58+t*15,y+19+Math.sin(t)*2,width*.082,t);
+        clouds(c,v,t,90,.32,2,410);vignette(c,v,.45);
       }},
-      // 2 · La aproximación: el helicóptero bajo las nubes y el cielo lleno de metralla.
-      {id:'aproximacion',dur:7.5,draw(c,t,v){
-        sky(c,v,'#1f3d5e','#5f9cbb','#c4d6c8');clouds(c,v,t,240,.9,6,480);
-        carrier(c,v.cx+320,236+Math.sin(t)*4,440,t,{alpha:.92});
-        const hx=v.cx-170+Math.sin(t*.7)*26,hy=262+Math.sin(t*4.6)*9;
-        for(let i=0;i<7;i++){const u=(t*1.9+i*.14)%1,ex=hx+(hash(i+Math.floor(t*1.9))-.5)*240,ey=hy+(hash(i+9)-.5)*130;c.fillStyle='#ffe08a';c.fillRect(Math.round(lerp(v.cx+250,ex,u)),Math.round(lerp(250,ey,u)),10,3);}
-        for(let k=0;k<5;k++){const clock=t*1.7+k*.23,cycle=Math.floor(clock),phase=clock-cycle;boom(c,hx+(hash(cycle*5+k)-.5)*420,hy-30+(hash(cycle*11+k)-.5)*230,100,phase*1.7,.9);}
-        worksiteHeli(c,hx,hy,320,t);
-        clouds(c,v,t,620,.6,3,700);vignette(c,v,.55);
+      {id:'centinela',dur:5.8,draw(c,t,v){
+        sky(c,v,'#263c58','#5987a1','#c4c4b1');clouds(c,v,t,32,.55,4,390);
+        const floor=397;
+        cut(c,images.air,JET,v.cx-175,floor-38,225);
+        deck(c,v,floor,130);
+        const walk=Math.min(t,2),x=v.cx+125-walk*37;
+        let pose;
+        if(t<2)pose=Math.floor(t*4)%4;
+        else if(t<2.6)pose=6;
+        else if(t<2.92)pose=7;
+        else if(t<3.45)pose=0;
+        else if(t<4.3)pose=Math.floor((t-3.45)*9)%2?0:4;
+        else if(t<4.75)pose=5;
+        else pose=0;
+        shadow(c,x,floor,148,.37);sentry(c,x,floor,205,pose);sentryMissiles(c,x,floor,t);
+        vignette(c,v,.52);
       }},
-      // 3 · El descenso: el cazador baja por la cuerda a la cubierta.
-      {id:'descenso',dur:7.5,draw(c,t,v){
-        sky(c,v,'#2a4a6c','#74a9c2','#d6dccb');clouds(c,v,t,180,.8,4,460);
-        // Follow the deck until Cap takes his weight on it.
-        const travel=Math.min(t,4);deck(c,v,FLOOR,60*(travel-travel*travel/8));
-        const hx=v.cx+70+Math.sin(t*.9)*10,hy=168+Math.sin(t*2)*5,drop=ease(ramp(t,.8,4)),x=v.cx+56+Math.sin(travel*.9)*10,y=lerp(hy+70,FLOOR,drop);
-        c.strokeStyle='#cbbd92';c.lineWidth=3;c.beginPath();c.moveTo(x,hy+26);c.lineTo(x,drop<1?Math.max(hy+26,y-50):hy+26+lerp(FLOOR-hy-60,0,ramp(t,4,5)));c.stroke();
-
-        shadow(c,x,FLOOR,80,.35*drop);
-        if(drop<1){
-          c.save();c.translate(Math.round(x),Math.round(y));c.scale(1.25,1.25);
-          if(!root.ArcadeSoldierAnimation?.baseSprite(c,{form:'soldier',x:0,y:0,facing:1},7,t*.85))hunter(c,0,0,54,t,'hang');
-          c.restore();
-        }else cityHunter(c,x,y,58,t);
-        worksiteHeli(c,hx,hy,360,t);
-        for(let i=0;i<9;i++){const u=(t*1.2+hash(i)*3)%1;c.fillStyle='rgba(255,255,255,'+(.25*(1-u)).toFixed(3)+')';c.fillRect(Math.round(v.w-u*(v.w+200)),90+((i*53)%300),130,2);}
-        flak(c,v,t,TOP+10,150,.9,'255,200,120');vignette(c,v,.55);
-      }},
-      // 4 · El Centinela: la máquina que guarda la proa, y el cazador frente a ella.
-      {id:'centinela',dur:7.5,draw(c,t,v){
-        sky(c,v,'#1c2f4c','#51748f','#c9a886');clouds(c,v,t,60,.5,4,460);shade(c,v,'rgba(14,20,40,.34)');
-        deck(c,v,FLOOR,0);
-        const mecha=atlas('mecha',4,3),mx=v.cx+170+Math.sin(t*.5)*10,step=Math.floor(t*3)%4;
-        for(const x of [v.cx-40,v.cx+400]){c.fillStyle='rgba(255,186,105,.25)';c.fillRect(Math.round(x)-3,TOP+30,6,FLOOR-TOP-30);c.fillStyle='#fff2a6';for(let y=TOP+40;y<FLOOR-20;y+=34)c.fillRect(Math.round(x)-2,Math.round(y+(Math.floor(t*20)%20)),4,10);}
-        shadow(c,mx,FLOOR,330,.5);put(c,mecha,step,mx,FLOOR+2+(step%2)*2,330);
-        glow(c,mx-52,FLOOR-262,26,'255,80,60',.4+.3*Math.sin(t*4));
-        shadow(c,v.cx-290,FLOOR,66);cityHunter(c,v.cx-290,FLOOR,100,t);
-        vignette(c,v,.7);
+      {id:'aproximacion',dur:5,draw(c,t,v){
+        sky(c,v,'#284b68','#7bafc4','#d0daca');clouds(c,v,t,74,.7,4,410);
+        const floor=417,travel=t*60;
+        cut(c,images.air,[674,49,347,474],v.cx+440-travel,floor-122,185);
+        cut(c,images.air,JET,v.cx+185-travel,floor-40,252);
+        deck(c,v,floor,travel);
+        const x=v.cx-120+ease(ramp(t,0,4))*64,y=244+Math.sin(t*1.8)*4;
+        const passenger=()=>cityHunter(c,x,y,43,t,0,false,v.data||{});
+        root.ArcadeRescueHelicopter?.draw(c,images.heli,x,y,334,t,passenger);
+        vignette(c,v,.48);
       }}
     ],
     // Después del rescate se revela el destino de la carta náutica.

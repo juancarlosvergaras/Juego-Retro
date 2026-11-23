@@ -4,6 +4,8 @@
   const Q=ArcadeQuimera,$=id=>document.getElementById(id),canvas=$('arena'),c=canvas.getContext('2d');
   const store=ArcadeDeveloperMode.storage(localStorage),saveKey='cap-dollar.quimera.v1',audio=ArcadeAudio.create();
   let saved={};try{saved=JSON.parse(store.getItem(saveKey)||'{}')||{};}catch{}
+  const profile=ArcadeProgression.load(store);
+  let lifeScore=Math.max(Number(saved.lifeScore)||0,Number(saved.score)||0);
   let state=Q.create(saved),screen='ready',ready=false,last=0,acc=0,buffer='',jump=false,pickup=false,buttonAge=0,padKeys=new Set(),lastZone='',lastScore=-1;
   let touchPad;
   const held=new Set(),touches=new Map(),art={},attacks={KeyJ:'jab',KeyK:'uppercut',KeyL:'kick',KeyI:'sweep'};
@@ -13,9 +15,9 @@
   const rows=['idle','walk','guard','jump','jab','cross','kick','uppercut','sweep','airkick','hurt','fall','win','throw','pounce','morph','fly','beam'];
   const labels={batter:'MATÓN DEL MUELLE',foreman:'CAPATAZ',rifle:'FUSILERO',knife:'CUCHILLERO',warden:'GUARDIÁN',jet:'AEROSOLDADO',infected:'INFECTADO',robot:'AUTÓMATA',blackWolf:'LOBO NEGRO',gunner:'ARTILLERO DEL DIQUE',scientist:'DR. VARELA',lizard:'QUIMERA'};
   const landmarks=Q.waves.flatMap((wave,index)=>[...new Set(wave.cast.map(e=>e.route))].filter(route=>route==='shutter'||route==='hatch').map(route=>({...Q.portal(wave,route),route,index})));
-  function saveCheckpoint(){try{store.setItem(saveKey,JSON.stringify(Q.checkpoint(state)));}catch{$('notice').textContent='El navegador no ha podido guardar este puesto.';}}
+  function saveCheckpoint(){try{store.setItem(saveKey,JSON.stringify({...Q.checkpoint(state),lifeScore,dead:state.mode==='down',respawnProtection:state.player.respawnProtection}));}catch{$('notice').textContent='El navegador no ha podido guardar este puesto.';}}
   function savePrize(){
-    const profile=ArcadeProgression.load(store);profile.heroUnlocked=true;
+    profile.heroUnlocked=true;
     return ArcadeProgression.save(profile,store);
   }
   function leave(url){try{store.removeItem(saveKey);}catch{}location.assign(url);}
@@ -31,6 +33,7 @@
   function show(id,title,copy,action){screen=id;clear();audio.setRunning(false);$('skip-scene').hidden=true;$('panel').hidden=false;$('heading').textContent=title;$('description').textContent=copy;$('go').textContent=action;$('tag').textContent=id==='down'?'FUERA DE COMBATE':'ESPECIAL 01 · DISTRITO QUIMERA';$('go').focus();$('pause').disabled=true;}
   function play(){screen='play';clear();$('panel').hidden=true;$('pause').disabled=false;audio.unlock();audio.setRunning(true);canvas.focus({preventScroll:true});}
   function scene(id,resume=false){
+    if(id==='ending')window.ArcadeStoryIllustrations?.load('quimera-outro');
     play();screen=id;if(!resume)sceneTime=0;
     $('skip-scene').hidden=false;$('notice').textContent=id==='arrival'?'Vega sobrevuela el muelle.':'Varela ha caído. Cap va a abrir la compuerta.';
   }
@@ -44,6 +47,7 @@
     if(screen==='play'||cinematic()){pausedFrom=screen;show('paused','En pausa','Distrito Quimera · '+Q.zones[Q.zoneOf(state.wave)],'Continuar');}
     else if(screen==='paused')resume();
   }
+  window.addEventListener('pagehide',()=>{if(screen==='play'||screen==='paused'&&pausedFrom==='play')saveCheckpoint();});
   $('skip-scene').onclick=endScene;$('pause').onclick=pause;
   function syncSound(){const muted=audio.status().muted;$('sound').textContent=muted?'♫ Silenciado':'♫ Sonido';$('sound').setAttribute('aria-pressed',String(muted));}
   $('sound').onclick=()=>{audio.setMuted(!audio.status().muted);syncSound();};syncSound();
@@ -55,7 +59,12 @@
       state.mode='won';state.wave=state.clears=Q.waves.length;state.score=Number.isFinite(saved.finalScore)?saved.finalScore:state.score;
       prizeSaved=savePrize();scene('ending');return;
     }
-    if(screen==='down')state=Q.create(Q.checkpoint(state));
+    if(ArcadeProgression.restartLives(profile,store)){
+      saved={};state=Q.create(saved);lifeScore=0;screen='ready';saveCheckpoint();
+    }else if(screen==='down'||saved.dead){
+      state=Q.create(Q.checkpoint(state));ArcadeProgression.protect(state.player);
+      saved.dead=false;screen='play';saveCheckpoint();
+    }else if(screen==='ready')ArcadeProgression.protect(state.player,saved.respawnProtection||0);
     story.reset();
     if(screen==='ready'&&!state.checkpoint){
       screen='briefing';audio.unlock();$('panel').hidden=true;
@@ -91,6 +100,8 @@
   }
   const pressed=(...keys)=>keys.some(k=>held.has(k)||padKeys.has(k)||touchHeld(k));
   function tick(dt){
+    const bossOnStreet=screen==='play'&&state.enemies.some(n=>Q.foes[n.kind].boss&&!n.entry&&n.hp>0);
+    audio.music?.follow?.(dt,state.player,null,{quiet:screen==='arrival',boss:bossOnStreet,victory:screen==='ending',pressure:screen==='play'&&state.locked});
     if(cinematic()){
       const before=sceneTime;sceneTime+=dt;
       if(screen==='ending'){
@@ -102,7 +113,12 @@
     if(screen!=='play')return;const p=state.player,canAct=!p.attack&&!p.pickup&&p.stun<=0&&state.hitstop<=0;
     const input={left:pressed('KeyA','ArrowLeft'),right:pressed('KeyD','ArrowRight'),up:pressed('KeyW','ArrowUp'),down:pressed('KeyS','ArrowDown'),guard:pressed('ShiftLeft','ShiftRight'),jump:canAct&&jump,pickup:canAct&&pickup,primaryPressed:canAct&&buffer==='jab',attack:canAct&&(buffer||(pressed('KeyJ')&&!p.weapon?'jab':''))};
     if(canAct){buffer='';jump=false;pickup=false;}else if((buttonAge-=dt)<=0)buffer='';
+    ArcadeProgression.tickProtection(p,dt);
     const events=Q.update(state,input,dt);
+    if(state.score>lifeScore){
+      ArcadeProgression.addLifePoints(profile,state.score-lifeScore);
+      lifeScore=state.score;ArcadeProgression.save(profile,store);saveCheckpoint();
+    }
     story.update(state,dt);
     for(const e of events){if(e==='checkpoint')saveCheckpoint();if(e==='wave'){
       const lead=Q.waves[state.wave].cast[0].kind;
@@ -114,8 +130,13 @@
       if(e==='morph')$('notice').textContent='¡El suero está transformando a Varela!';
       if(e==='rise')$('notice').textContent='¡El infectado se levanta!';
       if(e==='overheat')$('notice').textContent='¡Cañón recalentado! Acércate al artillero.';
-      const sound={gas:'grenade',flask:'grenade',shatter:'debris',acid:'plasma',tail:'claw',leap:'jump',land:'kick',equip:'pickup',playerShot:'rifle',batHit:'axe',shot:'rifle',vial:'grenade',hit:'kick',swing:'claw',jump:'jump',hurt:'hurt',block:'debris',boxHit:'kick',boxBreak:'debris',points:'pickup',knockout:'brake',heal:'pickup',checkpoint:'pickup',morph:'thunder',roar:'whiteRoar'}[e];if(sound)audio.play(sound,{gain:.34});}
-    if(state.mode==='down')show('down','Has caído','Vuelve al inicio de la zona con la salud completa.','Reintentar zona');
+      const sound={grenade:'grenade',blast:'explosion',gas:'grenade',flask:'grenade',shatter:'debris',acid:'plasma',tail:'claw',leap:'jump',land:'kick',equip:'pickup',playerShot:'rifle',batHit:'axe',shot:'rifle',vial:'grenade',hit:'kick',swing:'claw',jump:'jump',hurt:'hurt',block:'debris',boxHit:'kick',boxBreak:'debris',points:'pickup',knockout:'brake',heal:'pickup',checkpoint:'pickup',morph:'thunder',roar:'whiteRoar'}[e];if(sound)audio.play(sound,{gain:.34});}
+    if(state.mode==='down'){
+      ArcadeProgression.loseLife(profile,state);ArcadeProgression.save(profile,store);saveCheckpoint();
+      const end=ArcadeProgression.gameOver;
+      if(!profile.lives)show('down',end.title,end.message,end.action);
+      else show('down','Has caído','Vuelve al inicio de la zona con cinco segundos de protección.','Reintentar zona');
+    }
     if(state.mode==='won'){
       prizeSaved=savePrize();
       try{store.setItem(saveKey,JSON.stringify({...Q.checkpoint(state),ending:true,finalScore:state.score}));}catch{}
@@ -230,10 +251,11 @@
     const model=a.kind==='fighter'&&carried?Q.weapons[carried].sprite:a.kind;
     const gait=art['steps_'+model];
     const onFoot=gait&&(a.act==='walk'||a.act==='idle'||(a.kind==='fighter'&&a.act==='guard'));
-    const pose=({bash:'cross',slash:'jab',shoot:'throw',pulse:'throw',charge:'pounce'})[a.act]||a.act;
+    const tossing=a.move==='throw'&&(a.wind>0||a.strike>0)&&a.hp>0&&!a.stun;
+    const pose=tossing?'guard':({bash:'cross',slash:'jab',shoot:'throw',pulse:'throw',charge:'pounce'})[a.act]||a.act;
     const pic=art[a.kind];c.save();c.translate(x,Math.round(floor-(a.z||0)+rise));c.scale(a.face*scale,scale);
     if(a.immune>0&&Math.floor(a.immune*17)%2)c.globalAlpha=.55;
-    c.globalAlpha*=fade;
+    c.globalAlpha*=fade;if(a.respawnProtection>0)c.globalAlpha*=ArcadeProgression.respawnAlpha(a);
     if(a.kind==='fighter'&&carried&&!a.attack?.weapon&&a.attack){
       const icon=Q.weapons[carried].icon;
       c.save();c.translate(-10,-44);c.rotate(-1.02);
@@ -252,6 +274,13 @@
       drawArmed(a,model,frame);
     }else ArcadeImpact.hitSprite(c,hit,pic,frame*120,Math.max(0,rows.indexOf(pose))*98,120,98,-53,-91,120,98);
     c.restore();c.restore();
+    if(tossing){
+      const phase=a.wind>0?1-a.wind/Q.foes[a.kind].wind:1,hand=Q.throwHand(a,phase);
+      c.save();c.lineWidth=5*scale;c.strokeStyle='#484936';c.beginPath();c.moveTo(x+3*a.face*scale,floor-hand.shoulder);
+      c.lineTo(hand.x-state.cam,floor-hand.height);c.stroke();c.fillStyle='#c99d73';
+      c.fillRect(hand.x-state.cam-2,floor-hand.height-2,4,4);
+      if(a.wind>0)ArcadeGrenades.body(c,hand.x-state.cam,floor-hand.height-3,0,.8*scale);c.restore();
+    }
     if(a.kind==='gunner'&&a.hp>0&&a.overheat>0){
       const muzzle=x+52*a.face;
       c.fillStyle='#ffa954';c.fillRect(muzzle-4,floor-58,8,3);
@@ -442,10 +471,19 @@
     for(const section of art.scenery){const x=section.left-Math.round(state.cam);
       if(x<960&&x+section.image.width>0)c.drawImage(section.image,x,-90);
     }
+    if(state.cam<2300&&window.ArcadeSceneryAnimation?.next){
+      const decor=window.ArcadeSceneryAnimation,pelican=decor.next(state,'muelles',state.age);
+      decor.place(c,pelican,state.cam,218,960,53,.86);
+    }
+    for(const dockX of [262,1850]){
+      const x=dockX-state.cam;
+      if(x>-60&&x<1020)window.ArcadeSceneryAnimation?.draw(c,'forklift',state.age,x,228,86,.94);
+    }
     for(const f of state.food)if(!f.used){const x=f.x-state.cam;c.fillStyle='#163928';c.fillRect(x-12,f.y-13,25,14);c.fillStyle='#aac491';c.fillRect(x-10,f.y-12,21,10);c.fillStyle='#b64b40';c.fillRect(x-1,f.y-12,4,10);c.fillRect(x-5,f.y-9,12,4);}
     const visible=landmarks.filter(p=>p.x>state.cam-150&&p.x<state.cam+1110);
     const supplies=state.supplies.filter(box=>Math.abs(box.x-state.cam-480)<535&&(!box.taken||state.age-box.takenAt<.85));
     drawDangerZones();
+    for(const g of state.grenades)ArcadeGrenades.draw(c,g,state.cam);
     [...visible,...supplies,...state.drops,...state.enemies,state.player].sort((a,b)=>a.y-b.y).forEach(a=>{
       if(a.route)drawPortal(a);else if(a.uses)drawDrop(a);else if(Q.supplies[a.kind])drawSupply(a);else actor(a);
     });
@@ -473,7 +511,7 @@
     if(!state.locked&&state.clears>0)goSignal();
     else if(!state.locked&&Math.floor(state.age*2)%3!==0)text('AVANZA  ▶',937,82,19,'#ffe39b','right');
   }
-  function frame(now){const dt=Math.min(.08,(now-last)/1000||0);last=now;pollPad();if(screen==='play'||cinematic()){acc+=dt;while(acc>=1/120){tick(1/120);acc-=1/120;}}else{acc=0;if(screen==='down')state.player.age+=dt;}render();requestAnimationFrame(frame);}
+  function frame(now){ArcadeProgression.showLives(document,profile);const dt=Math.min(.08,(now-last)/1000||0);last=now;pollPad();if(screen==='play'||cinematic()){acc+=dt;while(acc>=1/120){tick(1/120);acc-=1/120;}}else{acc=0;if(screen==='down')state.player.age+=dt;}render();requestAnimationFrame(frame);}
   const paths=Q.characterSprites();paths.city='assets/worlds/distrito-quimera.png';
   paths.port='assets/worlds/quimera-puerto-dique.webp';paths.booth='assets/sprites/quimera-garita.png';paths.drain='assets/sprites/quimera-desague.png';
   paths.supplies='assets/sprites/quimera-suministros.png';

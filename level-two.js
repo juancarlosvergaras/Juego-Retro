@@ -68,14 +68,15 @@
   function solidWalls(){/* Open rooms: only the one-way floor platforms collide. */}
   function createCivilians(){return Array.from({length:9},(_,i)=>({id:i,variant:i%4,sex:i%2,x:130+i*108,y:WORLD.ground,speed:88+(i%3)*13,phase:i*.31,age:0,shouted:false}));}
   function updateCivilians(civilians,dt,shout=()=>{}){for(const p of civilians){p.age+=dt;p.x-=p.speed*dt;p.phase+=p.speed*dt/52;if(!p.shouted&&p.age>.2+p.id*.25){p.shouted=true;shout(p);}}return civilians.filter(p=>p.x>-80);}
-  function canEnter(p,inside){return !inside&&Math.abs(p.x-ENTRANCE)<60&&Math.abs(p.y-WORLD.ground)<10;}
+  function atDoorHeight(p){return !p.heroFlight&&!p.jetpack&&p.grounded!==false&&Math.abs(p.y-WORLD.ground)<10;}
+  function canEnter(p,inside){return !inside&&Math.abs(p.x-ENTRANCE)<60&&atDoorHeight(p);}
   function finishClimb(p,ladder,g){
     if(!ladder||p.ladder||Math.abs(p.y-ladder.top)>.5)return;
     const roof=g.platforms.find(s=>s.kind==='deck'&&s.y===ladder.top&&ladder.x>=s.x-15&&ladder.x<=s.x+s.w+15);
     if(!roof)return;
     p.x=clamp(p.x,roof.x+p.w/2+2,roof.x+roof.w-p.w/2-2);p.y=roof.y;p.vx=0;p.vy=0;p.grounded=true;p.ground=roof;p.jumps=0;p.fallPeak=p.y;
   }
-  function canExit(p,inside){return inside&&p.x<170&&Math.abs(p.y-WORLD.ground)<10;}
+  function canExit(p,inside){return inside&&p.x<170&&atDoorHeight(p);}
   const api={WORLD,INTERIOR_WIDTH,ENTRANCE,PEDESTAL,pedestalPlatform,CRATER,CRATERS,AIRSHIP,airshipPlatform,geometry,barricades,scaffolds,wreckedCars,atmosphere,zone,solidWalls,finishClimb,canEnter,canExit,createCivilians,updateCivilians};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeLevelTwo=api;
 })(typeof window!=='undefined'?window:globalThis);

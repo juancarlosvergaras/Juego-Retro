@@ -1,5 +1,9 @@
 (function(root){'use strict';const paths={
+   escalator:'assets/worlds/mission-06/escalera-mecanica.webp',
+   balconies:'assets/worlds/mission-06/pasarelas.webp',
+   rideNiche:'assets/worlds/mission-06/rincon-del-caballito.webp',
    shoppers:'assets/sprites/compradores-centro.webp',
+   arcadeFront:'assets/worlds/mission-06/local-arcade.webp',
    atriumUpper:'assets/worlds/mission-06/atrio-alto.webp',galleryUpper:'assets/worlds/mission-06/galeria-alta.webp',foodUpper:'assets/worlds/mission-06/restaurantes-altos.webp',
    rifleSteps:'assets/sprites/quimera-pasos-rifle.webp',knifeSteps:'assets/sprites/quimera-pasos-knife.webp',
    wardenSteps:'assets/sprites/quimera-pasos-warden.webp',fighterSteps:'assets/sprites/quimera-pasos-fighter.webp',
@@ -14,6 +18,7 @@
     // A contact shadow belongs to the supporting floor, never to airborne feet.
     if(player.grounded&&!player.jetpack&&!player.rope&&!player.ladder){ctx.fillStyle='#16202255';ctx.beginPath();ctx.ellipse(player.x,player.y+1,16,3,0,0,Math.PI*2);ctx.fill();}
     if(player.transform>0){const t=Math.min(7,Math.floor((1-player.transform/1.2)*8)),pose=ArcadeSoldierAnimation.transformation(player.form==='wolf'?t:7-t),frames={soldier:SOLDIER_V2_FRAMES,wolf:ACTION_FRAMES.wolf,transformation:ArcadeSoldierAnimation.transformationFrames};sprite(images[pose.sheet],frames[pose.sheet],pose.row,pose.frame,pose.scale);return;}
+    if(ArcadeSoldierAnimation.basePose(ctx,player,mode,stats))return;
     if(player.form==='wolf'){
       const idlePose=ArcadeSoldierAnimation.wolfIdlePose(player,mode),comboPose=ArcadeSoldierAnimation.wolfComboPose(player),ramPose=ArcadeSoldierAnimation.wolfRamPose(player),airPose=ArcadeSoldierAnimation.wolfAirPose(player),sprintPose=ArcadeSoldierAnimation.wolfSprintPose(player),walkPose=ArcadeSoldierAnimation.wolfWalkPose(player,mode);
       if(player.ladder||player.rope?.mantle)sprite(images.wolfClimb,WOLF_CLIMB_FRAMES,0,((Math.floor(player.y/6.5)%4)+4)%4,WOLF_CLIMB_SCALE);
@@ -54,30 +59,43 @@
     if(item.x>=camera-32&&item.x<=camera+992&&!s.taken.has(item.id))root.ArcadePickupRenderer.draw(c,item,s.time,p);
   }
   function title(c,small,big,detail){c.fillStyle='#081b29eb';c.fillRect(0,0,960,66);c.fillRect(0,458,960,82);c.textAlign='center';c.fillStyle='#ffc96c';c.font='bold 15px monospace';c.fillText(small,480,39);c.fillStyle='#ebf7ed';c.font='bold 25px monospace';c.fillText(big,480,491);c.fillStyle='#b8d5d6';c.font='12px monospace';c.fillText(detail,480,520);}
-  function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;
-   // One floor at a time: the crossing between floors happens behind a veil.
-   const panorama=art.background(c,s,images);
-   root.ArcadeMallShoppers.draw(c,s,images.shoppers,panorama);
-   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);}
-   art.stairwell(c,s,images);
-   c.save();c.translate(-Math.round(s.camera.x),-s.camera.y);
-   art.escalators(c,s,false);
+  function floorActors(c,s,p){
    if(s.floor<3){
-    for(const pl of s.geometry.platforms)if(pl.kind==='balcony')art.balcony(c,pl);
+    for(const pl of s.geometry.platforms){
+     if(pl.kind==='balcony'&&pl.x+pl.w>s.camera.x&&pl.x<s.camera.x+960)art.balcony(c,pl,images.balconies,s.floor);
+    }
    }
    supplies(c,s,p,s.floor,s.camera.x);
-   if(s.floor===0){
-    const x=s.arcadeX,base=ArcadeMallWorld.FLOOR,left=x-85,top=base-88;
-    c.fillStyle='#182629';c.fillRect(left,top,170,88);
-    for(let y=top+4;y<base-6;y+=5){c.fillStyle=y%2?'#25373a':'#2a373a';c.fillRect(left+4,y,162,1);}
-    for(const post of [left,left+165]){c.fillStyle='#3c4342';c.fillRect(post,top,5,88);c.fillStyle='#99866d';c.fillRect(post+1,top,1,88);}
-    c.fillStyle='#726b51';c.fillRect(left,top,170,3);
-    c.fillStyle='#55605a';c.fillRect(left+2,base-5,166,5);
-    prop(c,3,x,base-62,41);
-    for(let i=0;i<3;i++)prop(c,i,x+(i-1)*47,base,44);
+   for(const n of s.enemies){if(n.x<s.camera.x-100||n.x>s.camera.x+1060||n.hp<=0&&n.death<=0)continue;let row=n.hp<=0?3:n.hit>0?3:n.flash>0?3:Math.abs(n.vx)>10?1:0,frame=n.hp<=0?3:n.hit>0?2:n.flash>0?0:Math.floor((n.anim||0)*8)%4;if(ArcadeEnemySpecialists.drawRam(c,n,images.ramHit))continue;if(!art.guard(c,n,images,s.time)&&!ArcadeEnemySpecialists.draw(c,n,images)){const f=ENEMY_FRAMES[row][frame],k=.21;c.save();c.translate(n.x,n.y);c.scale(n.facing||-1,1);if(n.hp<=0)c.globalAlpha=Math.min(1,n.death*2);c.drawImage(images.enemy,...f.slice(0,4),-f[2]*k/2,-f[3]*k,f[2]*k,f[3]*k);c.restore();}if(n.throwAge!=null)root.ArcadeGrenades.drawHand(c,n);if(n.hp>0){const barY=n.y-Math.max(n.h||46,n.kind==='warden'?57:46)-7;c.fillStyle='#111e27';c.fillRect(n.x-17,barY,34,4);c.fillStyle='#e09a72';c.fillRect(n.x-16,barY+1,32*n.hp/n.maxHp,2);}window.ArcadeEnemySpecialists?.aimFlash?.(c,n);}
+  }
+  function draw(c,s,p,e,powers,profile){ctx=c;player=p;stats=e;mode=s.mode||{};state=s;c.save();c.imageSmoothingEnabled=false;
+   const j=art.junction(s),panorama=art.background(c,s,images,j,p.x-s.camera.x);
+   let neighbour=null;
+   if(j){
+    const below=s.floor===j.lower,floor=below?j.lower+1:j.lower;
+    neighbour={...s,...ArcadeMallWorld.room(s,floor),floor,
+     camera:{x:below?j.upperX:j.x,y:below?-j.upperY:-j.lift}};
    }
-   for(const n of s.enemies){if(n.x<s.camera.x-100||n.x>s.camera.x+1060||n.hp<=0&&n.death<=0)continue;let row=n.hp<=0?3:n.hit>0?3:n.flash>0?3:Math.abs(n.vx)>10?1:0,frame=n.hp<=0?3:n.hit>0?2:n.flash>0?0:Math.floor((n.anim||0)*8)%4;if(ArcadeEnemySpecialists.drawRam(c,n,images.ramHit))continue;if(!art.guard(c,n,images,s.time)&&!ArcadeEnemySpecialists.draw(c,n,images)){const f=ENEMY_FRAMES[row][frame],k=.21;c.save();c.translate(n.x,n.y);c.scale(n.facing||-1,1);if(n.hp<=0)c.globalAlpha=Math.min(1,n.death*2);c.drawImage(images.enemy,...f.slice(0,4),-f[2]*k/2,-f[3]*k,f[2]*k,f[3]*k);c.restore();}if(n.hp>0){const barY=n.y-Math.max(n.h||46,n.kind==='warden'?57:46)-7;c.fillStyle='#111e27';c.fillRect(n.x-17,barY,34,4);c.fillStyle='#e09a72';c.fillRect(n.x-16,barY+1,32*n.hp/n.maxHp,2);}window.ArcadeEnemySpecialists?.aimFlash?.(c,n);}
-   c.save();if(s.ending<0)ArcadePhysics.jumpTurn.apply(c,p);
+   c.save();c.translate(0,-Math.round(s.camera.y));
+   const decor=root.ArcadeSceneryAnimation;
+   if(s.floor<3&&s.intro>=4&&!s.stairs?.active&&decor?.next){
+     const scene=decor.next(s.geometry,'tiendas',s.time),layout=ArcadeMallInterior.storefront(s.floor);
+     decor.place(c,scene,s.camera.x*ArcadeMallInterior.parallax,layout.threshold+2,960,41,.91,180);
+   }
+   root.ArcadeMallShoppers.draw(c,s,images.shoppers,panorama);c.restore();
+   if(neighbour){
+    c.save();c.translate(0,-Math.round(neighbour.camera.y));
+    root.ArcadeMallShoppers.draw(c,neighbour,images.shoppers,art.interiorArt(images,neighbour.floor));c.restore();
+   }
+   if(s.floor===3){art.giant(c,s,images.giant);art.rooftop(c,images.roofDeck,s.time);}
+   c.save();c.translate(-Math.round(s.camera.x),-s.camera.y);
+   art.escalators(c,s,images,j);
+   if(neighbour){
+    c.save();c.translate(s.camera.x-neighbour.camera.x,s.camera.y-neighbour.camera.y);
+    floorActors(c,neighbour,p);c.restore();
+   }
+   floorActors(c,s,p);
+   c.save();if(p.respawnProtection>0)c.globalAlpha*=ArcadeProgression.respawnAlpha(p);if(s.ending<0)ArcadePhysics.jumpTurn.apply(c,p);
    if(s.ending>=7&&p.form==='fighter')ArcadeAdvancedForms.draw(c,{...p,victoryAge:s.ending-7});
    else if(p.form==='tank'&&p.grounded&&p.ground?.terrain&&s.floor<3){
     // The tread spans several steps; its front and rear follow the incline through both landings.
@@ -88,12 +106,11 @@
    if(s.ending<0&&!p.rope&&!p.ladder&&!p.transform&&!['wolf','zombie'].includes(p.form))ArcadeWeaponRenderer.draw(c,p,e);
    if(p.jetpack)drawJetpack('front');
    c.restore();
-   art.escalators(c,s,true);
    ArcadeMissionCombat.draw(c,e,powers,p,{left:s.camera.x,right:s.camera.x+960,top:s.camera.y,bottom:s.camera.y+540});
    for(const f of s.debris)for(let i=0;i<14;i++){const t=f.age,x=f.x+Math.sin(i*7)*100*t,y=f.y-Math.abs(Math.cos(i*4))*130*t+110*t*t;c.fillStyle=i%2?'#b8b49b':'#5f7076';c.fillRect(Math.round(x),Math.round(y),7-i%3,5+i%4);}
    if(s.floor===3&&s.boss.active&&s.ending<0)art.hazards(c,s,images,giantEffects);
    c.restore();
-   art.veil(c,s);
+   art.landingRail(c,j);art.veil(c,s);
    if(s.intro<4)title(c,'MISIÓN 06','EL ÚLTIMO CENTRO','La fachada del Consorcio · Sube hasta la antena de la azotea.');
    if(s.ending>=6)title(c,'MISIÓN 06 COMPLETADA','EL COLOSO HA CAÍDO','Antena desconectada · Próximo destino: Nueva York');
    c.restore();

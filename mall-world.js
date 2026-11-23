@@ -3,6 +3,7 @@
  const common=typeof module!=='undefined'&&module.exports,P=common?require('./physics'):root.ArcadePhysics,N=common?require('./enemies'):root.ArcadeEnemies,E=common?require('./encounter'):root.ArcadeEncounter;
  const Arsenal=common?require('./arsenal'):root.ArcadeArsenal;
  const Shoppers=common?require('./mall-shoppers'):root.ArcadeMallShoppers;
+ const Interior=common?require('./mall-interior'):root.ArcadeMallInterior;
  const FLOOR=472,widths=[5400,4800,4600,960],names=['Atrio · Planta 1','Galerías · Planta 2','Restaurantes · Planta 3','Azotea · El Coloso'],clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),num=(v,d)=>Number.isFinite(v)?v:d;
  // All coordinates are in world space. The tread and both feet use the same profile.
  const beltSpeed=93;
@@ -16,22 +17,27 @@
  // On the upper floor the head of the same escalator stands at the left edge.
  // A crossing ends at arrivalX; walking back left past returnX starts the way down.
  const landingX=84,returnX=landingX+20,arrivalX=landingX+40,comb=14,reach=90;
- // One crossing, mirrored in both directions: the veil closes while the actor
- // reaches the landing, the rooms swap behind it, and it opens on the new floor.
+ // The roof has its own fixed shot. Inside, both rooms share one camera path.
  const crossing={out:.3,hold:.1,in:.3};
  const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
- // Each room is framed on its own. The view slows to a stop at both ends of a
- // floor, a little past the escalator, and never shows the neighbouring room.
  function settle(distance,margin=60){
   return distance>=margin?distance:distance<=-margin?0:(distance+margin)*(distance+margin)/(4*margin);
  }
  function cameraX(floor,x){
-  if(floor===3)return 0;
-  const low=floor>0?-reach:0,high=widths[floor]-960+reach;
-  return high-settle(high-low-settle(x-320-low));
+  const follow=x-320;
+  if(floor===0)return settle(follow);
+  if(floor===2){const end=widths[2]-960+reach;return end-settle(end-follow);}
+  return floor===3?0:follow;
  }
  function updateCamera(s,x){
-  s.camera.x=cameraX(s.floor,x);s.camera.y=0;s.camera.landing=null;
+  const floor=s.floor;s.camera.x=cameraX(floor,x);
+  // Use the tread profile even while jumping: the view follows the architecture.
+  if(floor<2&&x>escalator(floor).lower){
+   const st=escalator(floor);s.camera.y=-st.rise*ease((x-st.lower)/(st.upper-st.lower));
+  }else if(floor===1||floor===2){
+   const st=escalator(floor-1),belowX=x+st.exit-landingX;
+   s.camera.y=st.rise*(1-ease((belowX-st.lower)/(st.upper-st.lower)));
+  }else s.camera.y=0;
  }
  function geometry(floor){
   const w=widths[floor],st=floor<3?escalator(floor):null;
@@ -72,29 +78,35 @@
   const mode=P.step(p,input,dt,s.geometry.platforms,s.geometry);
   updateCamera(s,p.x);return mode;
  }
- function soldiers(floor,defeated,difficulty){if(floor===3)return[];return Array.from({length:11},(_,i)=>{const id='mall-'+floor+'-'+i,x=(floor===0?1480:520)+i*(floor===0?310:330),n=N.createSoldier({x,y:FLOOR,facing:-1,kind:i%4===2?'warden':i%4===3?'knife':i%4===1?'turret':'rifle'},id);n.shot=1.4+i*.2;if(n.kind==='warden'){n.hp=n.maxHp=6;}n.maxHp*=difficulty;n.hp=defeated.has(id)?0:n.maxHp;return n;});}
- const patrolGates=[1620,3240];
+ function soldiers(floor,defeated,difficulty){if(floor===3)return[];return Array.from({length:11},(_,i)=>{const id='mall-'+floor+'-'+i,x=(floor===0?1480:520)+i*(floor===0?310:330),n=N.createSoldier({x,y:FLOOR,facing:-1,grenadier:i%4===0,kind:i%4===2?'warden':i%4===3?'knife':i%4===1?'turret':'rifle'},id);n.shot=1.4+i*.2;if(n.kind==='warden'){n.hp=n.maxHp=6;}n.maxHp*=difficulty;n.hp=defeated.has(id)?0:n.maxHp;return n;});}
+ // Indices 0 and 1 are also the identifiers stored by earlier saves.
+ const patrolGates=[1620,3240,2120,2600,3700,4120];
+ const rearKinds=['knife','rifle','jetSoldier','rifle','jetSoldier','warden'];
  function guardFromRear(s,i,x){
-  const kind=i===0?'knife':'rifle',id='mall-rear-'+s.floor+'-'+i;
-  const n=N.createSoldier({x,y:P.surfaceY(groundAt(s,x),x),facing:1,kind},id);
-  n.maxHp*=s.difficulty;n.hp=n.maxHp;n.shot=1.4;n.rear=true;return n;
+  const kind=rearKinds[i],id='mall-rear-'+s.floor+'-'+i;
+  const floorY=P.surfaceY(groundAt(s,x),x),y=kind==='jetSoldier'?floorY-126:floorY;
+  const n=N.createSoldier({x,y,facing:1,kind,grenadier:kind==='jetSoldier'||i===3},id);
+  if(kind==='jetSoldier'){n.h=38;n.homeY=y;n.landingY=floorY;}
+  if(kind==='warden')n.maxHp=6;
+  n.maxHp*=s.difficulty;n.hp=n.maxHp;n.shot=1.4;n.rear=true;n.enteringFromRear=true;return n;
  }
  function rearPatrol(s,p,dt){
   if(s.floor>=3||p.cloak>0||p.burrow)return;
   s.patrolWait=Math.max(0,s.patrolWait-dt);
-  if(s.patrolWait>0)return;
+  if(s.patrolWait>0||s.enemies.filter(n=>n.rear&&n.hp>0&&Math.abs(p.x-n.x)<700).length>=3)return;
   for(const [i,gate] of patrolGates.entries()){
    const id='mall-rear-'+s.floor+'-'+i;
    if(p.x<gate||s.awarded.has(id)||s.enemies.some(n=>n.id===id))continue;
-   const x=cameraX(s.floor,p.x)-48,guard=guardFromRear(s,i,x);
+   const x=s.camera.x-48,guard=guardFromRear(s,i,x);
    guard.memory=5;guard.lastKnown={x:p.x,y:p.y};guard.shot=1.4;
    s.enemies.push(guard);s.patrolWait=4;emit(s,'rear');break;
   }
  }
- function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,supplySlots:Arsenal.supplyRolls([3,5,6],3,saved.supplySlots),x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,rooms:new Map(),intro:saved.started?4:0,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0},arcadeX:980};
+ function create(saved={},difficulty=1){const complete=!!saved.complete,ending=complete?11:saved.ending?0:-1,floor=ending>=0?3:clamp(Math.floor(num(saved.floor,0)),0,3),awarded=new Set(saved.awarded||[]);const s={floor,supplySlots:Arsenal.supplyRolls([3,5,6],3,saved.supplySlots),x:clamp(num(saved.x,140),40,widths[floor]-40),y:clamp(num(saved.y,FLOOR),65,FLOOR),time:0,rooms:new Map(),intro:saved.started?4:0,ending,complete,difficulty,checkpoint:clamp(Math.floor(num(saved.checkpoint,floor)),0,3),camera:{x:0,y:0},events:[],awarded,taken:new Set(saved.taken||[]),stars:new Set(saved.stars||[]),hazards:[],debris:[],supplyAge:0,geometry:geometry(floor),enemies:soldiers(floor,awarded,difficulty),boss:{id:'mall-giant',kind:'mallGiant',x:725,y:FLOOR,w:310,h:322,hp:ending>=0?0:210*difficulty,maxHp:210*difficulty,active:false,phase:'arrival',age:0,hit:0,frozen:0,cycle:0,targets:[],sticky:0}};
   s.departedShoppers=new Set(saved.departedShoppers||[]);s.shoppers=Shoppers.create(floor,s.departedShoppers);s.shoppingBags=[];s.patrolWait=0;
   // stairs.active marks a crossing in progress; fade is the opacity of the veil.
-  s.stairs={active:false,dir:0,phase:'',t:0,fade:0};s.belt=0;s.beltSpeed=beltSpeed;
+  s.purseScenes=Interior.restorePurseScenes(saved.purseScenes);
+  s.stairs={active:false,roof:false,dir:0,phase:'',t:0,fade:0};s.belt=0;s.beltSpeed=beltSpeed;
   s.resume=ending<0&&(saved.stairs===1||saved.stairs===-1)?saved.stairs:0;
   for(const record of Array.isArray(saved.rearGuards)?saved.rearGuards:[]){
    if(floor===3||!Number.isInteger(record?.i)||!patrolGates[record.i]||!Number.isFinite(record.x)||!Number.isFinite(record.hp)||record.hp<=0)continue;
@@ -116,23 +128,31 @@
   e.enemies=s.enemies;e.bullets=[];e.explosions=[];e.debris=[];e.playerPools=[];e.playerPlasma=[];e.plasmaDrips=[];e.zombieEffects=[];e.invincible=2;
  }
  const emit=(s,type,data={})=>s.events.push({type,...data});
- function interact(s,p){return s.floor===0&&Math.abs(p.x-s.arcadeX)<200&&p.grounded&&!p.burrow?'arcade':null;}
+ function nearArcade(s,p){
+  return s.floor===0&&Interior.atArcadeFront(p.x,cameraX(0,p.x));
+ }
+ function interact(s,p){return nearArcade(s,p)&&p.grounded&&!p.burrow?'arcade':null;}
+ function room(s,floor){
+  if(floor===s.floor)return s;
+  if(!s.rooms.has(floor))s.rooms.set(floor,{geometry:geometry(floor),enemies:soldiers(floor,s.awarded,s.difficulty),
+   shoppers:Shoppers.create(floor,s.departedShoppers),shoppingBags:[],debris:[]});
+  return s.rooms.get(floor);
+ }
  function changeFloor(s,p,e,direction,st){
-  // Both rooms share the landing at the top of the escalator. Behind the closed
-  // veil only the coordinates change: the stride, the facing and the pace remain.
+  // Rebase the actor on the shared comb plate without interrupting the stride.
   const vx=p.vx,invincible=e.invincible;
   s.rooms.set(s.floor,{geometry:s.geometry,enemies:s.enemies,shoppers:s.shoppers,shoppingBags:s.shoppingBags,debris:s.debris});
-  s.floor+=direction;s.checkpoint=s.floor;
+  const next=room(s,s.floor+direction);s.floor+=direction;s.checkpoint=s.floor;
   s.x=p.x+direction*(landingX-st.exit);s.y=p.y+direction*st.rise;
-  Object.assign(s,s.rooms.get(s.floor)||{geometry:geometry(s.floor),enemies:soldiers(s.floor,s.awarded,s.difficulty),
-   shoppers:Shoppers.create(s.floor,s.departedShoppers),shoppingBags:[],debris:[]});
+  Object.assign(s,next);
   configure(s,p,e);p.vx=vx;e.invincible=invincible;e.enemies=[];
   const ground=groundAt(s,p.x),surface=P.surfaceY(ground,p.x);
   if(Math.abs(p.y-surface)<2)Object.assign(p,{y:surface,grounded:true,ground,fallPeak:surface});
   emit(s,'checkpoint',{text:'CHECK POINT · '+names[s.floor]});
  }
  function begin(s,p,e,dir,phase){
-  Object.assign(s.stairs,{active:true,dir,phase,t:0,fade:0});
+  const roof=s.floor===3||(s.floor===2&&p.x>=escalator(2).entry-4);
+  Object.assign(s.stairs,{active:true,roof,dir,phase,t:0,fade:0});
   Object.assign(p,{facing:dir,buffer:0,ram:null});
   // Nobody fights across a crossing: the guards hold their ground until it ends.
   for(const n of s.enemies)n.vx=0;
@@ -162,7 +182,13 @@
  function ride(s,p,e,dt){
   const trip=s.stairs,up=trip.dir>0;
   truce(e);
-  if(trip.phase==='walk'){
+  if(!trip.roof&&(trip.phase==='walk'||trip.phase==='out')){
+   // Switch room ownership on the shared flat plate, while the same artwork is visible.
+   const st=escalator(up?s.floor:s.floor-1);
+   if(up?p.x>=st.exit-8:p.x<=landingX-12){
+    changeFloor(s,p,e,trip.dir,st);trip.phase='exit';
+   }
+  }else if(trip.phase==='walk'){
    // Close the veil so that it is shut as the actor reaches the middle of the landing.
    const st=escalator(s.floor);
    if(st.upper+28-p.x<=(Math.abs(p.vx)+st.speed)*crossing.out){trip.phase='out';trip.t=0;emit(s,'stairs',{phase:'out',dir:trip.dir});}
@@ -178,7 +204,7 @@
   }
   // Control returns as soon as the actor stands on the new floor, still facing its way.
   if(trip.phase==='exit'&&(up?p.x>=arrivalX:p.x<=escalator(s.floor).entry-4)){
-   Object.assign(trip,{active:false,dir:0,phase:'',t:0,fade:0});
+   Object.assign(trip,{active:false,roof:false,dir:0,phase:'',t:0,fade:0});
    e.invincible=Math.max(e.invincible,1);
   }
  }
@@ -243,7 +269,7 @@
   return s.events;
  }
  function hearShot(s,p,source){Shoppers.hear(s,source,cameraX(s.floor,p.x));}
- function snapshot(s,p){return{floor:s.floor,supplySlots:s.supplySlots.slice(),rearGuards:s.enemies.filter(n=>n.rear&&n.hp>0).map(n=>({i:Number(n.id.split('-').pop()),x:n.x,hp:n.hp})),departedShoppers:[...s.departedShoppers],x:p.x,y:p.y,stairs:s.stairs.active?s.stairs.dir:0,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
+ function snapshot(s,p){return{floor:s.floor,purseScenes:Interior.restorePurseScenes(s.purseScenes),supplySlots:s.supplySlots.slice(),rearGuards:s.enemies.filter(n=>n.rear&&n.hp>0).map(n=>({i:Number(n.id.split('-').pop()),x:n.x,hp:n.hp})),departedShoppers:[...s.departedShoppers],x:p.x,y:p.y,stairs:s.stairs.active?s.stairs.dir:0,checkpoint:s.checkpoint,started:s.intro>=4,ending:s.ending>=0,complete:s.complete,awarded:[...s.awarded],taken:[...s.taken],stars:[...s.stars]};}
  function retry(s){return create({...snapshot(s,{x:140,y:FLOOR}),floor:s.checkpoint,x:140,y:FLOOR,stairs:0,rearGuards:[],ending:false,complete:false,started:true},s.difficulty);}
- const api={pickups,create,configure,update,interact,snapshot,retry,geometry,escalator,treadY,stepPlayer,landingX,returnX,arrivalX,crossing,cameraX,hearShot,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
+ const api={pickups,room,create,configure,update,interact,nearArcade,snapshot,retry,geometry,escalator,treadY,stepPlayer,landingX,returnX,arrivalX,crossing,cameraX,hearShot,widths,names,FLOOR};if(common)module.exports=api;else root.ArcadeMallWorld=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -21,6 +21,13 @@
   function map(c,v,t){
     const x=v.cx,y=250,w=640,h=330;
     c.save();c.translate(x,y);c.rotate(-.03);
+    if(root.ArcadeStorySprites?.draw(c,'ruta',t,0,171,325)){
+      const labels=[['PUERTO',-98,65],['CENTRO COMERCIAL',59,-27]];
+      labels.forEach(([label,mx,my],i)=>{const show=ease(ramp(t,.4+i*1.4,1.2+i*1.4));if(!show)return;
+        c.save();c.globalAlpha=show;c.fillStyle='#291f1a';c.font='bold 14px monospace';
+        const width=c.measureText(label).width+12;c.fillRect(mx-width/2,my,width,23);c.fillStyle='#ffe9bb';c.textAlign='center';c.fillText(label,mx,my+16);c.restore();});
+      c.restore();return;
+    }
     c.fillStyle='#d9ccaa';c.fillRect(-w/2,-h/2,w,h);c.fillStyle='#c4b48e';for(let i=0;i<8;i++)c.fillRect(-w/2,-h/2+i*h/8,w,1);
     c.strokeStyle='#5a4a32';c.lineWidth=3;c.beginPath();c.moveTo(-w/2+30,h/2-40);c.bezierCurveTo(-120,40,40,-10,w/2-70,-h/2+60);c.stroke();
     // Costa a la izquierda, con su puerto; la ciudad a la derecha, con el centro comercial.

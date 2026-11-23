@@ -1,6 +1,6 @@
 (function(root){
   'use strict';
-  // Menú único del juego. Las ocho misiones comparten esta definición: el mismo
+  // Menú único del juego. Las diez misiones comparten esta definición: el mismo
   // menú sirve de portada y de pausa (Jugar/Continuar, Misiones, Tienda,
   // Ajustes, Ayuda, Reiniciar, Modo desarrollador temporal y Salir).
   // Debe cargarse antes que player-profiles.js, developer-mode.js y controls.js,
@@ -13,7 +13,9 @@
     {n:5,href:'level-five.html',art:'assets/thumbs/mision-05.webp',alt:'Mar profundo y cámara del submarino',title:'Bajo el abismo',text:'Desciende entre buzos y minas, entra al submarino y derrota al Capitán del Abismo para desbloquear al luchador.',tags:'Combate submarino · Mini submarino · Arsenal del capitán',help:'Desciende al abismo, atraviesa los campos de minas y asalta la cámara del capitán.'},
     {n:6,href:'level-six.html',art:'assets/thumbs/mision-06.webp',alt:'Atrio de un centro comercial y su azotea',title:'El último centro',text:'Recorre tres plantas, juega en el salón Arcade y enfréntate al Coloso de la azotea.',tags:'Escaleras mecánicas · Tres minijuegos · Gigante',help:'Sube las tres plantas del centro comercial y derrota al Coloso en la azotea.'},
     {n:7,href:'level-seven.html',art:'assets/thumbs/mision-07.webp',alt:'La nave alienígena en el espacio',title:'El Soberano del Vacío',text:'Cruza la nave, combate aliens y platillos tripulados, y enfréntate al Soberano del Vacío.',tags:'Exterior e interior · Láseres · Poder alienígena',help:'Cruza el casco y el interior de la nave nodriza y derrota al Soberano en su núcleo.'},
-    {n:8,href:'level-eight.html',art:'assets/thumbs/mision-08.webp',alt:'Avenidas y cruces de Nueva York',title:'Nueva York · La última batalla',text:'Cruza el tráfico, reúne a los policías y derrota al Comandante y a su robot gigante.',tags:'Policías aliados · Nuevos soldados · Jefe de dos fases',help:'Cruza Manhattan, reúne a los policías y derrota al Comandante en la última plaza.',final:true}
+    {n:8,href:'level-eight.html',art:'assets/thumbs/mision-08.webp',alt:'Avenidas y cruces de Nueva York',title:'Nueva York · La última batalla',text:'Cruza el tráfico, reúne a los policías y derrota al Comandante y a su robot gigante.',tags:'Policías aliados · Nuevos soldados · Jefe de dos fases',help:'Cruza Manhattan, reúne a los policías y derrota al Comandante en la última plaza.'},
+    {n:9,href:'level-nine.html',art:'assets/thumbs/mision-09.webp',alt:'Hidroplano sobre el delta industrial',title:'Marea de hierro',text:'Abre paso al convoy de Vega. Cruza el delta bajo fuego y toma la sala de control en la cima de la torre petrolera.',tags:'Patrulleras · Torpedos · Abordaje',help:'J dispara. K lanza torpedos en el agua y granadas a pie. Usa ↑ para subir las escaleras de la torre.'},
+    {n:10,href:'level-ten.html',art:'assets/thumbs/mision-10.webp',alt:'Interceptor sobre el archipiélago Cénit',title:'Último vector',text:'Vuela sobre el archipiélago, rompe la escolta y ataca la fortaleza Cénit sobre la caldera.',tags:'Combate cenital · Vuelo libre en 3D · Fortaleza aérea',help:'J dispara. Vigila los cazas que te adelantan. En la caldera, esquiva y mantén al Cénit en la mira para lanzar un misil con K.',final:true}
   ];
   const two=n=>String(n).padStart(2,'0');
   function card(m){
@@ -24,7 +26,7 @@
     const here=missions.find(m=>m.n===mission)||missions[0];
     return '<div class="menu-art" aria-hidden="true"></div>'
       +'<div class="menu-content">'
-      +'<div class="menu-brand"><span class="eyebrow">UNA CACERÍA. OCHO MISIONES.</span><h1>CAP <span>DOLLAR</span></h1><p>THE HUNTER</p></div>'
+      +'<div class="menu-brand"><span class="eyebrow">UNA CACERÍA. DIEZ MISIONES.</span><h1>CAP <span>DOLLAR</span></h1><p>THE HUNTER</p></div>'
       +'<section data-menu-page="home"><p id="menu-loading" class="menu-tagline" role="status">Preparando la misión…</p>'
       +'<nav class="menu-actions" aria-label="Menú">'
       +'<button id="menu-play" class="primary" disabled>Jugar</button>'
@@ -41,7 +43,7 @@
       +'<section data-menu-page="settings" hidden><h2>Ajustes</h2>'
       +'<fieldset class="difficulty-settings"><legend>Dificultad</legend><div id="difficulty-choices"></div><p id="difficulty-description" class="menu-tip"></p><p class="menu-tip">Se aplica al continuar y se conserva para las próximas partidas.</p></fieldset>'
       +'<fieldset class="tutorial-settings"><legend>Tutorial</legend><label><input id="tutorial-enabled" type="checkbox" checked> Ayudas durante la misión</label><p class="menu-tip">Aprende los controles a medida que avanzas. Las acciones especiales se explican cuando las necesitas.</p><button id="tutorial-reset" class="secondary" type="button">Repetir ayudas del tutorial</button></fieldset>'
-      +'<div id="menu-sound"></div><button id="menu-fullscreen" class="secondary">Alternar pantalla completa</button><p id="settings-message" class="menu-tip" role="status"></p></section>'
+      +'<div id="menu-sound"></div><small class="menu-tip">Disparos grabados por <a href="https://opengameart.org/content/gunshot-sounds" target="_blank" rel="noopener">Vincent Sevedge</a> · fragmentos editados bajo <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>.</small><button id="menu-fullscreen" class="secondary">Alternar pantalla completa</button><p id="settings-message" class="menu-tip" role="status"></p></section>'
       +'<section data-menu-page="help" hidden><h2>Ayuda y controles</h2><p class="menu-tagline">Misión '+two(here.n)+' · '+here.title+'. '+here.help+'</p><div id="menu-help" class="menu-help"></div></section>'
       +'<section data-menu-page="exit" hidden><h2>Hasta la próxima, cazador.</h2><p class="menu-tagline">El juego está detenido y tu partida queda guardada en este navegador. Puedes cerrar la pestaña o volver al menú.</p><button id="menu-return" class="primary">Volver al menú</button></section>'
       +'<button id="menu-back" class="menu-back" hidden>← Volver</button><p class="menu-signature">CAP DOLLAR, THE HUNTER</p>'

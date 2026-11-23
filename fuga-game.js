@@ -4,16 +4,22 @@
   const $=id=>document.getElementById(id),canvas=$('road'),audio=ArcadeAudio.create();
   let touchPad;
   const store=ArcadeDeveloperMode.storage(localStorage),keyboard=new Set(),touch=new Map();
+  const profile=ArcadeProgression.load(store),retryKey='cap-dollar.fuga.retry.v1';
   let s=FugaRoad.create(),screen='loading',last=0,carry=0,endTime=0,renderer,padStart=false,padDrift=false,driftTap=false,stored=false;
   const active=()=>screen==='race'||screen==='ending';
   function sound(){const muted=audio.status().muted;$('audio').textContent=muted?'♫ Silenciado':'♫ Sonido';$('audio').setAttribute('aria-pressed',String(muted));}
   $('audio').onclick=()=>{audio.setMuted(!audio.status().muted);sound();};sound();
   function panel(id,tag,title,copy,button){screen=id;keyboard.clear();touchPad?.clear();touch.clear();driftTap=false;audio.setRunning(false);$('pause').disabled=true;$('panel').hidden=false;$('tag').textContent=tag;$('title').textContent=title;$('copy').textContent=copy;$('go').disabled=false;$('go').textContent=button;$('go').focus({preventScroll:true});}
   function drive(id){screen=id;carry=0;keyboard.clear();touchPad?.clear();touch.clear();$('panel').hidden=true;$('pause').disabled=false;audio.unlock();audio.setRunning(true);canvas.focus({preventScroll:true});}
-  function start(){s=FugaRoad.create();endTime=0;stored=false;$('notice').textContent='Vega · Sigue al coupé de la franja dorada.';drive('race');}
+  function start(){
+    const reset=ArcadeProgression.restartLives(profile,store);
+    let retry=screen==='lost';try{retry=retry||store.getItem(retryKey)==='1';store.removeItem(retryKey);}catch{}
+    s=FugaRoad.create();
+    if(retry&&!reset)ArcadeProgression.protect(s);
+    endTime=0;stored=false;$('notice').textContent='Vega · Sigue al coupé de la franja dorada.';drive('race');}
   let pausedFrom='race';
   function pause(){if(active()){pausedFrom=screen;panel('paused','RUTA COSTERA','En pausa','La persecución continuará desde este punto.','Continuar');}else if(screen==='paused')drive(pausedFrom);}
-  function grant(){const profile=ArcadeProgression.load(store);if(!profile.owned.includes('cloak')){profile.owned.push('cloak');profile.equipped='cloak';}return ArcadeProgression.save(profile,store);}
+  function grant(){if(!profile.owned.includes('cloak')){profile.owned.push('cloak');profile.equipped='cloak';}return ArcadeProgression.save(profile,store);}
   function results(){
     if(!stored&&!grant()){panel('save','PREMIO PENDIENTE','Fugitivo alcanzado','El navegador no pudo guardar la invisibilidad en este perfil.','Reintentar guardado');return;}
     screen='won';$('panel').hidden=true;$('pause').disabled=true;audio.setRunning(false);
@@ -33,14 +39,26 @@
   });
   $('steer-drift').onclick=e=>{if(e.detail===0&&screen==='race')driftTap=true;};
   function tick(i,dt){
-    if(screen==='ending'){endTime+=dt;const step=Math.max(0,46-endTime*12)*dt;s.z+=step;s.boss.z=s.z+3;s.speed=step/dt;s.slip*=Math.exp(-6*dt);s.vx*=Math.exp(-6*dt);s.boost=false;s.x+=(0-s.x)*dt*1.8;s.age+=dt;if(endTime>=3.8)results();return;}
-    if(screen!=='race')return;FugaRoad.update(s,i,dt);
-    for(const event of s.events){const effect={go:'jump',hurt:'debris',bump:'brake',wreck:'explosion',shot:'rifle',drift:'brake',barrier:'debris'}[event];if(effect)audio.play(effect,{gain:.38});
-      if(event==='wreck')$('notice').textContent='Un vehículo de la escolta ha salido de la carretera.';if(event==='go')$('notice').textContent='Cierra la distancia antes del peaje.';}
-    if(s.mode==='caught'){stored=grant();endTime=0;screen='ending';$('notice').textContent='Vega · Lo tengo. Módulo de camuflaje recuperado.';audio.play('pickup');}
-    if(s.mode==='escaped'||s.mode==='wrecked')panel('lost','COSTA SUR',s.mode==='escaped'?'Cruzó el peaje':'Fuera de carrera',s.mode==='escaped'?'El coupé salió del distrito. Acelera y reserva nitro para recuperar distancia.':'Tu coche quedó inmovilizado. Evita la parte trasera del camión y embiste de lado.','Reintentar');
+    const closing=s.mode==='race'&&(s.boss.z>FugaRoad.finish-900||s.boss.z-s.z<65);
+    const underPressure=s.boost||s.driftSide!==0||s.shots.length>0||s.cars.some(car=>!car.crash&&car.kind!=='traffic'&&Math.abs(car.z-s.z)<75);
+    audio.music?.follow?.(dt,null,null,{quiet:s.mode==='launch',boss:closing,victory:screen==='ending',pressure:underPressure});
+    if(screen==='ending'){endTime+=dt;const ease=1-Math.exp(-2*dt),gap=s.boss.z-s.z;
+      s.speed=Math.max(0,s.speed-s.finishSpeed*dt/3.5);s.z+=s.speed*dt;
+      s.boss.z=s.z+gap+(3-gap)*ease;s.boss.x+=(s.finishLane-s.boss.x)*ease;s.slip*=Math.exp(-6*dt);s.vx*=Math.exp(-6*dt);s.boost=false;s.x+=(0-s.x)*dt*1.8;s.age+=dt;if(endTime>=3.8)results();return;}
+    if(screen!=='race')return;if(s.mode==='race')ArcadeProgression.tickProtection(s,dt);FugaRoad.update(s,i,dt);
+    for(const event of s.events){const effect={grenade:'grenade',blast:'explosion',go:'jump',hurt:'debris',bump:'brake',wreck:'explosion',shot:'rifle',drift:'brake',barrier:'debris'}[event];if(effect)audio.play(effect,{gain:.38});
+      if(event==='grenade')$('notice').textContent='¡Granada en la carretera!';if(event==='wreck')$('notice').textContent='Un vehículo de la escolta ha salido de la carretera.';if(event==='go')$('notice').textContent='Cierra la distancia antes del peaje.';}
+    if(s.mode==='caught'){window.ArcadeStoryIllustrations?.load('fuga-outro');s.finishSpeed=s.speed;s.finishLane=s.boss.x>=s.x?2.6:-2.6;stored=grant();endTime=0;screen='ending';$('notice').textContent='Vega · Lo tengo. Módulo de camuflaje recuperado.';audio.play('pickup');}
+    if(s.mode==='escaped'||s.mode==='wrecked'){
+      ArcadeProgression.loseLife(profile,s);ArcadeProgression.save(profile,store);
+      try{store.setItem(retryKey,'1');}catch{}
+      const end=ArcadeProgression.gameOver;
+      if(!profile.lives)panel('lost','COSTA SUR',end.title,end.message,end.action);
+      else panel('lost','COSTA SUR',s.mode==='escaped'?'Cruzó el peaje':'Fuera de carrera',s.mode==='escaped'?'El coupé salió del distrito. Acelera y reserva nitro para recuperar distancia.':'Tu coche quedó inmovilizado. Evita la parte trasera del camión y embiste de lado.','Reintentar');
+    }
   }
   function frame(now){
+    ArcadeProgression.showLives(document,profile);
     const dt=Math.min(.08,(now-last)/1000||0);last=now;
     const pad=Array.from(navigator.getGamepads?.()||[]).find(Boolean),btn=n=>!!pad?.buttons[n]?.pressed;
     if(btn(9)&&!padStart){if(active()||screen==='paused')pause();else if(screen==='ready'||screen==='lost')start();}padStart=btn(9);
@@ -58,6 +76,7 @@
   function image(path){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=path;});}
   Promise.all([image('assets/sprites/fuga-coches.png'),image('assets/worlds/fuga-costa.webp'),image('assets/sprites/fuga-arcenes.png'),
     image('assets/sprites/fuga-derrape.webp'),image('assets/sprites/fuga-agente.webp'),image('assets/sprites/fuga-valla.webp')]).then(([cars,sky,verge,drift,officer,barrier])=>{
+    window.ArcadeStoryIllustrations?.load('fuga-intro');
     renderer=FugaRenderer.create(canvas.getContext('2d'),{cars,sky,verge,drift,officer,barrier});$('route-length').textContent='RUTA COSTERA / '+(FugaRoad.finish/1000).toLocaleString('es-CO')+' KM';screen='ready';$('go').textContent='Arrancar';$('go').disabled=false;requestAnimationFrame(frame);
   }).catch(()=>panel('error','COSTA SUR','Carga interrumpida','No se pudo cargar la carretera.','Recargar'));
   if(new URLSearchParams(location.search).has('debug'))window.__fuga={get state(){return s;},get screen(){return screen;},tick,render:()=>renderer.draw(s,screen,endTime)};

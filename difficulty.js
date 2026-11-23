@@ -14,19 +14,24 @@
   const get=id=>levels.find(level=>level.id===id)||levels[1];
   function load(storage){try{return get((storage||root.localStorage).getItem(key)).id;}catch{return 'normal';}}
   function save(id,storage){try{(storage||root.localStorage).setItem(key,get(id).id);return true;}catch{return false;}}
-  function apply(encounter,id){
-    const level=get(id);encounter.difficulty=level.id;encounter.combatDamage=level.damage;encounter.hitProtection=level.grace;
-    function scale(enemy,base){
+  function applyPlayerDamage(encounter,id){
+    const level=get(id);
+    encounter.difficulty=level.id;encounter.combatDamage=level.damage;encounter.hitProtection=level.grace;
+    return level;
+  }
+  function scaleEnemy(enemy,level,base=enemy.baseHp||3){
       const fraction=enemy.maxHp>0?enemy.hp/enemy.maxHp:0;
       enemy.maxHp=enemy.kind==='bat'?1:Math.max(1,Math.round(base*level.health));
       enemy.hp=fraction>0?enemy.maxHp*Math.min(1,fraction):0;
     }
-    for(const enemy of encounter.enemies)scale(enemy,enemy.baseHp||3);
-    scale(encounter.boss,18);
-    scale(encounter.finalBoss,encounter.finalBoss.stage===2?64:32);
+  function apply(encounter,id){
+    const level=applyPlayerDamage(encounter,id);
+    for(const enemy of encounter.enemies)scaleEnemy(enemy,level);
+    scaleEnemy(encounter.boss,level,18);
+    scaleEnemy(encounter.finalBoss,level,encounter.finalBoss.stage===2?64:32);
     encounter.finalBoss.healthScale=level.health;
     return level;
   }
-  const api={levels,get,load,save,apply};
+  const api={levels,get,load,save,apply,applyPlayerDamage,scaleEnemy};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeDifficulty=api;
 })(typeof window!=='undefined'?window:globalThis);

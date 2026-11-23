@@ -10,11 +10,21 @@ function targets(e){return [...e.enemies.filter(n=>n.hp>0),...(e.boss.active&&e.
 function nearest(e,x,y,range=600){return targets(e).filter(n=>Math.hypot(n.x-x,n.y-30-y)<range).sort((a,b)=>Math.hypot(a.x-x,a.y-30-y)-Math.hypot(b.x-x,b.y-30-y))[0];}
 function damage(e,n,amount){if(n===e.finalBoss)F.damage(n,amount);else if(n===e.boss||n===e.tank){n.hp=Math.max(0,n.hp-amount);n.hit=.18;}else N.damage(n,amount);}
 function blast(s,e,p,x,y,r,amount,color,kind='wave'){for(const n of targets(e))if(Math.hypot(n.x-x,n.y-30-y)<r)damage(e,n,amount*(p.damageBonus||1));s.effects.push({x,y,r,life:.5,duration:.5,color,kind});}
+function animate(s,p,dt){
+ s.age+=dt;s.shieldFlash=Math.max(0,s.shieldFlash-dt);if(s.lastShield!==null&&p.shield<s.lastShield)s.shieldFlash=.3;s.lastShield=p.shield;
+ s.effects=s.effects.filter(f=>(f.life-=dt)>0);s.flame=Math.max(0,s.flame-dt);
+}
+function ageBeams(s,dt){s.beams=s.beams.filter(b=>(b.age+=dt)<2);}
+function ageTurret(t,dt){t.life-=dt;t.shot-=dt;t.age+=dt;t.flash=Math.max(0,t.flash-dt);}
+function aftermath(s,p,dt){
+ animate(s,p,dt);ageBeams(s,dt);
+ s.turrets=s.turrets.filter(t=>{ageTurret(t,dt);return t.life>0;});
+ s.drones.length=0;s.marks.length=0;s.shake=0;
+}
 function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top:p.y-600,bottom:p.y+60}){
  p.cloak=Math.max(0,(p.cloak||0)-dt);
- s.age+=dt;s.shieldFlash=Math.max(0,s.shieldFlash-dt);if(s.lastShield!==null&&p.shield<s.lastShield)s.shieldFlash=.3;s.lastShield=p.shield;
+ animate(s,p,dt);
  for(const k in s.cooldowns)s.cooldowns[k]=Math.max(0,s.cooldowns[k]-dt);
- s.effects=s.effects.filter(f=>(f.life-=dt)>0);s.flame=Math.max(0,s.flame-dt);
  s.quiet=p.hurt>0?0:s.quiet+dt;if(p.regenLevel&&s.quiet>=30-p.regenLevel*3){e.hp=Math.min(e.maxHp,e.hp+1);s.quiet=0;p.healGlow=.7;s.effects.push({kind:'heal',x:p.x,y:p.y-28,r:45,life:.8,duration:.8});}
  const id=profile.equipped,c=C.catalog.find(c=>c.id===id);let message=null;
  if(pressed&&!p.burrow&&c&&profile.owned.includes(id)&&!s.cooldowns[id]&&!p.transform){
@@ -31,8 +41,9 @@ function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top
   if(used)s.cooldowns[id]=c.cooldown;
  }
  s.shake=0;
+ ageBeams(s,dt);
  for(const beam of s.beams){
-  beam.age+=dt;if(beam.age<.45||beam.age>=2)continue;
+  if(beam.age<.45)continue;
   s.shake=Math.max(s.shake,12*Math.min(1,(2-beam.age)*2));
   // Damage is confined to the same visible column that is rendered, without waking dormant bosses.
   const left=Math.max(beam.x-beam.r,view.left),right=Math.min(beam.x+beam.r,view.right);
@@ -44,10 +55,9 @@ function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top
    damage(e,n,ORBITAL_DAMAGE*(p.damageBonus||1));
   }
  }
- s.beams=s.beams.filter(b=>b.age<2);
  for(const d of s.drones){d.life-=dt;if(d.target.hp<=0)d.target=nearest(e,d.x,d.y);if(!d.target){d.life=0;continue;}const dx=d.target.x-d.x,dy=d.target.y-30-d.y,len=Math.hypot(dx,dy)||1;const step=Math.min(len,220*dt);d.x+=dx/len*step;d.y+=dy/len*step;if(len<18){blast(s,e,p,d.x,d.y,85,6,'#ffb54b','orbital');d.life=0;}}
  s.drones=s.drones.filter(d=>d.life>0);
- for(const t of s.turrets){t.life-=dt;t.shot-=dt;t.age+=dt;t.flash=Math.max(0,t.flash-dt);const n=nearest(e,t.x,t.y,320);if(n){t.angle=Math.atan2(n.y-30-t.y,n.x-t.x);if(t.shot<=0){t.shot=.32;t.flash=.16;e.bullets.push({x:t.x+Math.cos(t.angle)*18,y:t.y+Math.sin(t.angle)*18,vx:Math.cos(t.angle)*500,vy:Math.sin(t.angle)*500,life:.65,damage:1*(p.damageBonus||1),enemy:false,fromTurret:true});}}}
+ for(const t of s.turrets){ageTurret(t,dt);const n=nearest(e,t.x,t.y,320);if(n){t.angle=Math.atan2(n.y-30-t.y,n.x-t.x);if(t.shot<=0){t.shot=.32;t.flash=.16;e.bullets.push({x:t.x+Math.cos(t.angle)*18,y:t.y+Math.sin(t.angle)*18,vx:Math.cos(t.angle)*500,vy:Math.sin(t.angle)*500,life:.65,damage:1*(p.damageBonus||1),enemy:false,fromTurret:true});}}}
  s.turrets=s.turrets.filter(t=>t.life>0);
  for(const m of s.marks){m.t-=dt;if(m.t<=0)blast(s,e,p,m.x,m.y,100,8,'#ff8369','orbital');}s.marks=s.marks.filter(m=>m.t>0);
  return message;
@@ -72,8 +82,8 @@ function draw(ctx,s,p,e,view={top:-400,bottom:4000}){
  for(const t of s.turrets)V.turret(ctx,t);
  for(const m of s.marks){V.draw(ctx,'wave',Math.floor(s.age*8)%4,m.x,m.y+22,58,18,.7);V.draw(ctx,'orbital',0,m.x,m.y-80,35,200,(1-m.t)*.65);}
  if(s.flame>0)V.flame(ctx,p,s.age);
- if(!p.burrow&&(p.shield>0||s.shieldFlash>0)){const wolf=p.form==='wolf',ride=!!p.onMotorcycle;/* On the bike the shield covers rider and machine. */V.draw(ctx,'shield',s.shieldFlash>0?3:Math.floor(s.age*7)%3,p.x,p.y-(ride?36:wolf?38:26),ride?136:wolf?78:58,ride?98:wolf?98:76,s.shieldFlash>0?1:.58);}
+ if(!p.burrow&&(p.shield>0||s.shieldFlash>0)){if(view.drawShield)view.drawShield(ctx,p,s);else{const wolf=p.form==='wolf',ride=!!p.onMotorcycle;/* On the bike the shield covers rider and machine. */V.draw(ctx,'shield',s.shieldFlash>0?3:Math.floor(s.age*7)%3,p.x,p.y-(ride?36:wolf?38:26),ride?136:wolf?78:58,ride?98:wolf?98:76,s.shieldFlash>0?1:.58);}}
  ctx.restore();
 }
-const api={create,update,draw,nearest};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadePowers=api;
+const api={create,update,aftermath,draw,nearest};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadePowers=api;
 })(typeof window!=='undefined'?window:globalThis);

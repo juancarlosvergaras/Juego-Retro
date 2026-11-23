@@ -4,12 +4,21 @@
  const apiOf=(name,file)=>common?require(file):root[name];
  const label=form=>form==='hero'?'Centella Azul':form==='tank'?'Mini tanque':form==='fighter'?'Luchador':form==='robot'?'Robot':form==='zombie'?'Zombi':form==='wolf'?'Lobo':'Soldado';
  function forms(p,won){return ['soldier',...(won||p.zombieUnlocked?['wolf']:[]),...(p.zombieUnlocked?['zombie']:[]),...(p.robotUnlocked?['robot']:[]),...(p.tankUnlocked?['tank']:[]),...(p.fighterUnlocked?['fighter']:[]),...(p.heroUnlocked?['hero']:[])];}
+ // Movement, collisions and save restoration must agree on each silhouette.
+ function setBody(p,form){
+  const heights={soldier:46,wolf:64,zombie:68,robot:54,tank:53,fighter:57,hero:46};
+  p.form=Object.hasOwn(heights,form)?form:'soldier';
+  p.h=heights[p.form];p.w=p.form==='tank'?64:24;
+ }
+ function restoreBody(p,form,won=false){
+  setBody(p,forms(p,won).includes(form)?form:'soldier');
+ }
  function change(e,p,target){
   const list=forms(p,e.won),from=p.form||'soldier';target=target||list[(list.indexOf(from)+1)%list.length];
   if(e.dead||p.transform>0||p.formCooldown>0||p.burrow||p.rope||p.ladder||target===from||!list.includes(target))return false;
-  e.robotWait=null;p.wolfSprintJump=false;p.ramCooldown=0;p.ramBuffer=0;p.idleTime=0;p.idleGesture=false;p.transformFrom=from;p.form=target;p.h=target==='tank'?53:target==='fighter'?57:target==='wolf'?64:target==='zombie'?68:target==='robot'?54:46;p.w=target==='tank'?64:24;p.transform=1.2;p.formCooldown=5;
+  e.robotWait=null;p.wolfSprintJump=false;p.ramCooldown=0;p.ramBuffer=0;p.idleTime=0;p.idleGesture=false;p.transformFrom=from;setBody(p,target);p.transform=1.2;p.formCooldown=5;
   if(target==='robot'&&e.inventory?.selected<3)e.inventory.selected=e.inventory.owned.find(n=>n>=3)||e.inventory.selected;
-  p.heroFlight=false;p.jetpack=false;p.claw=0;p.kick=0;p.slide=0;p.ram=null;p.wolfAttack=null;p.wolfQueued=null;p.vx=0;e.weaponAction=null;e.cooldown=1.2;
+  p.fighterImpact=null;p.fighterPose=0;p.fighterFreeze=0;p.heroFlight=false;p.jetpack=false;p.claw=0;p.kick=0;p.slide=0;p.ram=null;p.wolfAttack=null;p.wolfQueued=null;p.vx=0;e.weaponAction=null;e.cooldown=0;
   return true;
  }
  function tick(p,dt){apiOf('ArcadeAdvancedForms','./advanced-forms')?.tick(p,dt);p.formCooldown=Math.max(0,(p.formCooldown||0)-dt);p.zombiePose=Math.max(0,(p.zombiePose||0)-dt);p.emerging=Math.max(0,(p.emerging||0)-dt);}
@@ -46,7 +55,7 @@
  function updatePools(e,dt,platforms){
   const P=apiOf('ArcadePhysics','./physics');e.playerPools=(e.playerPools||[]).filter(a=>{a.life-=dt;a.age+=dt;if(a.life<=0||!platforms.includes(a.surface))return false;const radius=Math.min(a.radius,9+a.age*85);for(const n of targets(e))if(Math.abs(n.x-a.x)<radius+(n.w||28)/2&&Math.abs(n.y-P.surfaceY(a.surface,n.x))<12)n.sticky=Math.max(n.sticky||0,.8);return true;});
  }
- function combat(e,p,input,dt,platforms){
+ function advancePlasma(e,p,dt,platforms){
   const E=apiOf('ArcadeEncounter','./encounter');
   updatePools(e,dt,platforms);
   e.zombieEffects=(e.zombieEffects||[]).filter(f=>(f.life-=dt)>0);
@@ -59,6 +68,10 @@
    if(blocked){if(hitSurface){const P=apiOf('ArcadePhysics','./physics'),surfaceY=P.surfaceY(hitSurface,b.x);if(dy>=0&&Math.abs(b.y-surfaceY)<10)pool(e,b.x,hitSurface);else{const ground=platforms.filter(s=>s!==hitSurface&&b.x>=s.x&&b.x<=s.x+s.w&&P.surfaceY(s,b.x)>=b.y).sort((a,c)=>P.surfaceY(a,b.x)-P.surfaceY(c,b.x))[0];if(ground)e.plasmaDrips=(e.plasmaDrips||[]).concat({x:b.x,y:b.y,vy:10,surface:ground,life:2}).slice(-24);}}b.life=0;e.zombieEffects.push({kind:'splash',x:b.x,y:b.y,life:.4});if(target){damage(e,target,1*(p.damageBonus||1));if(target.hp>0)target.sticky=4;}}
   }e.playerPlasma=blobs.filter(b=>b.life>0);
   e.plasmaDrips=(e.plasmaDrips||[]).filter(d=>{d.life-=dt;d.vy+=440*dt;d.y+=d.vy*dt;const y=apiOf('ArcadePhysics','./physics').surfaceY(d.surface,d.x);if(d.y>=y){pool(e,d.x,d.surface);return false;}return d.life>0;});
+ }
+ function combat(e,p,input,dt,platforms){
+  const E=apiOf('ArcadeEncounter','./encounter');
+  advancePlasma(e,p,dt,platforms);
   p.plasmaWait=Math.max(0,(p.plasmaWait||0)-dt);p.rayWait=Math.max(0,(p.rayWait||0)-dt);
   if(p.form!=='zombie'||p.burrow||p.transform>0||p.hurt>0||e.dead)return;
   const aim=p.aim||{x:p.facing||1,y:0};
@@ -90,10 +103,19 @@
  function setRunSheet(image){playerRun=prepare(image,1,[0,image.height]);playerRun.scale=64/407;return playerRun;}
  function setShockSheet(image){shockSheet=image;}
  function setForms(soldier,soldierFrame,wolf,wolfFrame){formsArt={soldier:{image:soldier,frame:soldierFrame,height:46},wolf:{image:wolf,frame:wolfFrame,height:64}};const T=apiOf('ArcadeFormTransition','./form-transition');T?.setEndpoint('soldier',soldier,soldierFrame,46);T?.setEndpoint('wolf',wolf,wolfFrame,wolfFrame[3]*.48);}
- function prepare(image,rowCount,bands,cuts={}){
-  const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);const d=ctx.getImageData(0,0,c.width,c.height).data,rows=[];
+ function prepare(image,rowCount,bands,cuts={},anchorBoots=false){
+  const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);const d=ctx.getImageData(0,0,c.width,c.height).data,rows=[];
   for(let row=0;row<rowCount;row++){const frames=[];for(let col=0;col<6;col++){const xs=cuts.x?.[row],x0=xs?xs[col]:Math.round(col*c.width/6),x1=xs?xs[col+1]:Math.round((col+1)*c.width/6),y0=Math.round((cuts.y?.[row]?.[col]??bands[row])*c.height/bands.at(-1)),y1=Math.round((cuts.y?.[row+1]?.[col]??bands[row+1])*c.height/bands.at(-1));let l=x1,r=x0,t=y1,b=y0;
-    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(d[(y*c.width+x)*4+3]>190){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}frames.push({x:l,y:t,w:r-l+1,h:b-t+1,pivot:(col+.5)*c.width/6,base:b+1});}rows.push(frames);}
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)if(d[(y*c.width+x)*4+3]>190){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}frames.push({x:l,y:t,w:r-l+1,h:b-t+1,pivot:(col+.5)*c.width/6,base:b+1});}if(anchorBoots){
+      for(const f of frames){
+        let left=f.x+f.w,right=f.x;
+        for(let y=f.base-Math.ceil(f.h*.1);y<f.base;y++)for(let x=f.x;x<f.x+f.w;x++){
+          if(d[(y*c.width+x)*4+3]>190){left=Math.min(left,x);right=Math.max(right,x);}
+        }
+        if(right>=left)f.pivot=(left+right)/2;
+      }
+    }
+    rows.push(frames);}
   return {image,rows,scale:68/rows[0][0].h};
  }
  function setSheet(image){atlas=prepare(image,6,[0,226,440,643,855,1080,1254],{x:{3:[0,209,418,627,836,1060,1254],4:[0,209,418,627,836,1060,1254]}});return atlas;}
@@ -105,10 +127,7 @@
   playerExtra=prepare(extras,4,[0,280,530,774,1024],{x:Object.fromEntries(Array.from({length:4},(_,i)=>[i,[0,254,499,750,1036,1275,1536]]))});
  }
  function setIdleSheet(image){
-  playerIdle=prepare(image,4,[0,260,512,764,1024],{x:Object.fromEntries(Array.from({length:4},(_,i)=>[i,[0,300,550,800,1040,1300,1536]]))});
-  // Anchor each frame to its boots; the detached hand must not shift the body.
-  const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const c=canvas.getContext('2d');c.drawImage(image,0,0);const pixels=c.getImageData(0,0,canvas.width,canvas.height).data;
-  for(const row of playerIdle.rows)for(const f of row){let left=f.x+f.w,right=f.x;for(let y=f.y+f.h-Math.ceil(f.h*.1);y<f.y+f.h;y++)for(let x=f.x;x<f.x+f.w;x++)if(pixels[(y*canvas.width+x)*4+3]>190){left=Math.min(left,x);right=Math.max(right,x);}if(right>=left)f.pivot=(left+right)/2;}
+  playerIdle=prepare(image,4,[0,260,512,764,1024],{x:Object.fromEntries(Array.from({length:4},(_,i)=>[i,[0,300,550,800,1040,1300,1536]]))},true);
   return playerIdle;
  }
  function idlePose(p){
@@ -123,16 +142,20 @@
  function draw(c,p,scale=1){
   const playable=p.kind!=='stormZombie',base=playable&&playerAtlas?playerAtlas:atlas,additional=playable&&playerExtra?playerExtra:extra;if(!base)return;
   const q=pose(p),running=playable&&playerRun&&!q.cast&&!q.idle&&!q.extra&&q.row===2,sheet=running?playerRun:q.idle&&playerIdle?playerIdle:q.extra&&additional?additional:base,f=sheet.rows[running||q.idle&&!playerIdle?0:q.row][running?Math.floor((p.zombieStride||0)*6)%6:q.idle&&!playerIdle?0:q.frame],s=sheet.scale*scale,buried=playable?burial(p):{hidden:false,depth:0};
+  if(playable&&scale===1&&!q.cast&&!q.extra&&!q.idle&&q.row<=2&&!buried.depth&&!p.swimming&&!p.onMotorcycle&&!p.hurt&&!p.ladder&&!p.rope){
+   const row=q.row===0?2:q.row-1,phase=q.row===0?(p.anim||0)*.6:(p.zombieStride||0);
+   if(root.ArcadeSoldierAnimation?.baseSprite?.(c,p,row,phase))return;
+  }
   if(buried.hidden)return;
   if(playable&&castSheet&&p.zombiePose>0&&!p.transform&&!p.burrow&&!p.emerging){const a=castPose(p);c.save();c.imageSmoothingEnabled=false;c.translate(Math.round(p.x),Math.round(p.y));c.scale(a.facing,1);if(p.hurt>0)c.filter='brightness(1.6)';c.drawImage(castSheet,a.x,a.y,a.w,a.h,(a.x-a.pivot)*a.scale,(a.y-a.base)*a.scale,a.w*a.scale,a.h*a.scale);c.restore();return;}
   c.save();c.imageSmoothingEnabled=false;if(buried.depth){c.beginPath();c.rect(p.x-100,p.y-180,200,180);c.clip();}c.translate(Math.round(p.x),Math.round(p.y+buried.depth));c.scale(p.facing||1,1);if(playable&&(p.hit>0||p.hurt>0))c.filter='brightness(1.6)';apiOf('ArcadeImpact','./impact-effects').hitSprite(c,playable?0:p.hit,sheet.image,f.x,f.y,f.w,f.h,(f.x-f.pivot)*s,-(running?600-f.y:f.h)*s,f.w*s,f.h*s);c.restore();
  }
  function drawSoil(c,p){const age=p.burrow?.age||0;c.save();for(let i=0;i<11;i++){const x=p.x-17+i*3,y=p.y-1-Math.sin(i/10*Math.PI)*3;c.fillStyle=i%3?'#5c5140':'#93826a';c.fillRect(Math.round(x),Math.round(y),4,3);if(Math.abs(p.vx)>10&&i%3===0){c.globalAlpha=.55;c.fillRect(Math.round(x-Math.sign(p.vx)*5),Math.round(y-3-Math.abs(Math.sin(age*9+i))*3),2,2);c.globalAlpha=1;}}c.restore();}
  function drawPlayer(c,p){if(apiOf('ArcadeFormTransition','./form-transition')?.draw(c,p))return true;if(apiOf('ArcadeAdvancedForms','./advanced-forms')?.draw(c,p))return true;if(p.form!=='zombie'&&!(p.transform>0&&p.transformFrom==='zombie'))return false;
-  c.save();let other=null,mix=0;if(p.transform>0){const t=Math.max(0,Math.min(1,1-p.transform/1.2));other=formsArt[p.form==='zombie'?p.transformFrom:p.form];mix=other?Math.max(0,Math.min(1,p.form==='zombie'?1-t/.28:(t-.65)/.35)):0;}
-  c.globalAlpha=1-mix;draw(c,p);if(p.burrow||p.emerging>0)drawSoil(c,p);
-  if(other&&mix>0){const f=other.frame,s=other.height/f[3];c.globalAlpha=mix;c.save();c.translate(Math.round(p.x),Math.round(p.y));c.scale(p.facing||1,1);c.drawImage(other.image,...f.slice(0,4),-f[2]*s/2,-f[3]*s,f[2]*s,f[3]*s);c.restore();}
-  if(p.transform>0){c.globalAlpha=1;c.strokeStyle='#8cf2bd';c.lineWidth=3;c.beginPath();c.ellipse(p.x,p.y-30,22+Math.sin(p.transform*10)*4,45,0,0,Math.PI*2);c.stroke();}c.restore();return true;}
+  c.save();const opacity=c.globalAlpha??1;let other=null,mix=0;if(p.transform>0){const t=Math.max(0,Math.min(1,1-p.transform/1.2));other=formsArt[p.form==='zombie'?p.transformFrom:p.form];mix=other?Math.max(0,Math.min(1,p.form==='zombie'?1-t/.28:(t-.65)/.35)):0;}
+  c.globalAlpha=opacity*(1-mix);draw(c,p);if(p.burrow||p.emerging>0)drawSoil(c,p);
+  if(other&&mix>0){const f=other.frame,s=other.height/f[3];c.globalAlpha=opacity*mix;c.save();c.translate(Math.round(p.x),Math.round(p.y));c.scale(p.facing||1,1);c.drawImage(other.image,...f.slice(0,4),-f[2]*s/2,-f[3]*s,f[2]*s,f[3]*s);c.restore();}
+  if(p.transform>0){c.globalAlpha=opacity;c.strokeStyle='#8cf2bd';c.lineWidth=3;c.beginPath();c.ellipse(p.x,p.y-30,22+Math.sin(p.transform*10)*4,45,0,0,Math.PI*2);c.stroke();}c.restore();return true;}
  function drawEffects(c,e){c.save();
   const P=apiOf('ArcadePhysics','./physics');
   for(const a of e.playerPools||[]){const r=Math.min(a.radius,9+a.age*85),left=Math.max(a.surface.x,a.x-r),right=Math.min(a.surface.x+a.surface.w,a.x+r);c.globalAlpha=Math.min(1,a.life/.8);for(let x=Math.ceil(left/2)*2;x<right;x+=2){const edge=Math.sqrt(Math.max(0,1-((x-a.x)/r)**2)),y=Math.round(P.surfaceY(a.surface,x)),h=Math.ceil(edge*5);c.fillStyle='#244c30';c.fillRect(x,y-h,2,h+2);c.fillStyle='#58aa39';c.fillRect(x,y-h,2,Math.max(1,h-1));if(Math.floor(x/6+a.age*7)%5===0){c.fillStyle='#bcf270';c.fillRect(x,y-h,2,1);}}for(let i=0;i<3;i++){const x=a.x+Math.sin(i*9)*r*.7,y=P.surfaceY(a.surface,x)-5-Math.abs(Math.sin(a.age*4+i))*4;c.fillStyle='#93d94a';c.fillRect(Math.round(x),Math.round(y),2,2);}}
@@ -159,5 +182,5 @@ for(const n of targets(e))if(n.sticky>0){c.fillStyle='#6fcc5370';c.fillRect(n.x-
    else{const age=.4-f.life;for(let i=0;i<9;i++){const a=i*2.4,speed=20+(i%4)*14,x=f.x+Math.cos(a)*speed*age,y=f.y-Math.abs(Math.sin(a))*speed*age+100*age*age;c.fillStyle=i%2?'#9bd946':'#538833';c.fillRect(Math.round(x),Math.round(y),i%3===0?3:2,3);}}
   }c.restore();}
 
- const api={forms,label,change,tick,step,combat,targets,setSheet,setExtra,setPlayerSheets,setIdleSheet,setRunSheet,setShockSheet,setCastSheet,castPose,castRows,setForms,icon,pose,idlePose,burial,castOrigin,draw,drawPlayer,drawEffects};if(common)module.exports=api;else root.ArcadeZombieForm=api;
+ const api={forms,label,setBody,restoreBody,change,tick,step,combat,advancePlasma,targets,setSheet,setExtra,setPlayerSheets,setIdleSheet,setRunSheet,setShockSheet,setCastSheet,castPose,castRows,setForms,icon,pose,idlePose,burial,castOrigin,draw,drawPlayer,drawEffects};if(common)module.exports=api;else root.ArcadeZombieForm=api;
 })(typeof window!=='undefined'?window:globalThis);

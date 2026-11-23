@@ -4,6 +4,22 @@ P.WORLD.width=18000;
 const player=o=>Object.assign(P.createPlayer(),{x:9000,y:620,grounded:true,h:46,vx:0},o);
 const world=(s,o={})=>({stats:{bullets:[],explosions:[]},enemies:[],platforms:[],dt:1/60,inside:false,hurts:[],...o,hurt(e,p,x,projectile,amount){this.hurts.push(amount);},damage:(n,a)=>N.damage(n,a)});
 const run=(s,ctx,seconds)=>{const all=[];for(let i=0;i<seconds*60;i++)all.push(...C.update(s,ctx));return all;};
+test('las oleadas respetan la dificultad y las bajas de la Fosa son independientes de la cripta',()=>{
+ const D=require('../difficulty'),King=require('../mausoleum-king'),Score=require('../score');
+ for(const level of D.levels){
+  const s=C.create(),ctx=world(s,{player:player({x:11700}),stats:{difficulty:level.id}}),score=Score.create();
+  run(s,ctx,.1);assert.equal(ctx.enemies.length,4);
+  assert.ok(ctx.enemies.every(n=>n.maxHp===Math.round(3*level.health)));
+  const id=ctx.enemies[0].id;ctx.enemies[0].hp=0;ctx.player.x=12100+200;run(s,ctx,.1);
+  assert.equal(ctx.enemies.length,1);assert.equal(Score.sync(score,{enemies:ctx.enemies}),200);
+  ctx.player.x=11700;run(s,ctx,.1);assert.equal(ctx.enemies.length,4);
+  ctx.enemies.find(n=>n.id===id).hp=0;run(s,ctx,.1);
+  assert.equal(Score.sync(score,{enemies:ctx.enemies}),0);
+  const inside=King.interiorEnemies();inside[0].hp=0;
+  assert.equal(Score.sync(score,{enemies:inside}),200);assert.deepEqual([...C.create(C.snapshot(s)).pit.kills],[id]);
+ }
+ assert.deepEqual([...C.create({},[2,300,305,400]).pit.kills],[C.PIT.ids,C.PIT.ids+5]);
+});
 test('tombs are reachable one-way platforms clear of zombies, barricades and checkpoints',()=>{
  const tombs=C.platforms(),geo=L.geometry(),zombies=Z.create([],geo.platforms);
  assert.equal(tombs.length,11);assert.equal(new Set([...geo.platforms,...tombs,...C.gates()].map(p=>p.id)).size,geo.platforms.length+tombs.length+2);
@@ -20,7 +36,7 @@ test('tombs are reachable one-way platforms clear of zombies, barricades and che
 });
 test('no collectible orbs remain in the cemetery and old saves that had them still load',()=>{
  const s=C.create({souls:[0,3],stones:[1],pit:'done'});assert.equal(s.souls,undefined);assert.equal(C.soulSpots,undefined);
- assert.deepEqual(C.snapshot(s),{stones:[1],pit:'done'});
+ assert.deepEqual(C.snapshot(s),{stones:[1],pit:'done',pitKills:[]});
  const p=player({x:C.TOMBS[0][0]+45,y:620-C.TOMBS[0][2]-20,grounded:false});assert.equal(run(s,world(s,{player:p}),.5).filter(e=>e.type==='soul').length,0);
 });
 test('headstones break under bullets, blasts and melee and always drop something',()=>{

@@ -25,13 +25,16 @@
     return camera;
   }
   function create(p,platforms=[],returnToRoof=false){
-    const support=platforms.filter(q=>q.y>=p.y-2&&p.x>=q.x&&p.x<=q.x+q.w).sort((a,b)=>a.y-b.y)[0];
+    const roof=returnToRoof&&platforms.find(pl=>pl.arena&&p.y<=pl.y+2);
+    const support=roof||platforms.filter(q=>q.y>=p.y-2&&p.x>=q.x&&p.x<=q.x+q.w).sort((a,b)=>a.y-b.y)[0];
     const ground=support?support.y:p.y,pickX=support?Math.max(support.x+20,Math.min(support.x+support.w-20,366)):366;
     if(returnToRoof&&ground>-138){const climbX=support?Math.max(support.x+20,Math.min(support.x+support.w-20,160)):160;return{phase:'return',returning:true,t:0,x:-220,y:-265,ground,pickX:366,climbX,platforms,form:p.form||'soldier',boarded:false,done:false};}
-    const landTime=Math.max(0,(ground-p.y)/240),walkTime=Math.abs(pickX-p.x)/110,grabAt=Math.max(3.2,landTime+walkTime);
-    return{t:0,x:-220,y:ground-125,pickX,ground,startX:p.x,startY:p.y,landTime,walkTime,grabAt,liftAt:grabAt+.5,boardAt:grabAt+2.7,form:p.form||'soldier',phase:'walk',door:0,boarded:false,done:false};
+    const landX=roof?Math.max(roof.x+12,Math.min(roof.x+roof.w-12,p.x)):p.x;
+    const landTime=Math.max(0,(ground-p.y)/240,Math.abs(p.x-landX)/110),walkTime=Math.abs(pickX-landX)/110,grabAt=Math.max(3.2,landTime+walkTime);
+    return{t:0,x:-220,y:ground-125,pickX,ground,startX:p.x,startY:p.y,landX,landTime,walkTime,grabAt,liftAt:grabAt+.5,boardAt:grabAt+2.7,form:p.form||'soldier',phase:'walk',door:0,boarded:false,done:false};
   }
   function update(s,p,dt){
+    p.heroFlight=false;
     if(s.returning){p.anim+=dt;p.jetpack=false;p.rope=null;p.claw=0;p.kick=0;p.transform=0;p.rescueGrip=false;p.hurt=0;
       if(Math.abs(p.x-s.climbX)>1){const dx=s.climbX-p.x;p.facing=Math.sign(dx);p.vx=p.facing*110;p.x+=Math.sign(dx)*Math.min(Math.abs(dx),110*dt);p.walkCycle=(p.walkCycle||0)+110*dt/52;p.grounded=true;p.y=s.ground;p.ladder=null;}
       else{p.x=s.climbX;p.ladder={x:s.climbX,top:-140,bottom:s.ground};p.grounded=false;p.vx=0;p.vy=-140;p.y=Math.max(-140,p.y-140*dt);if(p.y===-140){p.ladder=null;p.grounded=true;Object.assign(s,create(p,s.platforms));s.returning=false;}}
@@ -39,10 +42,10 @@
     }
     s.t+=dt;p.anim+=dt;p.vx=0;p.vy=0;p.rope=null;p.ladder=null;p.jetpack=false;p.claw=0;p.kick=0;p.transform=0;p.hurt=0;p.landing=0;p.slide=0;p.idleGesture=false;p.rescueGrip=false;p.grounded=true;
     s.x=s.t<2?-220+(s.pickX+220)*(1-Math.pow(1-s.t/2,3)):s.pickX;
-    if(s.t<s.landTime){s.phase='land';p.y=s.startY+240*s.t;p.grounded=false;p.vy=240;}
+    if(s.t<s.landTime){s.phase='land';const u=s.t/s.landTime;p.y=s.startY+(s.ground-s.startY)*u;p.x=s.startX+(s.landX-s.startX)*u;p.grounded=false;p.vy=240;}
     else if(s.t<s.grabAt){
-      const progress=Math.min(1,(s.t-s.landTime)/(s.walkTime||1)),dir=Math.sign(s.pickX-s.startX);
-      s.phase=progress<1?'walk':'wait';p.x=s.startX+(s.pickX-s.startX)*progress;p.y=s.ground;
+      const progress=Math.min(1,(s.t-s.landTime)/(s.walkTime||1)),dir=Math.sign(s.pickX-s.landX);
+      s.phase=progress<1?'walk':'wait';p.x=s.landX+(s.pickX-s.landX)*progress;p.y=s.ground;
       if(progress<1){p.vx=dir*110;p.facing=dir||p.facing;p.walkCycle=(p.walkCycle||0)+110*dt/52;}
     }else if(s.t<s.boardAt){
       s.phase=s.t<s.liftAt?'grab':'lift';p.rescueGrip=true;p.grounded=false;p.facing=1;

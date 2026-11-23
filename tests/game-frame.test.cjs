@@ -25,7 +25,7 @@ test('missions 5 to 8 draw through the close-up camera and relax it for bosses a
  for(const [file,zoom] of [['level-five-game.js','1.3'],['level-six-game.js','1.5'],['level-seven-game.js','1.4'],['level-eight-game.js','1.55']]){const src=fs.readFileSync(file,'utf8');
   assert.ok(src.includes('ArcadeFrameBudget.createView?.('+zoom+')'),file+' zoom');
   assert.ok(src.includes("closeUp=()=>!stage?.classList?.contains?.('road-cinematic')&&!!$('boss-hud')?.hidden"),file+' relaxes the zoom');
-  if(file==='level-six-game.js')assert.ok(src.includes('&&!s.stairs?.active;'),'the close-up opens while riding the escalators');
+  if(file==='level-six-game.js')assert.ok(src.includes('&&!s.stairs?.roof;'),'interior crossings retain their zoom and the roof opens out');
   assert.ok(src.includes('view.update(closeUp()?view.limit:1,dt);view.draw(ctx,960,540,p.x-s.camera.x,'),file+' wraps the renderer');}
  for(const file of ['mall-renderer.js','new-york-renderer.js','space-renderer.js','sea-renderer.js'])assert.ok(!/setTransform|resetTransform/.test(fs.readFileSync(file,'utf8')),file+' must not reset the camera transform');
 });

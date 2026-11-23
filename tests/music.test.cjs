@@ -40,8 +40,8 @@ function fakeDom(){
  const add=(tag,id)=>{const el=element(tag);el.id=id;roots.push(el);return el;};
  return{doc,Observer,observers,add,element,fire:target=>{for(const o of observers)if(o.target===target)o.callback([]);}};
 }
-const pages=['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html','quimera.html','fuga.html'];
-const ids=['obra','umbral','aire','carretera','abismo','centro','vacio','nueva-york','quimera','fuga'];
+const pages=['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html','level-nine.html','level-ten.html','quimera.html','fuga.html'];
+const ids=['obra','umbral','aire','carretera','abismo','centro','vacio','nueva-york','quimera','fuga','marea','cenit'];
 const melodic=seq=>seq.steps.flatMap(list=>(list||[]).filter(e=>e.midi!==null));
 const percussion=seq=>seq.steps.flatMap(list=>(list||[]).filter(e=>e.midi===null));
 
@@ -51,17 +51,17 @@ test('note names convert to MIDI numbers and frequencies',()=>{
  assert.equal(M.midiToFrequency(69),440);assert.ok(Math.abs(M.noteToFrequency('C4')-261.63)<.01);assert.ok(Math.abs(M.noteToFrequency('E2')-82.41)<.01);assert.equal(M.noteToFrequency('nope'),null);
  assert.deepEqual(M.scaleNotes('D','minor'),[2,4,5,7,9,10,0]);assert.deepEqual(M.scaleNotes('G','major'),[7,9,11,0,2,4,6]);assert.deepEqual(M.scaleNotes('X','minor'),[]);
 });
-test('ten themes exist, one per mission and special, each with a valid structure',()=>{
+test('twelve themes exist, one per mission and special, each with a valid structure',()=>{
  assert.deepEqual(M.themes.map(t=>t.id),ids);
- for(let mission=1;mission<=8;mission++)assert.equal(M.themeFor(mission).mission,mission);
- assert.equal(M.themeFor('quimera').id,'quimera');assert.equal(M.themeFor('fuga').id,'fuga');assert.equal(M.themeFor(9),null);assert.equal(M.themeFor('nada'),null);
+ for(let mission=1;mission<=10;mission++)assert.equal(M.themeFor(mission).mission,mission);
+ assert.equal(M.themeFor('quimera').id,'quimera');assert.equal(M.themeFor('fuga').id,'fuga');assert.equal(M.themeFor(11),null);assert.equal(M.themeFor('nada'),null);
  for(const theme of M.themes){
   assert.deepEqual(M.validate(theme),[],theme.id);
   assert.ok(theme.tempo>=50&&theme.tempo<=200,theme.id+' tempo');assert.ok(theme.bars>=8&&theme.bars<=16,theme.id+' bars');assert.ok(theme.title&&theme.character,theme.id);
   for(const name of ['bass','lead'])assert.ok(theme.tracks[name],theme.id+' has a '+name);
   assert.ok(Object.keys(theme.tracks).length>=3,theme.id+' has an accompaniment');assert.ok(theme.drums.kick&&theme.drums.hat,theme.id+' has percussion');
  }
- assert.equal(new Set(M.themes.map(t=>t.key+' '+t.scale+' '+t.tempo)).size,10,'no two themes share key and tempo');
+ assert.equal(new Set(M.themes.map(t=>t.key+' '+t.scale+' '+t.tempo)).size,12,'no two themes share key and tempo');
 });
 test('every note is audible and belongs to the declared scale, in both variations',()=>{
  for(const theme of M.themes){
@@ -257,7 +257,7 @@ test('a saved mute silences the music from the first frame, and the engine works
 // ── Page part ────────────────────────────────────────────────────────────
 test('the page picks its theme from the mission or the page name',()=>{
  const menu=mission=>({getElementById:id=>id==='main-menu'?{dataset:{mission:String(mission)}}:null});
- for(let mission=1;mission<=8;mission++)assert.equal(M.detectTheme(menu(mission),{pathname:'/x.html'}).mission,mission);
+ for(let mission=1;mission<=10;mission++)assert.equal(M.detectTheme(menu(mission),{pathname:'/x.html'}).mission,mission);
  const bare={getElementById:()=>null};
  assert.equal(M.detectTheme(bare,{pathname:'/juego/quimera.html'}).id,'quimera');assert.equal(M.detectTheme(bare,{pathname:'/fuga.html'}).id,'fuga');assert.equal(M.detectTheme(bare,{pathname:'/otra.html'}),null);assert.equal(M.detectTheme(null,null),null);
  const ctx=fakeAudio(),timers=fakeTimers(),music=M.create({storage:memory(),timers,document:bare,MutationObserver:null,location:{pathname:'/tests/preview.html'}});music.attach(ctx);music.setRunning(true);assert.equal(music.status().theme,null);assert.equal(music.status().playing,false,'pages without a theme stay silent');assert.equal(timers.intervals.size,0);
@@ -287,8 +287,45 @@ test('the boss bar and the tab visibility are observed from the DOM',()=>{
  const shown=fakeDom(),hud=shown.add('div','boss-hud');hud.hidden=false;
  assert.equal(M.create({storage:memory(),timers:fakeTimers(),document:shown.doc,MutationObserver:shown.Observer,theme:'obra'}).status().boss,true,'a boss already on screen counts');
 });
-test('the ten pages load music.js right after sound-effects.js',()=>{
+test('the twelve pages load music.js right after sound-effects.js',()=>{
  for(const page of pages){const html=fs.readFileSync(page,'utf8');
   assert.ok(html.includes('<script src="sound-effects.js"></script><script src="music.js"></script>'),page);assert.equal(html.split('<script src="music.js">').length,2,page+' loads it once');}
  const source=fs.readFileSync('music.js','utf8');assert.ok(!/requestAnimationFrame|new Audio\(|\.(mp3|ogg|wav|m4a)\b|fetch\(|\bimport\b|\brequire\(/.test(source),'no audio files, no frame loop, no dependencies');
+});
+
+test('every mission has an in-key combat answer and a distinct cadence before the epilogue',()=>{
+ for(const theme of M.themes){
+  const quiet=M.compile(theme),combat=M.compile(theme,'combat'),boss=M.compile(theme,true),win=M.compile(theme,'victory');
+  assert.ok(quiet.tempo<combat.tempo&&combat.tempo<boss.tempo,theme.id);
+  assert.ok(combat.count>quiet.count&&combat.count<boss.count,theme.id);
+  assert.ok(melodic(combat).some(n=>n.inst.name==='respuesta'));
+  assert.ok(win.count<quiet.count&&win.loopStart===2*win.stepsPerBar);
+  for(const seq of [combat,win]){
+   assert.ok(M.peak(seq)<=1);
+   assert.ok(melodic(seq).every(n=>M.scaleNotes(theme.key,theme.scale).includes(n.midi%12)),theme.id);
+   assert.ok(melodic(seq).every(n=>n.frequency>=60&&n.frequency<=2100));
+  }
+ }
+});
+
+test('incoming fire raises the score, a lull lets it settle, and victory overrides a lingering boss bar',()=>{
+ const dom=fakeDom(),bar=dom.add('div','boss-hud');bar.hidden=true;
+ const {music}=rig('obra',{document:dom.doc,MutationObserver:dom.Observer}),p={x:100,y:465},field={enemies:[],bullets:[]};
+ const tick=(seconds,opts={})=>{for(let i=0;i<Math.ceil(seconds*120);i++)music.follow(1/120,p,field,opts);return music.status().mode;};
+ field.enemies=[{hp:4,x:110,y:15},{hp:0,x:102,y:462}];assert.equal(tick(.25),'explore');
+ field.bullets=[{enemy:true,life:1,x:105,y:440}];assert.equal(tick(.25),'combat');
+ field.bullets=[];assert.equal(tick(2),'combat');assert.equal(tick(1.3),'explore');
+ assert.equal(tick(.02,{pressure:true}),'combat');assert.equal(tick(.02,{boss:true}),'boss');
+ assert.equal(tick(.02,{boss:true,victory:true}),'victory');bar.hidden=false;dom.fire(bar);assert.equal(music.status().mode,'victory');
+ assert.equal(tick(.02,{quiet:true}),'explore');
+});
+
+test('a mid-bar win starts its cadence on the beat and repeats only the epilogue',()=>{
+ const theme='fuga',seq=M.compile(theme,'combat'),victory=M.compile(theme,'victory'),transport=M.createTransport(),notes=[];
+ transport.start(seq,.05);for(let i=0;i<45;i++)transport.tick(i*.025,()=>{});
+ transport.use(victory);
+ for(let i=45;i<2400;i++)transport.tick(i*.025,(e,t,step)=>{if(step===victory.stepSeconds)notes.push(e);});
+ assert.equal(notes[0].step,0);
+ assert.equal(notes.filter(e=>e.step===0&&e.inst.name==='lead').length,1);
+ assert.ok(notes.filter(e=>e.step===victory.loopStart&&e.inst.name==='bass').length>1);
 });

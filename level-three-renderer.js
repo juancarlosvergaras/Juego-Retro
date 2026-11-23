@@ -4,12 +4,11 @@
  function create(images){
   function art(c,key,x,y,w,h){c.drawImage(images.airAtlas,...cuts[key],Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
   function sky(c,w,h,time,camera){const g=c.createLinearGradient(0,0,0,h);g.addColorStop(0,'#254566');g.addColorStop(.55,'#69a8c5');g.addColorStop(1,'#d1decc');c.fillStyle=g;c.fillRect(0,0,w,h);c.fillStyle='#ffedba';c.fillRect(w*.77,45,22,22);for(let i=0;i<7;i++){const span=w+650,x=((i*379-time*(10+i*2)-camera.x*.12)%span+span)%span-500;art(c,'cloud',x,70+(i*67)%(Math.max(160,h-60)),500,140);}root.ArcadeWorldLighting?.sky(c,{x:camera.x,y:camera.y},w,h,time,{mission:1});}
-  function helicopter(c,x,y,time,scale=1,dir=-1){c.save();c.translate(Math.round(x),Math.round(y));c.scale(-dir,1);art(c,'heli',-150*scale,-68*scale,300*scale,120*scale);c.fillStyle='#c9d4d4';const rotor=Math.sin(time*92)*138*scale;c.fillRect(-rotor,-50*scale,rotor*2,2);c.restore();}
   const ease=u=>{u=Math.max(0,Math.min(1,u));return u*u*(3-2*u);},rnd=n=>{const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);};
   function burst(c,x,y,phase,seed){if(phase>.8)return;const grow=8+phase*34;for(let i=0;i<16;i++){const a=rnd(seed*3+i)*Math.PI*2,d=grow*(.3+rnd(seed+i*7)*.7);c.fillStyle=phase<.14?'#fff1c2':phase<.3?(i%2?'#ffb23f':'#ff7a2a'):(i%2?'#5b5f66':'#3a3d44');const size=phase<.3?4:rnd(seed+i)>.5?7:5;c.fillRect(Math.round(x+Math.cos(a)*d),Math.round(y+Math.sin(a)*d*.8),size,size);}}
   // Arrival: approach at speed, a run through anti-aircraft fire, a rope drop
   // onto the deck and the title. Nine seconds; Space skips to the landing.
-  function intro(c,a,t,w,h){
+  function intro(c,a,t,w,h,state){
     const flak=a>2.4&&a<6.2,shake=flak?2.5:a>7.5&&a<7.9?5:0,pass=[1.1,4.3].find(s=>a>s&&a<s+1.1);
     c.save();c.translate(Math.round((rnd(Math.floor(a*40))-.5)*shake*2),Math.round((rnd(Math.floor(a*40)+9)-.5)*shake*2));
     c.fillStyle='#142b48';c.fillRect(-10,-10,w+20,h+20);sky(c,w,h,t*4+a*6,{x:a*900,y:0});
@@ -24,13 +23,18 @@
     }
     // Rope drop: the hunter slides down from under the cabin and hits the deck.
     // He is drawn at the helicopter's own scale, so a man is a fraction of its length.
-    if(a>5.9){const deck=sy+sh*.392,u=ease((a-6.3)/1.3),top=hy+30*hs,s=.36*hs,tall=145*s,y=top+tall*.4+(deck-top-tall*.4)*u,landed=a>7.6;
-      c.fillStyle='#1a2026';c.fillRect(Math.round(hx)-1,Math.round(top),2,Math.round((landed?deck-tall*.5:y-tall*.8)-top));
-      const sheet=images.soldier,frames=root.SOLDIER_V2_FRAMES;
-      if(sheet&&frames){const f=landed?frames[4][a<7.8?3:4]:frames[4][0];c.drawImage(sheet,f[0],f[1],f[2],f[3],Math.round(hx-f[2]*s/2),Math.round((landed?deck:y)-f[3]*s),Math.round(f[2]*s),Math.round(f[3]*s));}
+    if(a>5.9){
+      const deck=sy+sh*.392,u=ease((a-6.3)/1.3),top=hy+32*hs,scale=.78*hs,tall=46*scale;
+      const x=hx+14*hs,y=top+tall+(deck-top-tall)*u,landed=u>=1;
+      const ropeEnd=landed?top+(deck-tall-top)*(1-ease((a-7.6)/.85)):Math.max(top,y-tall*.82);
+      c.fillStyle='#332e26';c.fillRect(Math.round(x)-1,Math.round(top),2,Math.max(0,Math.round(ropeEnd-top)));
+      const actor={...state.player,form:'soldier',x:0,y:0,grounded:landed,facing:1,vx:0,vy:0,anim:a,rope:landed?null:{},aim:{x:1,y:0}};
+      c.save();c.translate(Math.round(x),Math.round(y));c.scale(scale,scale);
+      root.ArcadeMissionKit.drawShooter(c,actor,{},state.combat,images,{},[]);
+      c.restore();
       if(landed&&a<8.2){const p=(a-7.6)/.6;c.fillStyle='#d9d3c2';for(let i=0;i<10;i++)c.fillRect(Math.round(hx+(rnd(i)-.5)*46*(.3+p)),Math.round(deck-2-p*rnd(i+4)*12),3,2);}
     }
-    helicopter(c,hx,hy,a,hs,1);
+    root.ArcadePatrolHelicopter.draw(c,images.patrolHeli,hx,hy,300*hs,a);
     // Escort jets tear across the foreground twice.
     if(pass!==undefined){const u=(a-pass)/1.1;art(c,'jet',w*1.25-u*(w*1.9),h*(pass<2?.62:.12),w*.62,w*.62*208/509);}
     for(let i=0;i<4;i++){const span=w+1100,x=((i*520-(t*4+a*6)*(420+i*90))%span+span)%span-700;c.globalAlpha=.22;art(c,'cloud',x,i%2?h-90:10+i*26,700,135);}c.globalAlpha=1;
@@ -65,7 +69,19 @@
       c.strokeStyle='#33454f';c.lineWidth=2;c.beginPath();c.moveTo(x+2,top+26);c.lineTo(x-14,top+7);c.moveTo(x+w-2,top+26);c.lineTo(x+w+14,top+7);c.stroke();
     }
   }
-  function draw(c,state,camera,w,h,loadout){const t=state.time;c.save();c.imageSmoothingEnabled=false;sky(c,w,h,t,camera);
+  function draw(c,state,camera,w,h,loadout){const t=state.time;c.save();c.imageSmoothingEnabled=false;
+   if(state.endingAge>=0){root.ArcadeMissionEndings.draw(c,images,state,w,h);c.restore();return;}
+   if(state.introAge<9){intro(c,state.introAge,t,w,h,state);c.restore();return;}
+   sky(c,w,h,t,camera);
+   const decor=root.ArcadeSceneryAnimation;
+   if(decor){
+     if(decor.next){
+       const gull=decor.next(state,'aire',t);
+       decor.place(c,gull,camera.x*.10,h*.23+Math.sin(t*2)*3,w,52,.92,w+76);
+     }
+     const x=decor.pass(w*.16+120+t*28-camera.x*.10,w,100);
+     if(x>-62&&x<w+62)decor.draw(c,'plane',t,x,h*.31+Math.sin(t*.46)*3,100,.78);
+   }
    // A second carrier in the formation makes flight and the scale of the fleet visible during play.
    c.globalAlpha=.45;c.drawImage(images.carrier,w*.52-camera.x*.025,110,430,287);c.globalAlpha=1;
    c.save();c.translate(-Math.round(camera.x),-Math.round(camera.y));
@@ -82,8 +98,6 @@
    loadout();c.restore();
    // Foreground wisps are fast, translucent, and kept away from the aiming centre.
    for(let i=0;i<3;i++){const span=w+1000,x=((i*580-t*(340+i*70))%span+span)%span-650;c.globalAlpha=.18;art(c,'cloud',x,i===1?h-70:20+i*31,650,125);}c.globalAlpha=1;
-   if(state.introAge<9)intro(c,state.introAge,t,w,h);
-   if(state.endingAge>=0)root.ArcadeMissionEndings?.draw(c,images,state,w,h);
    c.restore();
   }
   return{draw};

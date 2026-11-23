@@ -56,6 +56,17 @@
    const tile=1440,offset=Math.round(cam.x*.29)%tile,top=-Math.round(cam.y*.20);
    for(let x=-offset;x<W;x+=tile)c.drawImage(images.trench,x,top,tile,1088);
    c.fillStyle='rgba(3,24,48,.12)';c.fillRect(0,0,W,H);
+   const decor=root.ArcadeSceneryAnimation;
+   if(decor){
+     if(decor.next&&s.intro>=5&&s.y<410){
+       const whale=decor.next(s,'superficie',s.time);
+       const visibility=Math.min(1,(410-s.y)/85);
+       decor.place(c,whale,cam.x*.22,225-cam.y*.32+Math.sin(s.time*.65)*4,W,242,.72*visibility,900);
+     }
+     const mantaX=decor.pass(488+s.time*22-cam.x*.29,W,120);
+     const mantaY=296-cam.y*.2+Math.sin(s.time*.52)*10;
+     if(mantaX>-60&&mantaX<W+60)decor.draw(c,'manta',s.time,mantaX,mantaY,114,.72);
+   }
    const cx=(reef.left+reef.right)/2,cy=reef.seabed(cx)-355;
    const caveX=(cx-cam.x-W/2)*.84+W/2-cave.width/2;
    const caveY=(cy-cam.y-H/2)*.80+H/2-cave.height/2;
@@ -102,6 +113,21 @@
      c.drawImage(sheet,(i%2?1-left-w:left)*1024,128,w*1024,128,0,-25,to-x+.6,92);
      c.restore();
     }
+   }
+   const decor=root.ArcadeSceneryAnimation;
+   if(decor?.next&&s.intro>=5&&reef.seabed(s.x)-s.y<285){
+     const crab=decor.next(s,'lecho',s.time);
+     if(crab){
+       if(crab.anchor===null){
+         const near=cam.x+W*(.18+.34*crab.seed),tile=Math.floor(near/size);
+         const fraction=near/size-tile,mirrored=tile%2!==0;
+         // Two flat ledges in the reef painting, including their painted height.
+         const ledge=(mirrored?1-fraction:fraction)<.615?.45:.78;
+         crab.anchor=(tile+(mirrored?1-ledge:ledge))*size;
+         crab.floor=reef.seabed(crab.anchor)+(ledge===.45?23:16);
+       }
+       decor.paint(c,crab.id,crab.frame,crab.anchor,crab.floor,47,.89*crab.alpha);
+     }
    }
   }
   return {water,terrain};

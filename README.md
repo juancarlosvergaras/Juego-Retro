@@ -65,13 +65,21 @@ Soldado v2: hoja transparente de 48 poses completas, con cabeza y cuerpo unidos.
 
 ## Mejoras compartidas entre misiones
 
-Las mejoras generales del personaje, controles, animaciones y combate se implementan en los módulos compartidos y se aplican a todas las misiones. Las misiones 1 y 2 utilizan soldier-animation.js para combinar el torso armado (incluidos cuchillo y hacha) con seis pasos de piernas, tanto al caminar como al correr. Las siguientes misiones deben reutilizar este renderizador y su avance de pasos. Las mejoras permanentes del jugador siguen perteneciendo al perfil global.
+### Lista de chequeo visual de cada misión
+
+- [ ] Reproducir la **intro** desde el menú hasta la primera acción jugable. Comparar al protagonista con el sprite de la partida al entrar en cada plano y al devolver el control.
+- [ ] Reproducir la **salida** desde el último impacto hasta la extracción, el epílogo y la pantalla de resultados. Comprobar la identidad de los personajes, la dirección del viaje y las dos poses que enlazan cada transición.
+- [ ] Seguir los pies, ruedas y bases de las llamas sobre su superficie al inicio, en mitad y al final de los movimientos de cámara. El humo debe nacer del mismo foco y alejarse desde allí.
+- [ ] Inspeccionar por separado las poses de los personajes, vehículos y efectos. Contar al menos ocho poses distintas en los ciclos base y observar el apoyo de los pies y el empalme entre el último y el primer cuadro.
+- [ ] Repetir la revisión en escritorio y con el encuadre de un teléfono. Probar la reproducción continua y la opción de omitir, y confirmar que los subtítulos permiten ver la acción.
+
+Las mejoras generales del personaje, controles, animaciones y combate se implementan en los módulos compartidos y se aplican a todas las misiones. Las misiones 1 y 2 utilizan soldier-animation.js para combinar el torso armado (incluidos cuchillo y hacha) con un ciclo de doce pasos al caminar o correr. Las siguientes misiones deben reutilizar este renderizador y su avance de pasos. Las mejoras permanentes del jugador siguen perteneciendo al perfil global.
 
 ## Heraldo eléctrico y traje de zombi
 
-El Heraldo espera al final del cementerio (x=16840), antes de la puerta del mausoleo. Tiene barra de subjefe, rayos dirigidos, descarga circular que se puede saltar y una ráfaga de tres bolas de plasma. La entrada se abre al derrotarlo. Su vida se conserva al guardar; la recompensa de 1500 puntos y el traje se conceden una sola vez.
+El Heraldo espera al final del cementerio (x=16840), antes de la puerta del mausoleo. Tiene barra de subjefe, rayos dirigidos, descarga circular que se puede saltar y una ráfaga de tres bolas de plasma. La entrada se abre al derrotarlo. Se conserva su salud al guardar. Derrotarlo concede 1500 puntos una vez por partida y desbloquea el traje de forma permanente.
 
-El perfil conserva el traje en ambas misiones. T alterna soldado, lobo y zombi; las tarjetas también permiten elegir una forma directamente. Cada cambio inicia una animación de 1,2 segundos y una espera de 10 segundos, sin recuperar salud ni gastar el arsenal. El contador se conserva al guardar y se detiene con la pausa.
+El perfil conserva el traje en ambas misiones. T alterna las formas disponibles. Las tarjetas también permiten elegir una forma directamente. Cada cambio inicia una animación de 1,2 segundos y una espera de 5 segundos, sin recuperar salud ni gastar el arsenal. El contador se conserva al guardar y se detiene con la pausa.
 
 Como zombi, J/X/clic/Num 0 lanza rayos ilimitados, con los mismos controles de apuntado. L lanza plasma que ralentiza y causa daño gradual durante cuatro segundos. Recibe la mitad del daño, puede correr con Shift y usar los poderes comprados salvo el lanzallamas. No usa armas ni jetpack. ↓/S en suelo firme inicia tres segundos de movimiento subterráneo inmune; hay que soltar abajo antes de repetir. En una plataforma solo se agacha. No ataca ni cambia de forma bajo tierra.
 

@@ -10,37 +10,38 @@
  if(carry.tankUnlocked)profile.tankUnlocked=true;if(carry.fighterUnlocked)profile.fighterUnlocked=true;if(carry.robotUnlocked)profile.robotUnlocked=true;if(carry.zombieUnlocked)profile.zombieUnlocked=true;if(fresh)ArcadeProgression.beginWorld(profile);ArcadeProgression.apply(profile,p,e,true);
  Object.assign(p,{x:200,y:414,lane:414,form:carry.form||'soldier',facing:1,grounded:false,jumps:0,jetpack:false,roadBoost:false,onMotorcycle:false,inSeaMission:false});
  if(!fresh&&saved.mall&&!saved.dead&&Number.isFinite(carry.hp))e.hp=Math.max(1,Math.min(e.maxHp,carry.hp));
- if(!fresh&&['wolf','zombie','robot','tank','fighter','hero'].includes(saved.form)&&(saved.form==='hero'&&p.heroUnlocked||saved.form==='tank'&&p.tankUnlocked||saved.form==='fighter'&&p.fighterUnlocked||saved.form==='wolf'||saved.form==='zombie'&&p.zombieUnlocked||saved.form==='robot'&&p.robotUnlocked))p.form=saved.form;
+ ArcadeZombieForm.restoreBody(p,saved.form||p.form,true);
  if(!fresh&&!saved.dead&&Number.isFinite(saved.fuel))p.fuel=Math.min(p.fuelMax,Math.max(0,saved.fuel));
  p.formCooldown=Math.min(5,Math.max(0,Number(carry.formCooldown)||0));for(const [id,v]of Object.entries(carry.cooldowns||{}))if(Number.isFinite(v)&&v>0)powers.cooldowns[id]=v;
  let difficulty=ArcadeDifficulty.get(ArcadeDifficulty.load(store)),s=ArcadeMallWorld.create(saved.mall||{},difficulty.health);if(saved.dead)s=ArcadeMallWorld.retry(s);
  ArcadeMallWorld.configure(s,p,e);
- e.combatDamage=difficulty.damage;e.hitProtection=difficulty.grace;let score={total:carry.score||0},paused=true,started=false,loaded=false,loading=null,renderer,last=0,acc=0,age=0,noticeAge=0,notice='',mainMenu=null,leaving=false,arcade=null;const images={},keys=new Set(),queue=new Set(),pointers=new Set();
+ ArcadeDifficulty.applyPlayerDamage(e,difficulty.id);let score={total:carry.score||0},paused=true,started=false,loaded=false,loading=null,renderer,last=0,acc=0,age=0,noticeAge=0,notice='',mainMenu=null,leaving=false,arcade=null;const images={},keys=new Set(),queue=new Set(),pointers=new Set();
+ ArcadeProgression.protect(p,saved.dead?ArcadeProgression.RESPAWN_SECONDS:(saved.respawnProtection||0));
  ArcadeDeveloperMode.prepare(profile,p,e,powers);
- function save(){if(leaving||!started)return;try{profile.shield=p.shield;ArcadeProgression.save(profile,store);const shared=ArcadeCampaign.snapshot(p,e,score,powers);store.setItem(key,JSON.stringify({...shared,dead:e.dead,mall:ArcadeMallWorld.snapshot(s,p)}));ArcadeCampaign.write(store,{...shared,level:6,arrival:false,complete:s.complete});}catch{}}
+ function save(){if(leaving||!started)return;if(e.dead)ArcadeProgression.loseLife(profile,e);try{profile.shield=p.shield;ArcadeProgression.save(profile,store);const shared=ArcadeCampaign.snapshot(p,e,score,powers);store.setItem(key,JSON.stringify({...shared,respawnProtection:p.respawnProtection,dead:e.dead,mall:ArcadeMallWorld.snapshot(s,p)}));ArcadeCampaign.write(store,{...shared,level:6,arrival:false,complete:s.complete});}catch{}}
  function notify(text){notice=text;noticeAge=3;}
  function locked(){return paused||s.intro<4||s.ending>=0||p.transform>0||!!arcade?.active;}
  function switchForm(target){if(locked()||s.stairs.active)return;p.previousForm=p.form;if(ArcadeZombieForm.change(e,p,target)){notify(ArcadeZombieForm.label(p.form)+' · Centro comercial'+' · T en 5 s');save();}else if(p.formCooldown>0)notify('Transformación en '+Math.ceil(p.formCooldown)+' s');}
  const wheel=ArcadeCharacterWheel.create($('characters-two'),switchForm);
- function chooseWeapon(slot){if(locked()||p.form==='wolf'||p.form==='zombie'||p.form==='tank'||p.form==='fighter')return;if(p.form==='robot'&&slot<3)return;if(ArcadeArsenal.selectWeapon(e.inventory,slot))save();}
+ function chooseWeapon(slot){if(locked())return;if(ArcadeArsenal.selectWeapon(e.inventory,slot,p.form))save();}
  function cyclePower(){if(locked())return;const list=profile.owned;profile.equipped=list[(list.indexOf(profile.equipped)+1)%list.length]||null;save();}
  const hud=ArcadeMissionHud.create({player:p,encounter:e,profile,powers,canvas,audio,score:()=>score.total,onSelect:chooseWeapon,onPower:()=>{if(!locked())queue.add('power');},onCycle:cyclePower,onPersist:save});
  const dock=ArcadeRobotForm.installDock(p,e,save);
  function clear(){keys.clear();queue.clear();pointers.clear();}
- function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Has caído en el centro':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
+ function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Has caído en el centro':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';if(e.dead)ArcadeProgression.showGameOver(document,profile);play.focus();}
  // La misión cierra con el mismo parte que las misiones 1 a 4; el panel antiguo queda de respaldo.
  function finish(){ArcadeCampaign.markCompleted(store,6);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
   if(window.ArcadeMissionResults?.show){const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 06 COMPLETADA',title:'EL ÚLTIMO CENTRO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 3'],['Antena del Consorcio','Localizada']],next:{label:'Nueva York · Misión 08',run:()=>$('victory-next').click()},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
   // Epílogo a pantalla completa antes del parte.
   if(story?.outro)story.outro(debrief);else debrief();return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}
- play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(s.complete){finish();return;}
+ play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(ArcadeProgression.restartLives(profile,store,key)){leaving=true;location.assign('level-six.html?entry=select');return;}if(s.complete){finish();return;}
   // Una partida nueva abre con el informe animado; reanudar o volver de la pausa va directo al centro.
   if(story&&!briefed&&!e.dead&&s.intro===0){briefed=true;menu.hidden=true;story.briefing(()=>play.click());return;}
-  if(e.dead){s=ArcadeMallWorld.retry(s);e.dead=false;e.hp=e.maxHp;ArcadeMallWorld.configure(s,p,e);e.invincible=3;p.transform=0;p.hurt=0;e.robotWait=null;powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];}
+  if(e.dead){s=ArcadeMallWorld.retry(s);e.dead=false;e.hp=e.maxHp;ArcadeMallWorld.configure(s,p,e);e.lifeLost=false;ArcadeProgression.protect(p);p.transform=0;p.hurt=0;e.robotWait=null;powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];}
   started=true;paused=false;clear();menu.hidden=true;canvas.inert=false;audio.unlock();audio.setRunning(true);canvas.focus();save();};
  $('pause-two').onclick=()=>paused?play.click():pause();$('show-shortcuts').onclick=()=>{$('shortcuts').hidden=!$('shortcuts').hidden;};$('restart').onclick=()=>{save();leaving=true;location.assign('level-six.html?entry=select');};
- mainMenu=ArcadeMainMenu.create({mission:6,resumeAvailable:!!saved.mall,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission(){save();leaving=true;},onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;e.combatDamage=next.damage;e.hitProtection=next.grace;return ArcadeDifficulty.save(id,store);}});
+ mainMenu=ArcadeMainMenu.create({mission:6,resumeAvailable:!!saved.mall,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission(){save();leaving=true;},onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;ArcadeDifficulty.applyPlayerDamage(e,next.id);return ArcadeDifficulty.save(id,store);}});
  $('open-main-menu').onclick=()=>mainMenu.show();$('victory-menu').onclick=()=>{save();leaving=true;location.assign('index.html');};$('victory-replay').onclick=()=>{save();leaving=true;location.assign('level-six.html?entry=select');};
  $('victory-next').onclick=()=>{save();leaving=true;ArcadeCampaign.transferEight(store,p,e,score,powers);location.assign('level-eight.html?entry=campaign');};
  let queuedAim=null;
@@ -54,7 +55,7 @@
  function interact(){if(locked())return;const result=ArcadeMallWorld.interact(s,p);if(result==='arcade'){paused=true;clear();audio.setRunning(false);save();menu.hidden=true;canvas.inert=true;arcade.show();}}
  arcade=ArcadeMallArcadeUI.create({store,onClose(){clear();paused=false;canvas.inert=false;audio.setRunning(true);canvas.focus();save();},onReward(amount){score.total+=amount;ArcadeProgression.credit(profile,amount);save();}});$('mall-interact').onclick=interact;
  function gunshot(source,sound){
-  ArcadeMallWorld.hearShot(s,p,source);
+  if(!['fistSwing','punch','kick'].includes(sound))ArcadeMallWorld.hearShot(s,p,source);
   audio.play(sound,ArcadeSoundEvents.spatial(source,p));
  }
  // La radio sigue lo que ocurre en el centro; el contexto solo lleva datos sencillos.
@@ -62,24 +63,56 @@
   story.update({playing,floor:s.floor,x:p.x,hp:e.hp,
    guards:playing&&!roof?s.enemies.filter(n=>n.hp>0&&!n.rear&&Math.abs(n.x-p.x)<430).length:0,
    rear:playing&&!roof&&s.enemies.some(n=>n.rear&&n.hp>0),
-   arcade:playing&&s.floor===0&&Math.abs(p.x-s.arcadeX)<200,
+   arcade:playing&&ArcadeMallWorld.nearArcade(s,p),
    bossActive:roof&&b.active&&b.phase!=='arrival'&&s.ending<0,bossHalf:roof&&s.ending<0&&b.hp>0&&b.hp<=b.maxHp/2,bossDown:s.ending>=.5},dt);}
- function update(dt){ArcadeDeveloperMode.tick(p,e);const input=controls();narrate(dt);ArcadeZombieForm.tick(p,dt);for(const k of ['transform','claw','kick','healGlow'])p[k]=Math.max(0,(p[k]||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
+ function update(dt){ArcadeProgression.tickProtection(p,dt);ArcadeDeveloperMode.tick(p,e);const input=controls();narrate(dt);ArcadeZombieForm.tick(p,dt);for(const k of ['transform','claw','kick','healGlow'])p[k]=Math.max(0,(p[k]||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
+  audio.music?.follow?.(dt,p,e,{quiet:s.intro<4||s.stairs.active,boss:s.boss.active,victory:s.ending>=0});
   if(queue.has('interact')){interact();queue.delete('interact');if(arcade.active)return;}
   if(s.intro>=4&&s.ending<0){const actual=p.transform>0||s.stairs.active?{}:input;ArcadeArsenal.playerAim(p,actual,{queuedAim,turn:false});s.mode=ArcadeMallWorld.stepPlayer(s,p,ArcadeArsenal.movementInput(p,actual),dt);p.crouching=!!s.mode.crouching;p.aimHeight=p.crouching?20:28;if(p.aim.x&&p.form!=='wolf'&&!p.rope)p.facing=Math.sign(p.aim.x);ArcadeSoldierAnimation.advanceWalk(p,dt);
    const message=ArcadeMissionCombat.update(e,p,actual,dt,s.geometry.platforms,powers,profile,{left:s.camera.x,right:s.camera.x+960,top:s.camera.y,bottom:s.camera.y+540},gunshot);if(message)notify(message);ArcadePhysics.updateIdle(p,actual,dt);
-  }
-  const events=ArcadeMallWorld.update(s,p,e,input,dt);for(const ev of events){if(ev.type==='rear'){notify('← Refuerzos por el pasillo');audio.play('land',{gain:.25,pan:-.75});}if(ev.type==='points'){score.total+=ev.amount;ArcadeProgression.credit(profile,ev.amount);notify(ev.text+' · +'+ev.amount);save();}if(ev.type==='checkpoint'){powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];notify(ev.text);audio.play('pickup',{gain:.5});save();}if(ev.type==='pickup')notify(ev.text);if(ev.type==='stairs'&&ev.phase!=='exit')audio.play(ev.phase==='walk'?'grip':'door',{gain:ev.phase==='walk'?.45:.3});if(ev.type==='ending'){audio.play('explosion',{gain:.5});save();}if(ev.type==='complete')finish();}
+  }else if(s.ending>=0)ArcadeMissionCombat.aftermath(e,p,powers,dt,s.geometry.platforms);
+  const events=ArcadeMallWorld.update(s,p,e,input,dt);for(const ev of events){if(ev.type==='rear'){notify('← Refuerzos por el pasillo');audio.play('land',{gain:.25,pan:-.75});}if(ev.type==='points'){score.total+=ev.amount;ArcadeProgression.credit(profile,ev.amount);notify(ev.text+' · +'+ev.amount);save();}if(ev.type==='checkpoint'){powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];notify(ev.text);audio.play('pickup',{gain:.5});save();}if(ev.type==='pickup')notify(ev.text);if(ev.type==='stairs'&&(ev.phase==='walk'||ev.dir<0&&ev.phase==='out'))audio.play('step',{gain:.35});if(ev.type==='ending'){audio.play('explosion',{gain:.5});save();}if(ev.type==='complete')finish();}
   queue.clear();queuedAim=null;if(e.dead){p.jetpack=false;pause();return;}age+=dt;if(age>2){age=0;save();}
  }
  function ui(){const cinematic=s.intro<4||s.ending>=0;document.querySelector('.viewport').classList.toggle('road-cinematic',cinematic);hud.update(locked());dock();wheel.update(p.form,true,locked(),p.zombieUnlocked,p.formCooldown,p.robotUnlocked,p.tankUnlocked,p.fighterUnlocked,p.heroUnlocked);
-  $('stars-two').textContent='★ '+s.stars.size+' / 3';$('region-two').textContent=ArcadeMallWorld.names[s.floor];$('route-two').max=4;$('route-two').value=s.floor+p.x/ArcadeMallWorld.widths[s.floor];$('distance-two').textContent=s.floor===3?'AZOTEA':'PLANTA '+(s.floor+1)+' / 3';const shop=s.floor===0&&Math.abs(p.x-s.arcadeX)<200;const button=$('mall-interact');button.hidden=locked()||!p.grounded||!!p.burrow||!shop;button.textContent='↑ Entrar a la tienda Arcade';$('context-two').textContent=noticeAge>0?notice:shop?'↑ Tienda Arcade · Tres minijuegos originales':s.floor===3?({arrival:'El Coloso trepa por la fachada.',fistWarn:'Puño · Sal de la marca en el suelo.',sweepWarn:'Barrido · Salta la onda.',throwWarn:'Lanzamiento · Sal de la mira.',rocksWarn:'Escombros · Muévete entre las marcas.',recover:'Ataca al torso mientras recupera el equilibrio.'}[s.boss.phase]||'Dispara al torso del Coloso.'):'Avanza por la galería · Escaleras mecánicas al fondo →';$('state').textContent=ArcadeZombieForm.label(p.form);$('hook-status').textContent=p.form==='soldier'?'E · GANCHO / F · JETPACK':'T · CAMBIAR FORMA';$('boss-hud').hidden=s.floor!==3||!s.boss.active||s.ending>=0;$('boss-title').textContent='JEFE · EL COLOSO';$('boss-value').textContent=Math.ceil(s.boss.hp)+' / '+Math.ceil(s.boss.maxHp);$('boss-fill').style.width=100*s.boss.hp/s.boss.maxHp+'%';const bar=$('boss-fill').parentElement;bar.setAttribute('aria-label','Vida del Coloso');bar.setAttribute('aria-valuemax',s.boss.maxHp);bar.setAttribute('aria-valuenow',s.boss.hp);
+  $('stars-two').textContent='★ '+s.stars.size+' / 3';$('region-two').textContent=ArcadeMallWorld.names[s.floor];$('route-two').max=4;$('route-two').value=s.floor+p.x/ArcadeMallWorld.widths[s.floor];$('distance-two').textContent=s.floor===3?'AZOTEA':'PLANTA '+(s.floor+1)+' / 3';const shop=ArcadeMallWorld.nearArcade(s,p);const button=$('mall-interact');button.hidden=locked()||!p.grounded||!!p.burrow||!shop;button.textContent='↑ Entrar a la tienda Arcade';$('context-two').textContent=noticeAge>0?notice:shop?'↑ Tienda Arcade · Tres minijuegos originales':s.floor===3?({arrival:'El Coloso trepa por la fachada.',fistWarn:'Puño · Sal de la marca en el suelo.',sweepWarn:'Barrido · Salta la onda.',throwWarn:'Lanzamiento · Sal de la mira.',rocksWarn:'Escombros · Muévete entre las marcas.',recover:'Ataca al torso mientras recupera el equilibrio.'}[s.boss.phase]||'Dispara al torso del Coloso.'):'Avanza por la galería · Escaleras mecánicas al fondo →';$('state').textContent=ArcadeZombieForm.label(p.form);$('hook-status').textContent=p.form==='soldier'?'E · GANCHO / F · JETPACK':'T · CAMBIAR FORMA';$('boss-hud').hidden=s.floor!==3||!s.boss.active||s.ending>=0;$('boss-title').textContent='JEFE · EL COLOSO';$('boss-value').textContent=Math.ceil(s.boss.hp)+' / '+Math.ceil(s.boss.maxHp);$('boss-fill').style.width=100*s.boss.hp/s.boss.maxHp+'%';const bar=$('boss-fill').parentElement;bar.setAttribute('aria-label','Vida del Coloso');bar.setAttribute('aria-valuemax',s.boss.maxHp);bar.setAttribute('aria-valuenow',s.boss.hp);
  }
  const paths=ArcadeMallRenderer.paths;
- function loadLevel(){if(loaded)return Promise.resolve(true);if(loading)return loading;ArcadeLoading.begin(Object.keys(paths).length,loadLevel);loading=Promise.all([ArcadeAdvancedForms.load(),ArcadeRobotForm.load(),...Object.entries(paths).map(([id,path])=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{images[id]=path.endsWith('.webp')||id.endsWith('Actions')?img:prepareWhiteDeath(img);ArcadeLoading.step();resolve();};img.onerror=()=>reject(Error(path));img.src=path;}))]).then(()=>{renderer=ArcadeMallRenderer.create(images);ArcadeJetpackRenderer.setSheet(images.jetMk2);ArcadeZombieForm.setRunSheet(images.zombieRun);ArcadeZombieForm.setShockSheet(images.shock);ArcadeCheckpoints.setSheet(images.checkpointPc);ArcadeFormTransition.setSheet(images.formTransition);ArcadeImpact.setSheet(images.impact);ArcadePowerSprites.setSpriteSheet(images.powerSheet);ArcadePowerSprites.setOrbitalSheet(images.orbitalSheet);ArcadeZombieForm.setSheet(images.zombiePlayer);ArcadeZombieForm.setExtra(images.zombieExtra);ArcadeZombieForm.setCastSheet(images.zombieCast);ArcadeZombieForm.setPlayerSheets(images.zombieSoldier,images.zombieSoldierExtra);ArcadeZombieForm.setIdleSheet(images.zombieIdle);wheel.setSprites(images.soldier,SOLDIER_V2_FRAMES[0][0],images.wolf,ACTION_FRAMES.wolf[0][7]);ArcadeFormTransition.setEndpoint('wolf',images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);loaded=true;play.disabled=false;play.textContent='Entrar al centro comercial';canvas.width=960;canvas.height=540;ArcadeLoading.finish();mainMenu.ready({autoPlay:!!entry});if(entry)history.replaceState(null,'','level-six.html');ui();return true;}).catch(error=>{console.error(error);loading=null;ArcadeLoading.fail();mainMenu.fail();return false;});return loading;}
+ function loadLevel(){if(loaded)return Promise.resolve(true);if(loading)return loading;const useZombie=p.zombieUnlocked||p.form==='zombie';
+    const levelArt=Object.entries(paths).filter(([key])=>useZombie||!/^zombie[A-Z]/.test(key));
+    ArcadeLoading.begin(levelArt.length,loadLevel);loading=Promise.all([ArcadeAdvancedForms.load(p),(p.robotUnlocked||p.form==='robot')?ArcadeRobotForm.load():null,...levelArt.map(([id,path])=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{images[id]=path.endsWith('.webp')||id.endsWith('Actions')?img:prepareWhiteDeath(img);ArcadeLoading.step();resolve();};img.onerror=()=>reject(Error(path));img.src=path;}))]).then(()=>{
+    renderer=ArcadeMallRenderer.create(images);
+    ArcadeJetpackRenderer.setSheet(images.jetMk2);
+    ArcadeZombieForm.setShockSheet(images.shock);
+    ArcadeCheckpoints.setSheet(images.checkpointPc);
+    ArcadeFormTransition.setSheet(images.formTransition);
+    ArcadeImpact.setSheet(images.impact);
+    ArcadePowerSprites.setSpriteSheet(images.powerSheet);
+    ArcadePowerSprites.setOrbitalSheet(images.orbitalSheet);
+    if(useZombie){
+      ArcadeZombieForm.setRunSheet(images.zombieRun);
+      ArcadeZombieForm.setCastSheet(images.zombieCast);
+      ArcadeZombieForm.setSheet(images.zombiePlayer);
+      ArcadeZombieForm.setExtra(images.zombieExtra);
+      ArcadeZombieForm.setPlayerSheets(images.zombieSoldier,images.zombieSoldierExtra);
+      ArcadeZombieForm.setIdleSheet(images.zombieIdle);
+    }
+    wheel.setSprites(images.soldier,SOLDIER_V2_FRAMES[0][0],images.wolf,ACTION_FRAMES.wolf[0][7]);
+    ArcadeFormTransition.setEndpoint('wolf',images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);
+    loaded=true;
+    play.disabled=false;
+    play.textContent='Entrar al centro comercial';
+    canvas.width=960;
+    canvas.height=540;
+    ArcadeLoading.finish();
+    mainMenu.ready({autoPlay:!!entry});
+    if(entry)history.replaceState(null,'','level-six.html');
+    ui();
+    return true;
+  }).catch(error=>{console.error(error);loading=null;ArcadeLoading.fail();mainMenu.fail();return false;});return loading;}
  mainMenu.defer(loadLevel);if(entry)loadLevel();const budget=ArcadeFrameBudget.create();
  // Cámara cercana: personajes más grandes fuera de cinemáticas y jefes.
- const view=ArcadeFrameBudget.createView?.(1.5)||{limit:1,update(){},draw(c,w,h,x,y,f,d,paint){paint();}},stage=document.querySelector('.viewport'),closeUp=()=>!stage?.classList?.contains?.('road-cinematic')&&!!$('boss-hud')?.hidden&&!s.stairs?.active;
+ const view=ArcadeFrameBudget.createView?.(1.5)||{limit:1,update(){},draw(c,w,h,x,y,f,d,paint){paint();}},stage=document.querySelector('.viewport'),closeUp=()=>!stage?.classList?.contains?.('road-cinematic')&&!!$('boss-hud')?.hidden&&!s.stairs?.roof;
 
  function frame(t){ArcadeDeveloperMode.poll();ArcadeControls.poll(t);const plan=budget.plan(t,{paused,hidden:document.hidden,width:960,height:540}),dt=Math.min(.08,(t-last)/1000||0);last=t;if(loaded){if(!paused){acc+=dt;while(acc>=1/120){update(1/120);acc-=1/120;if(paused){acc=0;break;}}}else acc=0;if(plan.render){view.update(closeUp()?view.limit:1,dt);view.draw(ctx,960,540,p.x-s.camera.x,p.y-s.camera.y-30,p.facing||1,dt,()=>renderer.draw(ctx,s,p,e,powers,profile));}story?.render(paused||s.intro<4);if(plan.hud)ui();}requestAnimationFrame(frame);}requestAnimationFrame(frame);
 })();

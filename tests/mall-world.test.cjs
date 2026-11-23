@@ -1,5 +1,22 @@
 const test=require('node:test'),assert=require('node:assert/strict'),M=require('../mall-world'),P=require('../physics'),C=require('../mission-combat'),V=require('../powers'),N=require('../enemies'),A=require('../mall-arcade'),Campaign=require('../campaign');
 const setup=(floor=0)=>{const s=M.create({floor,started:true}),p=P.createPlayer(),e=C.create({owned:[1,3],selected:3,ammo:{3:200}});p.form='soldier';M.configure(s,p,e);return{s,p,e};};
+test('the purse encounter stays on its balcony after the last pose, on returning and after loading a save',()=>{
+ const I=require('../mall-interior'),{s,p}=setup(),frames=new Set();
+ I.visitPurse(s,320,960);
+ const anchor=s.purseScenes[0].x;
+ for(let i=1;i<=3600;i++){
+  s.time=i/60;I.visitPurse(s,320,960);
+  frames.add(I.purseFrame(s.purseScenes[0].age));
+ }
+ assert.deepEqual([...frames].sort(),[0,1,2,3,4,5,6,7]);
+ const saved=M.snapshot(s,p),restored=M.create(JSON.parse(JSON.stringify(saved)));
+ restored.floor=1;I.visitPurse(restored,320,960);
+ const upstairs=restored.purseScenes[1];restored.camera.x=3000;restored.time+=.1;
+ I.visitPurse(restored,320,960);assert.equal(upstairs.age,0,'offscreen encounter waits');
+ restored.floor=0;restored.time+=12;I.visitPurse(restored,320,960);
+ assert.equal(I.purseFrame(restored.purseScenes[0].age),7);
+ assert.equal(restored.purseScenes[0].x,anchor);assert.deepEqual(saved.purseScenes[0],restored.purseScenes[0]);
+});
 test('three broad floors and roof leave ground clear below optional decks, with finite soldier timers',()=>{const {s,p,e}=setup();assert.deepEqual(M.widths,[5400,4800,4600,960]);assert.equal(p.y,472);assert.equal(e.enemies.length,11);assert.ok(e.enemies.every(n=>Number.isFinite(n.shot)));assert.ok(s.geometry.platforms.filter(n=>n.kind!=='ground').every(n=>!n.solid&&n.y<400));});
 function advance({s,p,e},count,input={},dt=1/120){
  const events=[];
@@ -27,12 +44,24 @@ test('stepping on an escalator starts the crossing, which finishes by itself and
 test('each floor has its own frame: the escalator is in view before boarding and the roof is framed whole',()=>{
  for(const floor of [0,1,2]){
   const st=M.escalator(floor),camera=M.cameraX(floor,st.entry);
-  assert.equal(camera,M.widths[floor]-870);assert.equal(M.cameraX(floor,st.exit),camera,'the frame rests during the climb');
+  if(floor===2)assert.equal(M.cameraX(floor,st.exit),camera,'the roof approach has a fixed frame');
+  else assert.equal(M.cameraX(floor,st.exit)-camera,st.exit-st.entry,'the camera follows the player up');
   assert.ok(st.entry-camera>300&&st.exit-camera<900,'the whole escalator is visible');
-  assert.equal(M.cameraX(floor+1,M.landingX),floor===2?0:-90,'the head of the escalator is in view on arrival');
+  assert.equal(M.cameraX(floor+1,M.landingX),floor===2?0:M.landingX-320,'the head of the escalator is in view on arrival');
  }
  assert.equal(M.cameraX(0,140),0);
  assert.equal(M.cameraX(3,270),0,'the boss arena is framed before combat starts');
+});
+test('the arcade prompt and entry follow the single painted shop while the atrium scrolls',()=>{
+ const {s,p}=setup(0),I=require('../mall-interior'),a=I.arcadeFront,layout=I.storefront(0);
+ for(p.x=100;p.x<2400;p.x+=5){
+  const camera=M.cameraX(0,p.x),playerX=p.x-camera;
+  const left=a.bay*layout.tile+a.x*layout.scale-camera*I.parallax;
+  const inFront=playerX>=left&&playerX<=left+a.width*layout.scale;
+  assert.equal(M.nearArcade(s,p),inFront);
+  assert.equal(M.interact(s,p),inFront?'arcade':null);
+ }
+ p.x=980;s.floor=1;assert.equal(M.interact(s,p),null);
 });
 test('Arcade entry still requires proximity, ground and no burrow; saves restore the current tread',()=>{
  const game=atStair(0,96),{s,p,e,st}=game;

@@ -1,0 +1,84 @@
+body.horizon-world{margin:0;background:#081317;color:#f5ead0}
+body.horizon-world #pilot-main{width:100%;margin:0;grid-template-columns:minmax(0,1fr);max-width:none;min-height:100dvh;padding:0;display:grid;place-items:center}
+.horizon-world .game-card{width:min(100%,calc((100dvh - 44px)*16/9));overflow:hidden;border:0;border-radius:0;box-shadow:none;background:#132329}
+.horizon-world .game-toolbar{height:42px;display:flex;align-items:center;gap:clamp(5px,1.5vw,20px);padding:0 12px;background:#132329;font:600 clamp(10px,1.05vw,14px)/1.1 monospace;color:#bbd0c8}
+.horizon-world .game-toolbar strong,.hz-sector b{color:#ffce81}
+.hz-sector{margin-right:auto;text-transform:uppercase;color:#f3e2b8}
+.horizon-world .game-toolbar button{width:auto;min-height:28px;white-space:nowrap}
+:root .horizon-world .game-card #viewport{position:relative;width:100%;height:auto;aspect-ratio:16/9;overflow:hidden;margin:0;padding:0;touch-action:none}
+#horizon{display:block;width:100%;height:100%;outline:0;image-rendering:pixelated;touch-action:none}
+.hz-readout,.hz-instruments,#pilot-radio{position:absolute;pointer-events:none;background:#102329db;color:#f8ebce;font:600 clamp(10px,1.2vw,16px)/1.25 monospace;text-shadow:0 1px #051418;border-left:2px solid #70c4ba}
+.hz-readout{left:2%;top:3%;padding:.31em .65em;max-width:56%}
+.hz-readout progress{height:3px;display:block;width:100%;accent-color:#83cebd;margin-top:3px}
+.hz-instruments{right:2%;top:3%;padding:.31em .65em;display:grid;text-align:right;gap:2px;border-color:#e5a762}
+#pilot-radio{bottom:4%;left:50%;transform:translateX(-50%);width:max-content;max-width:80%;text-align:center;padding:.4em .8em}
+.hz-pads{display:none}.hz-pads button{touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.horizon-world .overlay-panel{max-height:95%;overflow:auto}.horizon-world .overlay-panel a{display:block;text-align:center}
+body.horizon-world>.sound-controls{display:none}
+@media(pointer:coarse),(max-width:720px),(max-height:500px) and (max-width:1100px){
+ .horizon-world .game-card{width:min(100%,calc((100dvh - 92px)*16/9))}
+ .horizon-world .game-toolbar{height:34px;gap:5px;font-size:10px;padding:0 4px}
+ .horizon-world .profile-badge{display:none}
+ .hz-pads{display:flex;align-items:center;justify-content:space-between;gap:4px;min-height:52px;padding:2px 3px max(2px,env(safe-area-inset-bottom))}
+ .hz-pads>div{display:flex;gap:clamp(1px,1vw,6px)}
+ .hz-pads button{font:600 clamp(11px,2.7vw,17px)/1 monospace;color:#f0e4c4;background:#243c40;border:1px solid #547572;border-radius:4px;padding:0 6px;min-width:clamp(32px,8vw,54px);height:42px}
+ .hz-pads .held{background:#7e6038;border-color:#f6d388}
+ .horizon-world .hz-readout,.horizon-world .hz-instruments,#pilot-radio{font-size:clamp(9px,1.8vw,13px)}
+ .horizon-world .play-notices{display:none}
+}
+@media(max-width:405px){.hz-sector b{display:none}.horizon-world .game-toolbar .hz-sector{max-width:30%;line-height:1.15}}
+#pilot-radio[hidden]{display:none}
+
+@media(orientation:landscape) and (pointer:coarse),(orientation:landscape) and (max-height:500px) and (max-width:1100px){
+  .horizon-world .game-card{position:relative;width:100%;height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .horizon-world .game-toolbar{width:100%;height:36px;flex:none}
+  :root .horizon-world .game-card #viewport{width:min(calc(100% - 172px),calc((100dvh - 36px)*16/9));flex:none}
+  .hz-pads{position:absolute;inset:38px 0 0;pointer-events:none;min-height:0;padding:0 3px}
+  .hz-pads>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:80px;align-content:center;gap:3px;pointer-events:auto}
+  .hz-pads button{height:45px;min-width:0;padding:0 2px;font-size:12px}
+  .hz-pads>div:last-child button:last-child{grid-column:1/-1}
+  .hz-pads [data-drive=ArrowLeft]{grid-column:1;grid-row:2}
+  .hz-pads [data-drive=ArrowRight]{grid-column:2;grid-row:2}
+}
+
+@media(orientation:landscape) and (max-height:500px){.horizon-world[data-world="9"] .hz-pads>div:last-child{grid-template-columns:1fr}.horizon-world[data-world="9"] .hz-pads>div:last-child button{height:38px}}
+
+#rig-panel[hidden],.hz-pads [data-rig][hidden]{display:none}
+#rig-panel{position:relative;display:flex;align-items:center;gap:12px;padding:2px 10px;background:#15252c;border-top:1px solid #485b5c;height:96px;min-width:0}
+#rig-panel .character-wheel,#rig-panel #power-wheel{position:static;transform:none;flex:none;width:24%;min-width:0;max-width:222px;pointer-events:auto}
+#rig-panel #power-wheel{width:19%;max-width:160px}
+#rig-panel .character-cards,#rig-panel .power-cards{height:56px;display:flex;gap:3px;overflow:auto hidden;scrollbar-width:thin;align-items:center;touch-action:pan-x}
+#rig-panel .character-card,#rig-panel .power-card{position:relative;inset:auto;transform:none!important;flex:none;width:49px;height:53px;padding:1px;border-radius:4px}
+#rig-panel .character-card canvas,#rig-panel .power-card canvas{width:34px;height:31px;margin:auto}
+#rig-panel .character-card span,#rig-panel .power-card strong,#rig-panel .power-wait{font:600 8px/10px monospace;min-height:0;letter-spacing:0}
+#rig-panel .power-card canvas{height:22px}
+#rig-panel .character-cycle,#rig-panel .power-cycle{width:100%;min-height:19px;margin:2px 0 0;padding:1px}
+#rig-panel .rig-vitals{font:600 11px monospace;color:#e7ecd9;max-width:130px;flex:none}
+#rig-panel .life-track{width:78px;height:6px;margin:2px 0 5px}
+#rig-panel #weapon-slots{display:flex;flex:1;min-width:0;align-self:stretch;align-items:center;overflow:auto}
+#rig-panel .weapon-slot{flex:1;min-width:38px}
+body.on-rig .game-card{width:min(100%,calc((100dvh - 142px)*16/9))}
+@media(max-width:720px),(max-height:520px){
+ #rig-panel{gap:4px;height:80px;padding:0 4px;width:100%;justify-content:space-between}
+ #rig-panel .character-wheel>.hud-label{display:none}
+ #rig-panel .character-cards,#rig-panel .power-cards{height:53px}
+ #rig-panel .rig-vitals{font-size:9px;width:14%;max-width:90px}
+ #rig-panel .life-track{max-width:100%}
+ #rig-panel .weapon-slot{min-width:34px;padding:1px}#rig-panel .slot-name{display:none}
+ body.on-rig .game-card{width:min(100%,calc((100dvh - 163px)*16/9))}
+}
+@media(orientation:landscape) and (max-height:520px){
+ body.on-rig .game-card{width:100%}
+ :root .on-rig .game-card #viewport{width:min(calc(100% - 172px),calc((100dvh - 110px)*16/9))}
+ .on-rig .hz-pads{bottom:80px}
+}
+
+.horizon-world #shop .shop-summary{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}
+.horizon-world #shop .shop-summary #shop-balance{white-space:normal;font-size:clamp(14px,2vw,19px)}
+@media(max-width:620px){
+ .horizon-world #shop .shop-summary{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:530px) and (orientation:portrait){
+ .on-rig .hz-pads{flex-wrap:wrap;justify-content:center}
+ .on-rig .hz-pads button{min-width:36px;height:35px;font-size:12px}
+}

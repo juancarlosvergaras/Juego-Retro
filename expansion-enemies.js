@@ -4,7 +4,7 @@
  function update(n,p,dt,platforms,bullets){
   if(!['jetSoldier','warden'].includes(n.kind))return false;
   n.anim=(n.anim||0)+dt;n.hit=Math.max(0,(n.hit||0)-dt);n.flash=Math.max(0,(n.flash||0)-dt);
-  if(n.hp<=0){n.death=Math.max(0,(n.death||0)-dt);if(n.kind==='jetSoldier'){n.vy=(n.vy||0)+420*dt;n.y=Math.min(620,n.y+n.vy*dt);}return true;}
+  if(n.hp<=0){n.death=Math.max(0,(n.death||0)-dt);if(n.kind==='jetSoldier'){n.vy=(n.vy||0)+420*dt;n.y=Math.min(n.landingY??620,n.y+n.vy*dt);}return true;}
   if(n.frozen>0){n.frozen=Math.max(0,n.frozen-dt);return true;}
   const dx=p.x-n.x,dy=p.y-n.y,near=Math.abs(dx)<640&&Math.abs(dy)<370;
   if(!near){n.shot=Math.max(n.shot||0,1.1);return true;}

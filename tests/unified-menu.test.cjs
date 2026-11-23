@@ -1,8 +1,8 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');
 const shell=require('../menu-shell.js');
-const pages=['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html'];
-test('one menu definition serves the eight missions',()=>{
- assert.equal(shell.missions.length,8);
+const pages=['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html','level-nine.html','level-ten.html'];
+test('one menu definition serves the ten missions',()=>{
+ assert.equal(shell.missions.length,10);
  pages.forEach((page,i)=>{const html=fs.readFileSync(page,'utf8');
   assert.match(html,new RegExp('<section id="main-menu"[^>]*data-mission="'+(i+1)+'"></section>'),page+' only declares the menu container');
   assert.equal((html.match(/<script src="/)||{}).index,html.indexOf('<script src="menu-shell.js">'),page+': menu-shell.js is the first script');});
@@ -12,11 +12,11 @@ test('the menu offers play, missions, shop, settings, help, restart, developer m
   for(const id of ['menu-play','menu-shop','menu-restart','menu-developer','menu-exit','menu-back','menu-sound','menu-help','menu-shop-host','difficulty-choices','tutorial-enabled'])assert.ok(html.includes('id="'+id+'"'),id);
   for(const page of ['home','levels','shop','settings','help','exit'])assert.ok(html.includes('data-menu-page="'+page+'"'),page);
   assert.ok(html.includes('Modo desarrollador temporal'),'the temporary developer option stays in the menu');
-  assert.equal((html.match(/class="secondary mission-card"/g)||[]).length,8);
+  assert.equal((html.match(/class="secondary mission-card"/g)||[]).length,10);
   assert.ok(html.includes(shell.missions[mission-1].help),'help text matches the mission being played');}
 });
 test('mission cards use light thumbnails instead of full backgrounds',()=>{
- for(const m of shell.missions){assert.match(m.art,/^assets\/thumbs\/mision-0\d\.webp$/);assert.ok(fs.statSync(m.art).size<120000,m.art+' stays small');}
+ for(const m of shell.missions){assert.match(m.art,/^assets\/thumbs\/mision-\d{2}\.webp$/);assert.ok(fs.statSync(m.art).size<120000,m.art+' stays small');}
  assert.ok(!fs.readFileSync('mission-map.js','utf8').includes('assets/worlds/'),'special cards use thumbnails too');
 });
 test('pausing opens the same menu instead of a second pause panel',()=>{

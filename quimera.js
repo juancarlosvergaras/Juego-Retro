@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+  const Grenades=typeof module!=='undefined'&&module.exports?require('./grenades'):root.ArcadeGrenades;
   const zones=['Calle del muelle','Lonja del puerto','Varadero del Lobo','Canal de servicio','Patio de bombas','Dique de contención','Zona de carga','Pabellón de aislamiento','Laboratorio Quimera'];
   const right=kind=>({kind,route:'right'}),left=kind=>({kind,route:'left'}),hatch=kind=>({kind,route:'hatch'}),
     shutter=kind=>({kind,route:'shutter'}),air=()=>({kind:'jet',route:'air'});
@@ -26,10 +27,10 @@
   // Keep the same space behind the final arena as in the original district.
   const worldEnd=waves[waves.length-1].x+310, maxCam=worldEnd-960;
   const moves={
-    jab:{duration:.24,impact:.08,damage:9,reach:65,depth:22,push:10},
-    cross:{duration:.33,impact:.11,damage:15,reach:73,depth:21,push:26},
-    kick:{duration:.37,impact:.14,damage:19,reach:99,depth:23,push:38},
-    uppercut:{duration:.43,impact:.15,damage:23,reach:58,depth:26,push:40},
+    jab:{duration:.24,impact:.122,damage:9,reach:65,depth:22,push:10},
+    cross:{duration:.33,impact:.157,damage:15,reach:73,depth:21,push:26},
+    kick:{duration:.37,impact:.189,damage:19,reach:99,depth:23,push:38},
+    uppercut:{duration:.43,impact:.246,damage:23,reach:58,depth:26,push:40},
     sweep:{duration:.46,impact:.17,damage:14,reach:86,depth:31,push:30},
     batSwing:{duration:.45,impact:.18,damage:27,reach:113,depth:28,push:49},
     heavySwing:{duration:.51,impact:.22,damage:34,reach:119,depth:26,push:54},
@@ -37,6 +38,8 @@
     pistolShot:{duration:.25,impact:.09,damage:23,reach:460,depth:17,push:13},
     airkick:{duration:.35,impact:.10,damage:21,reach:92,depth:25,push:42}
   };
+  // Distances from the pivot to the extended glove or boot in the 120 px action cells.
+  const limbReach={jab:47,cross:49,uppercut:32,kick:49};
   const weapons={
     bat:{label:'Bate',move:'batSwing',sprite:'capBat',icon:0},
     alloy:{label:'Bate de metal',move:'heavySwing',sprite:'capAlloy',icon:1},
@@ -141,7 +144,7 @@
       drops:floor.map(d=>({...d,readyAt:0})),tracers:[],goSince:-10,checkpointGear:{weapon,floor},
       supplies:objects,checkpointSupplies:supplySnapshot(objects),
       player:{kind:'fighter',weapon:weapon&&{...weapon},x:wave?waves[wave].x-290:145,y:366,z:0,vz:0,face:1,hp:100,maxHp:100,act:'idle',stride:0,stepping:false,gaitWeight:0,age:0,stun:0,immune:0,attack:null,pickup:null,chain:0,chainTime:0},
-      enemies:[],shots:[],chemicals:[],sparks:[],food:[],score:Number.isFinite(saved.score)?Math.max(0,saved.score):0,
+      enemies:[],shots:[],grenades:[],chemicals:[],sparks:[],food:[],score:Number.isFinite(saved.score)?Math.max(0,saved.score):0,
       checkpointScore:Number.isFinite(saved.score)?Math.max(0,saved.score):0,combo:0,comboTime:0,hitstop:0,shake:0,serial:0,events:[]};
   }
   function portal(gate,route){return route==='shutter'?{x:gate.x+116,y:307}:{x:gate.x+42,y:406};}
@@ -218,13 +221,14 @@
     if(n.kind==='warden'&&!n.stun&&n.act==='guard'&&(p.x-n.x)*n.face>0&&(m===moves.jab||m===moves.cross)){
       spark(s,n.x,n.y-45,'block');s.events.push('block');return;
     }
+    const impactX=n.x-12*p.face*scaleAt(n),impactY=n.y-(n.z||0)-(m===moves.uppercut?58:43)*scaleAt(n);
     const multiplier=final&&n.tech?(techPhase(n)==='recovery'?1.25:.83):n.kind==='gunner'&&n.overheat>0?1.5:1;
     const damage=Math.round(m.damage*multiplier);
     n.hp=Math.max(0,n.hp-damage);
     if(boss&&damage>0)n.hitUntil=s.age+.18;
-    if(n.hp>0&&n.kind!=='gunner'&&!n.tech&&!n.evade)n.x=clamp(n.x+p.face*m.push*(boss?.24:1),s.arenaLeft+32,s.arenaLeft+740);
+    if(n.hp>0&&n.kind!=='gunner'&&!n.tech&&!n.evade)n.recoil=p.face*m.push*(boss?.24:1);
     if(!armored){n.wind=0;n.stun=m===moves.uppercut||m===moves.sweep?.65:.32;n.cool=Math.max(n.cool,.18);}
-    spark(s,n.x,n.y-(n.z||0)-49,'hit');s.hitstop=.024;s.events.push('hit');
+    spark(s,impactX,impactY,'hit');s.hitstop=.045;s.events.push('hit');
     s.combo=s.comboTime>0?s.combo+1:1;s.comboTime=1.45;s.score+=m.damage*7;
     if(n.hp<=0&&n.kind==='scientist'){n.hp=1;n.morph=1.8;n.stun=0;n.tech=null;n.evade=null;n.wind=0;n.z=0;activity(n,'morph');s.shots=[];s.chemicals=[];s.events.push('morph');}
     else if(n.hp<=0){if(final)s.chemicals=[];knockDown(s,n,p.face*Math.min(67,m.push+17));}
@@ -244,7 +248,7 @@
     if(target){if(supplies[target.kind])hitSupplies(s,move,target);else damageEnemy(s,target,move);}
   }
   function hurt(s,source,damage){
-    const p=s.player;if(p.immune>0||p.hp<=0)return;
+    const p=s.player;if(p.respawnProtection>0||p.immune>0||p.hp<=0)return;
     if(p.act==='guard'&&(source.x-p.x)*p.face>=-5){p.immune=.16;spark(s,p.x+p.face*20,p.y-56,'block');s.events.push('block');return;}
     p.hp=Math.max(0,p.hp-damage);p.stun=.33;p.immune=.72;p.attack=null;p.pickup=null;s.combo=0;activity(p,p.hp?'hurt':'fall');p.age=0;
     spark(s,p.x,p.y-45,'hurt');s.events.push('hurt');if(!p.hp)s.mode='down';
@@ -280,14 +284,24 @@
     if(p.attack){
       const a=p.attack,m=moves[a.name];a.t+=dt;p.age=a.t;
       if(a.name==='airkick')p.x+=p.face*105*dt;
+      else if(limbReach[a.name]&&dx===p.face&&a.t<m.impact)p.x+=dx*108*dt;
       if(!a.hit&&a.t>=m.impact){
         a.hit=true;const weapon=weapons[a.weapon];
         if(weapon&&--p.weapon.uses===0){p.weapon=null;s.events.push('spent');}
         if(weapon?.ranged){fireWeapon(s,m);s.events.push('playerShot');}
         else{
           s.events.push(weapon?'batHit':'swing');hitSupplies(s,m);
-          for(const n of s.enemies){const ahead=(n.x-p.x)*p.face;
-            if(n.hp>0&&!n.entry&&!n.morph&&Math.abs(p.z-(n.z||0))<73&&ahead>=-19&&ahead<=m.reach+(n.kind==='lizard'?18:0)&&Math.abs(n.y-p.y)<=m.depth)damageEnemy(s,n,m);}
+          const limb=limbReach[a.name];
+          let first=null,closest=Infinity;
+          for(const n of s.enemies){
+            if(n.hp<=0||n.entry||n.morph||n.down||n.rise>0||Math.abs(n.y-p.y)>m.depth||Math.abs(p.z-(n.z||0))>=73)continue;
+            const ahead=(n.x-p.x)*p.face;
+            if(limb){
+              const surface=ahead-16*scaleAt(n);
+              if(ahead>=0&&surface<=limb*scaleAt(p)&&surface<closest){closest=surface;first=n;}
+            }else if(ahead>=-19&&ahead<=m.reach+(n.kind==='lizard'?18:0))damageEnemy(s,n,m);
+          }
+          if(first)damageEnemy(s,first,m);
         }
       }
       if(a.t>=m.duration){p.attack=null;activity(p,'idle');}
@@ -421,11 +435,21 @@
       }
     }
   }
+  function throwHand(n,phase){
+    const scale=scaleAt(n),angle=-2.15+2.36*phase;
+    const shoulder=(n.z||0)+(n.kind==='jet'?37:49)*scale;
+    return {x:n.x+n.face*scale*(3+16*Math.cos(angle)),height:shoulder-16*scale*Math.sin(angle),shoulder};
+  }
   function enemy(s,n,dt){
     n.age+=dt;if(n.kind==='jet')n.hoverAge+=dt;
     if(n.entry){arrive(n,dt);return;}
     if(n.morph>0){n.morph-=dt;if(n.morph<=0){Object.assign(n,{kind:'lizard',hp:foes.lizard.hp,maxHp:foes.lizard.hp,cool:.28,wind:0,turn:0,age:0,act:'idle',morph:0});s.events.push('roar');}return;}
-    if(n.down){settle(s,n,dt);return;}
+    if(n.down){n.recoil=0;settle(s,n,dt);return;}
+    if(n.recoil){
+      const travel=n.recoil*Math.min(1,dt*24);
+      n.x=clamp(n.x+travel,s.arenaLeft+32,s.arenaLeft+740);
+      n.recoil=Math.abs(n.recoil-travel)<.25?0:n.recoil-travel;
+    }
     if(n.rise>0){n.rise=Math.max(0,n.rise-dt);if(!n.rise)activity(n,'idle');return;}
     if(n.kind==='scientist'||n.kind==='lizard'){finalBoss(s,n,dt);return;}
     if(n.kind==='jet')n.z=13+Math.sin(n.hoverAge*6)*5;
@@ -439,7 +463,11 @@
     if(n.wind>0){
       n.wind-=dt;
       if(n.wind<=0){n.strike=.25;activity(n,n.move);n.age=0;
-        if(n.move==='charge'){n.dash=.45;n.connected=false;}
+        if(n.move==='throw'){
+          const hand=throwHand(n,1);
+          s.grenades.push(Grenades.lob(hand.x,n.y,hand.height,n.throwX,n.throwY,56,{depth:.52,rise:58}));
+          s.events.push('grenade');
+        }else if(n.move==='charge'){n.dash=.45;n.connected=false;}
         else if(n.move==='shoot'||n.move==='pulse'){
           const count=n.kind==='warden'?3:1;
           for(let j=0;j<count;j++)s.shots.push({kind:n.move,x:n.x+28*n.face,y:n.y,dir:n.face,age:-j*.095,damage:cfg.damage});
@@ -452,9 +480,11 @@
     if(n.strike>0){n.strike-=dt;return;}
     n.face=dx<0?-1:1;
     const ranged=n.kind==='jet'||(n.kind==='rifle'||n.kind==='warden')&&n.turn%2===0;
-    const range=n.kind==='blackWolf'&&n.turn%2===0?210:ranged?168:cfg.reach;
+    const range=(n.kind==='jet'||n.kind==='rifle')&&n.turn%3===1?260:n.kind==='blackWolf'&&n.turn%2===0?210:ranged?168:cfg.reach;
     if(Math.abs(dx)<range&&Math.abs(dy)<19&&n.cool<=0){
-      switch(n.kind){
+      if((n.kind==='jet'||n.kind==='rifle')&&n.turn%3===1&&!s.grenades.length){
+        n.move='throw';n.throwX=p.x;n.throwY=p.y;
+      }else switch(n.kind){
         case 'blackWolf':n.move=n.turn%2?'jab':'charge';break;
         case 'batter':case 'foreman':n.move='batStrike';break;
         case 'robot':n.move='pulse';break;
@@ -507,6 +537,11 @@
     }
     for(const b of s.shots){b.age+=dt;if(b.age<0)continue;b.x+=(b.vx??b.dir*(b.speed||(b.kind==='shoot'?460:270)))*dt;b.y+=(b.vy||0)*dt;if(Math.abs(b.x-s.player.x)<19&&Math.abs(b.y-s.player.y)<22&&s.player.z<44){hurt(s,b,b.damage||9);b.age=9;}}
     s.shots=s.shots.filter(b=>b.age<2.8);
+    for(const g of s.grenades)if(Grenades.advance(g,dt)){
+      if(Grenades.inside(g,s.player.x,s.player.y,s.player.z))hurt(s,{x:g.tx},12);
+      spark(s,g.tx,g.ty-5,'hit');s.events.push('blast');
+    }
+    s.grenades=s.grenades.filter(g=>!Grenades.spent(g));
     updateChemicals(s,dt);
     for(const n of s.enemies){
       const kind=foes[n.kind].drop;
@@ -516,13 +551,13 @@
     s.drops=s.drops.filter(d=>d.x>s.cam-80);
     if(s.locked&&!s.enemies.length&&!s.pending.length&&s.mode==='play'){
       s.locked=false;s.wave++;s.clears++;s.shots=[];s.chemicals=[];s.score+=400;s.events.push('clear');
-      if(s.wave===waves.length){s.mode='won';activity(s.player,'win');}
+      if(s.wave===waves.length){s.mode='won';s.grenades=[];activity(s.player,'win');}
       else{s.goSince=s.age;if(s.wave%2===0){s.checkpoint=s.wave;s.checkpointGear=gearSnapshot(s);s.checkpointScore=s.score;s.checkpointSupplies=supplySnapshot(s.supplies);s.events.push('checkpoint');}
         s.food=[{x:clamp(s.player.x+62,s.cam+32,worldEnd-50),y:s.player.y,used:false}];}
     }
     return s.events;
   }
   function checkpoint(s){return {version:2,checkpoint:s.checkpoint,score:s.checkpointScore,supplies:s.checkpointSupplies,gear:s.checkpointGear};}
-  const api={zones,waves,moves,techniques,techPhase,fallTime,downTime,riseTime,foes,supplies,weapons,nearestDrop,stepSpan,armedRows,characterSprites,floorScale,scaleAt,maxCam,portal,zoneOf,create,update,checkpoint};
+  const api={throwHand,zones,waves,moves,techniques,techPhase,fallTime,downTime,riseTime,foes,supplies,weapons,nearestDrop,stepSpan,armedRows,characterSprites,floorScale,scaleAt,maxCam,portal,zoneOf,create,update,checkpoint};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeQuimera=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -10,10 +10,10 @@ const missions=[
  {n:7,name:'seven',page:'level-seven.html',game:'level-seven-game.js',story:require('../mission-seven-story.js'),eyebrow:/^MISIÓN 07 · EL SOBERANO DEL VACÍO$/,
   fire:{start:{playing:true,floor:0},crew:{aliens:1},pilots:{pilots:1},hurt:{hp:1},mid:{floor:0,x:5000},lock:{floor:0,airlockNear:true},inside:{floor:1},gallery:{floor:1,x:3500},core:{floor:2},boss:{bossActive:true},half:{bossHalf:true},down:{bossDown:true},home:{wrap:true}}},
  {n:8,name:'eight',page:'level-eight.html',game:'level-eight-game.js',story:require('../mission-eight-story.js'),eyebrow:/^MISIÓN 08 · NUEVA YORK/,
-  fire:{start:{playing:true,floor:0},traffic:{traffic:true},soldiers:{soldiers:3},police:{policeNear:true},joined:{allies:1},hurt:{hp:3},midtown:{floor:1},plaza:{floor:2},boss:{bossActive:true},retreat:{retreat:true},titan:{titan:true},half:{titanHalf:true},down:{bossDown:true},wrap:{wrap:true}}}
+  fire:{start:{playing:true,floor:0},traffic:{traffic:true},soldiers:{soldiers:3},police:{policeNear:true},joined:{allies:1},hurt:{hp:3},midtown:{floor:1},plaza:{floor:2},boss:{bossActive:true},retreat:{retreat:true},titan:{titan:true},half:{titanHalf:true},down:{bossDown:true}}}
 ];
 const finaleText=story=>story.finaleScript?story.finaleScript({}).flatMap(p=>[p.text||'',p.title?.title||'',...(p.credits||[]).map(l=>l.text||l.label||'')]):[];
-const allText=story=>[...story.briefing.flatMap(p=>[p.title||'',p.text,...(p.objectives||[])]),...(story.config.outro||[]).map(p=>p.text),...story.beats.map(b=>b.text),story.config.epilogue||'',...(story.finale?[story.finale.title,...story.finale.paragraphs,...story.finale.credits]:[]),...finaleText(story)];
+const allText=story=>[...story.briefing.flatMap(p=>[p.title||'',p.text,...(p.objectives||[])]),...(story.config.outro||[]).map(p=>p.text),...story.beats.map(b=>b.text),story.config.epilogue||'',...(story.finale?[story.finale.title,...story.finale.paragraphs,...(story.finale.credits||[])]:[]),...finaleText(story)];
 
 test('las misiones 5 a 8 cuentan su historia en subtítulos, con radio de Vega y epílogo',()=>{
  for(const {n,story,eyebrow} of missions){
@@ -43,12 +43,14 @@ test('cada aviso de radio se dispara con su contexto y ninguno falla con un cont
    assert.equal(!!b.when({...base,...fire[b.id]}),true,'se dispara: '+n+'/'+b.id);
    assert.equal(!!b.when({...base,hp:0}),false,'sin vida no hay aviso: '+n+'/'+b.id);
   }
-  // La radio real encadena el cierre: el segundo aviso espera al primero.
   const radio=One.createRadio(story.beats,story.config.ambient,story.config.series);radio.reset();
-  const last=story.beats.at(-1),before=story.beats.at(-2);assert.equal(last.after,before.id);
-  const end={...base,...fire[before.id],...fire[last.id]};let heard=[];for(let i=0;i<60*30;i++){const now=radio.update(end,1/60);if(now&&heard.at(-1)!==now.id)heard.push(now.id);}
-  assert.deepEqual(heard.slice(0,2),[before.id,last.id],'cierre en orden en la misión '+n);
-  const closing=[before,last].reduce((sum,b)=>sum+Math.max(4,2.2+b.text.length*.055)+.6,0);assert.ok(closing<13.5,'el cierre cabe en el final de la misión '+n+': '+closing.toFixed(1)+' s');
+  const cues=story.beats.slice(n===8?-1:-2);
+  if(cues.length===2)assert.equal(cues[1].after,cues[0].id);
+  const end=Object.assign({...base},...cues.map(c=>fire[c.id]));
+  const heard=[];for(let i=0;i<60*30;i++){const now=radio.update(end,1/60);if(now&&heard.at(-1)!==now.id)heard.push(now.id);}
+  assert.deepEqual(heard,cues.map(c=>c.id),'cierre en orden en la misión '+n);
+  const closing=cues.reduce((sum,b)=>sum+Math.max(4,2.2+b.text.length*.055)+.6,0);
+  assert.ok(closing<(n===8?5.2:13.5),'el cierre cabe en el final de la misión '+n);
  }
 });
 
@@ -68,24 +70,20 @@ test('el hilo es uno solo: el Consorcio, sin regionalismos ni restos del guion a
  assert.doesNotMatch(six,/portaaviones|Centinela|Devorador|convoy|submarino|Capitán/i,'la misión 06 no da por jugada ninguna de las 03 a 05');
  assert.doesNotMatch(seven,/Centinela|Devorador|Capitán del Abismo|submarino/i);assert.match(seven,/libros del Capitán/);
  assert.doesNotMatch(eight,/Soberano|nave nodriza|Quimera|Varela/i,'la misión 08 no dice quién apagó la señal');assert.match(eight,/La señal que alimentaba al Consorcio se apagó/);
- assert.match(read('sea-renderer.js'),/p\.tankUnlocked\?'El mini tanque sella su blindaje\.'/,'el rótulo del mini tanque solo sale si existe');
+ const sea=read('sea-renderer.js');
+ assert.match(sea,/const launching=s\.intro<5&&!s\.inside&&p\.tankUnlocked&&p\.form==='tank'/,'la transformación necesita el tanque activo en el exterior');
+ assert.match(sea,/launching\?'El mini tanque sella su blindaje\.'/,'el rótulo corresponde a la transformación visible');
  assert.match(read('quimera-game.js'),/a bordo del helicóptero de Vega/);assert.doesNotMatch(read('quimera-game.js'),/a bordo de Vega/);
  assert.match(read('level-three-game.js'),/coordenadas del submarino/);assert.doesNotMatch(read('mission-endings.js'),/FURIA EN LA CARRETERA|MISIÓN 04/,'el final de la 03 no anuncia la 04 como único camino');
  assert.doesNotMatch(read('level-seven-game.js')+read('space-renderer.js'),/núcleo expuesto/i,'el Soberano no tiene un núcleo que se exponga');
 });
 
-test('el final cierra el contrato, conserva al lobo y termina con créditos sin nombres',()=>{
+test('el parte de Manhattan enlaza directamente con el delta',()=>{
  const {finale,config}=missions[3].story,html=read('level-eight.html');
- assert.equal(finale.paragraphs.length,3);assert.match(finale.paragraphs.join(' '),/Consorcio/);assert.match(finale.paragraphs[1],/Vega.*recompensa más grande de tu carrera.*Cap Dollar/);
- assert.match(finale.paragraphs[2],/La mordida no se cura.*Un cazador usa lo que tiene/);
- assert.deepEqual(finale.credits,['GRACIAS POR JUGAR','CAP DOLLAR, THE HUNTER','Fin de la campaña']);
  const panel=html.slice(html.indexOf('id="victory-screen"'),html.indexOf('id="mall-interact"'));
- assert.ok(panel.includes('>'+finale.kicker+'<')&&panel.includes('>'+finale.title+'<'));
- for(const p of finale.paragraphs)assert.ok(panel.includes('<p>'+p+'</p>'),'el panel repite el epílogo: '+p.slice(0,30));
- let at=panel.indexOf('id="victory-credits"');assert.ok(at>panel.indexOf(finale.paragraphs[2]),'los créditos van después del epílogo');
- for(const line of finale.credits){const next=panel.indexOf(line,at);assert.ok(next>0,line);at=next;}
- assert.ok(panel.indexOf('id="victory-menu"')>at&&panel.indexOf('id="victory-replay"')>at,'los botones existentes cierran el panel');assert.ok(!panel.includes('victory-next'));
- assert.ok(config.epilogue.includes('Titán de Acero')&&config.epilogue.includes('Comandante'));
+ assert.ok(panel.includes('>'+finale.title+'<'));assert.ok(panel.includes(finale.paragraphs[0]));
+ assert.match(panel,/Misión 09 · Marea de hierro/);assert.doesNotMatch(panel,/victory-credits/);
+ assert.match(config.epilogue,/Comandante/);
 });
 
 test('las páginas 5 a 8 cargan estilos y guiones en orden, con los marcadores de su misión',()=>{
@@ -198,7 +196,7 @@ test('sin los módulos de historia las misiones 5 a 8 siguen arrancando',async()
 
 test('la radio acompaña al jefe y cierra cada misión antes del parte, que sustituye al panel antiguo',async()=>{
  const arena={5:{inside:true,started:true,x:180,y:436,checkpoint:3},6:{floor:3,checkpoint:3,started:true,x:350,y:472},7:{floor:2,started:true,x:350,y:472},8:{floor:2,started:true,x:350,y:472}};
- const closing={5:['books','next'],6:['signal','orbit'],7:['down','home'],8:['down','wrap']},ending={5:14,6:11,7:14,8:15};
+ const closing={5:['books','next'],6:['signal','orbit'],7:['down','home'],8:['down']},ending={5:14,6:11,7:14,8:5.2};
  const next={5:'level-six.html?entry=campaign',6:'level-eight.html?entry=campaign',7:'level-eight.html?entry=campaign'};
  for(const m of missions){
   const story=fakeStory(m.story),results=fakeResults(),g=await game(m.n,'?entry=resume',{[saveKey(m)]:JSON.stringify({hp:8,[world[m.n]]:arena[m.n]})},{story,results});

@@ -25,9 +25,13 @@
   // Cada imagen se pide una sola vez; si falla o tarda, el plano dibuja lo que haya.
   function fetchImage(id,src){
     if(images[id]||!root.Image)return Promise.resolve();
-    return pending[id]||(pending[id]=new Promise(resolve=>{const image=new root.Image();image.onload=()=>{images[id]=image;resolve();};image.onerror=()=>resolve();image.src=src;}));
+    return pending[id]||(pending[id]=new Promise(resolve=>{const image=new root.Image();image.onload=()=>{images[id]=image;resolve();};image.onerror=()=>{delete pending[id];resolve();};image.src=src;}));
   }
-  function load(set){return Promise.all(Object.entries(sources[set]||{}).map(([id,src])=>fetchImage(id,src)));}
+  function load(set){
+    const assets=Object.entries(sources[set]||{}).map(([id,src])=>fetchImage(id,src));
+    if(set==='one'||set==='two'||set==='three')assets.push(root.ArcadeSoldierAnimation?.loadBase?.('soldier')?.catch(()=>{}));
+    return Promise.all(assets);
+  }
   // Hoja de sprites en rejilla: limpia el alfa (como hace el juego) y mide la caja
   // ajustada de cada celda, para poder apoyar cada cuadro por los pies.
   const sheets={};
@@ -105,7 +109,7 @@
   // Un cuadro dado por su rectángulo [x,y,w,h], apoyado en el suelo.
   function frame(c,image,f,x,y,k,flip=false,alpha=1){
     if(!image||!f)return;c.save();c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);c.globalAlpha*=alpha;
-    c.drawImage(image,f[0],f[1],f[2],f[3],Math.round(-f[2]*k/2),Math.round(-f[3]*k),Math.round(f[2]*k),Math.round(f[3]*k));c.restore();
+    c.drawImage(image,f[0],f[1],f[2],f[3],Math.round(-(f[5]??f[2]/2)*k),Math.round(-f[3]*k),Math.round(f[2]*k),Math.round(f[3]*k));c.restore();
   }
   // Silueta: el cuadro teñido de un color, para insinuar sin mostrar.
   let stencil=null;
@@ -114,7 +118,7 @@
     try{
       stencil=stencil||doc.createElement('canvas');const w=Math.max(1,Math.ceil(f[2]*k)),h=Math.max(1,Math.ceil(f[3]*k));stencil.width=w;stencil.height=h;
       const s=stencil.getContext('2d');s.imageSmoothingEnabled=false;s.drawImage(image,f[0],f[1],f[2],f[3],0,0,w,h);s.globalCompositeOperation='source-in';s.fillStyle=color;s.fillRect(0,0,w,h);
-      c.save();c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);c.globalAlpha*=alpha;c.drawImage(stencil,Math.round(-w/2),-h);c.restore();
+      c.save();c.translate(Math.round(x),Math.round(y));if(flip)c.scale(-1,1);c.globalAlpha*=alpha;c.drawImage(stencil,Math.round(-(f[5]??f[2]/2)*k),-h);c.restore();
     }catch{}
   }
   // Cap Dollar con la hoja del soldado. size: su altura en pantalla. Mira a la derecha salvo flip.
@@ -149,7 +153,8 @@
   function beam(c,x,y,angle,length,spread,rgb,alpha){
     const tx=x+Math.sin(angle)*length,ty=y-Math.cos(angle)*length,g=c.createLinearGradient(x,y,tx,ty);
     g.addColorStop(0,'rgba('+rgb+','+alpha+')');g.addColorStop(1,'rgba('+rgb+',0)');
-    c.save();c.globalCompositeOperation='screen';c.fillStyle=g;c.beginPath();c.moveTo(x-2,y);c.lineTo(x+2,y);c.lineTo(tx+spread,ty);c.lineTo(tx-spread,ty);c.fill();c.restore();
+    const nx=Math.cos(angle),ny=Math.sin(angle);
+    c.save();c.globalCompositeOperation='screen';c.fillStyle=g;c.beginPath();c.moveTo(x-2*nx,y-2*ny);c.lineTo(x+2*nx,y+2*ny);c.lineTo(tx+spread*nx,ty+spread*ny);c.lineTo(tx-spread*nx,ty-spread*ny);c.fill();c.restore();
   }
   function searchlights(c,v,t,y,count=3,alpha=.22){for(let i=0;i<count;i++)beam(c,v.w*(.16+i*.68/Math.max(1,count-1)),y,Math.sin(t*(.3+i*.07)+i*2)*.5,v.h*1.3,40,'190,214,255',alpha);}
   function rain(c,v,t,alpha=.25){
@@ -211,35 +216,74 @@
   }
 
   // ═════════════════════ MISIÓN 01 · LA OBRA ═════════════════════
-  const WOLF=()=>root.ACTION_FRAMES?.wolf,DEATH=()=>root.WHITE_DEATH_FRAMES;
+  // Puntos de apoyo en píxeles del fondo original. La base de cada llama
+  // y su humo recorren exactamente la misma cámara que la superficie.
+  const cityFires=[[633,554,29],[865,653,34],[1187,604,26],[1328,654,39]];
+  const towerFires=[[152,1600,26],[485,1054,32],[222,707,26],[475,531,24]];
+  function firesOnSet(c,bg,sites,t){
+    const sheet=atlas('fx',4,8);
+    if(!bg||!sheet)return;
+    for(const [x,y,width] of sites){
+      const footX=bg.px(x),footY=bg.py(y),w=width*bg.k;
+      const age=t+x*.13,beat=Math.floor(age*9)%8;
+      // Dos lenguas de la hoja de ambiente alternan en ocho siluetas.
+      // El recorte ajustado descarta el margen transparente bajo cada celda.
+      for(let i=0;i<2;i++){
+        const u=(age*.42+i*.5)%1;
+        const puff=sheet.frames[16+Math.min(3,Math.floor(u*4))];
+        frame(c,sheet.image,puff,footX+w*.46*u,footY-w*(.42+1.25*u),
+          w*(.7+u)/sheet.cw,false,Math.sin(Math.PI*u)*.46);
+      }
+      frame(c,sheet.image,sheet.frames[12+(beat>>1)],footX-w*.12,footY,w/sheet.cw);
+      frame(c,sheet.image,sheet.frames[12+(((beat+3)%8)>>1)],footX+w*.20,footY,w*.63/sheet.cw,true);
+    }
+  }
   function nightCity(c,v,t,u,dark=.3){
     fill(c,v,'#121a33','#2a3350');
-    plate(c,images.city,v,{u,vy:.3,zoom:1.12});
+    const bg=plate(c,images.city,v,{u,vy:.3,zoom:1.12});
     const dusk=c.createLinearGradient(0,0,0,v.h);dusk.addColorStop(0,'rgba(8,12,34,'+(dark+.25)+')');dusk.addColorStop(1,'rgba(255,120,60,.16)');c.fillStyle=dusk;c.fillRect(0,0,v.w,v.h);
+    firesOnSet(c,bg,cityFires,t);
+    if(bg)for(const [x,y,phase] of [[690,603,0],[1130,698,2],[1375,653,4]])
+      beam(c,bg.px(x),bg.py(y),Math.sin(t*.32+phase)*.42,v.h*1.3,34,'190,214,255',.16);
   }
-  // Azotea en primer plano: una cornisa oscura con su pretil.
   function rooftop(c,v,y=FLOOR){
     c.fillStyle='#090e16';c.fillRect(0,y,v.w,v.h-y);c.fillStyle='#1d2a3a';c.fillRect(0,y,v.w,4);
-    for(let x=40;x<v.w;x+=150){c.fillStyle='#090e16';c.fillRect(x,y-22,8,22);c.fillRect(x-12,y-26,32,5);}
+    strip(c,images.city,v,[1304,653,175,86],y,v.h-y);
+  }
+  function worksiteSoldier(c,x,y,size,stepPhase=null,salute=0){
+    if(stepPhase!==null){
+      const zoom=size/46;
+      c.save();c.translate(Math.round(x),Math.round(y));c.scale(zoom,zoom);
+      const drawn=root.ArcadeSoldierAnimation?.baseSprite(c,{x:0,y:0,form:'soldier'},0,stepPhase);
+      c.restore();
+      if(!drawn)hunter(c,x,y,size,stepPhase,'walk');
+    }else if(images.capSalute){
+      const img=images.capSalute,w=img.width/12,i=Math.round(clamp(salute)*11),k=size/145;
+      c.drawImage(img,i*w,0,w,img.height,Math.round(x-63*k),Math.round(y-154*k),Math.round(w*k),Math.round(img.height*k));
+    }else hunter(c,x,y,size,0,salute>.6?'salute':'idle');
+  }
+  function worksiteHeli(c,x,y,width,t,flip=false){
+    root.ArcadePatrolHelicopter?.draw(c,images.patrolHeli,x,y,width,t,flip);
   }
   const one={
     intro:[
       // 1 · La ciudad tras la guerra: travelling nocturno con reflectores y combates lejanos.
       {id:'ciudad',dur:8,draw(c,t,v){
         nightCity(c,v,t,lerp(.05,.75,drift(t,v.dur)),.2);
-        searchlights(c,v,t,v.h*.74,4);flak(c,v,t,TOP+10,170,.7);
-        for(let i=0;i<4;i++)fx(c,3,t*9+i,v.w*(.2+i*.21),372-(i%2)*26,44,62,.85);
-        for(let i=0;i<3;i++)smoke(c,v.w*(.24+i*.28),350,t,i*3,.9);
+        flak(c,v,t,TOP+10,170,.7);
         rain(c,v,t,.22);vignette(c,v);
       }},
       // 2 · El cazador y su piloto: Cap en la cornisa, el helicóptero de Vega a su espalda.
       {id:'cazador',dur:8,draw(c,t,v){
-        nightCity(c,v,t,.55+.1*drift(t,v.dur),.35);searchlights(c,v,t,v.h*.76,3,.16);
-        const hx=v.cx+lerp(520,150,ease(t/3.2))+Math.sin(t*.9)*8,hy=215+Math.sin(t*1.7)*5;
-        beam(c,hx-120,hy+10,Math.PI+.5+Math.sin(t*.8)*.18,330,70,'220,236,255',.34);
-        heli(c,hx,hy,430,t,{flip:true,tilt:.04});
+        nightCity(c,v,t,.55+.1*drift(t,v.dur),.35);
+        const hx=v.cx+lerp(520,140,ease(t/3.2))+Math.sin(t*.9)*8,hy=205+Math.sin(t*1.7)*5;
+        beam(c,hx-115,hy+38,Math.PI+.5+Math.sin(t*.8)*.18,330,70,'220,236,255',.25);
+        worksiteHeli(c,hx,hy,335,t,true);
         rooftop(c,v);
-        shadow(c,v.cx-220,FLOOR,90);hunter(c,v.cx-220,FLOOR,158,t,'idle');
+        const distance=Math.min(t,2.4)*62,x=v.cx-310+distance,height=116;
+        shadow(c,x,FLOOR,56);
+        const salute=ramp(t,2.55,3.55)*(1-ramp(t,5.3,6.2));
+        worksiteSoldier(c,x,FLOOR,height,t<2.4?distance/(52*height/46):null,salute);
         rain(c,v,t,.28);vignette(c,v);
       }},
       // 3 · La obra: la cámara sube por la torre mientras los obreros huyen.
@@ -247,9 +291,16 @@
         fill(c,v,'#0d1522','#16202f');
         const rise=ease(t/(v.dur*.95)),bg=plate(c,images.tower,v,{vy:1-rise});
         if(bg){
-          const workers=atlas('workers',4,2),ground=bg.py(2036);
-          for(let i=0;i<4;i++){const dir=i%2?1:-1,x=bg.px(360)+dir*(40+((t*150+i*90)%420));put(c,workers,Math.floor(t*11+i*2)%4,x,ground+(i%3)*5,78*bg.k/1.3,{flip:dir<0});}
-          for(const [x,y] of [[150,1660],[560,1330],[170,980],[540,640],[300,420]])fx(c,3,t*10+x,bg.px(x),bg.py(y),40*bg.k,58*bg.k,.9);
+          const ground=bg.py(2036);
+          for(let i=0;i<4;i++){
+            const dir=i%2?1:-1,x=bg.px(360)+dir*(40+t*135+i*65);
+            const f=root.WORKER_RUN_FRAMES?.[Math.floor(t*11+i*2)%8];
+            if(!f||!images.workers)continue;
+            const [sx,sy,sw,sh,pivot,face]=f,k=bg.k*.15;
+            c.save();c.translate(x,ground+(i%3)*4);c.scale(dir*face,1);
+            c.drawImage(images.workers,sx,sy,sw,sh,-pivot*k,-sh*k,sw*k,sh*k);c.restore();
+          }
+          firesOnSet(c,bg,towerFires,t);
         }
         shade(c,v,'rgba(8,12,30,'+(.12+.34*rise).toFixed(3)+')');rain(c,v,t,.2);vignette(c,v);
       }},
@@ -257,11 +308,19 @@
       {id:'luna',dur:7.5,draw(c,t,v){
         fill(c,v,'#0a1024','#1b2740');
         const bg=plate(c,images.tower,v,{band:[0,0,729,640],vy:lerp(.45,.2,drift(t,v.dur)),zoom:1.04});
-        const x=bg?bg.px(318):v.cx-110,y=bg?bg.py(252):300,k=bg?bg.k:1.4,rise=ease(ramp(t,.6,2.6));
+        const stride=Math.min(t,3.6)*18;
+        const x=bg?bg.px(238+stride):v.cx-110,y=bg?bg.py(235):300,k=bg?bg.k:1.4,rise=ease(ramp(t,.6,2.6));
         shade(c,v,'rgba(6,9,26,.5)');
-        glow(c,x,y-120*k,150*k,'226,234,255',.5*rise);c.fillStyle='rgba(236,240,255,'+(.9*rise).toFixed(3)+')';c.beginPath();c.arc(x,y-120*k,58*k,0,TAU);c.fill();
-        const death=atlas('whiteWolf',3,2),pose=t%5>3.4?0:1,f=DEATH()?.[pose]||death?.frames[pose];
-        if(death&&f){frame(c,death.image,f,x,y,k*.25,false,rise);silhouette(c,death.image,f,x,y,k*.25,'#04060c',.86*rise);}
+        if(bg){
+          const mx=bg.px(283),my=bg.py(140);
+          glow(c,mx,my,45*k,'196,208,235',.27);
+          c.fillStyle='rgba(207,218,238,.57)';c.beginPath();c.arc(mx,my,19*k,0,TAU);c.fill();
+        }
+        const walking=t<3.6&&images.wolfWalk&&root.WOLF_WALK_FRAMES;
+        const img=walking?images.wolfWalk:images.wolf;
+        const f=walking?root.WOLF_WALK_FRAMES[0][Math.floor(stride/9)%8]:root.ACTION_FRAMES?.wolf?.[0][7];
+        const scale=k*(walking?root.WOLF_WALK_SCALE*.57/.48:.57);
+        if(img&&f){frame(c,img,f,x,y,scale,false,rise);silhouette(c,img,f,x,y,scale,'#04060c',.86*rise);}
         rain(c,v,t,.2);vignette(c,v,.8);
       }}
     ],
@@ -269,38 +328,76 @@
     outro:[
       // 1 · La mordida: el cazador cambia, cuadro a cuadro, bajo una luz de luna.
       {id:'mordida',dur:9,draw(c,t,v){
-        fill(c,v,'#05070f','#0f1424');
-        const pulse=.5+.5*Math.sin(t*3.2),x=v.cx,y=FLOOR;
-        glow(c,x,y-150,260,'150,170,255',.2+.1*pulse);glow(c,x,y-120,120,'255,70,60',.16*pulse*ramp(t,.4,2));
-        c.fillStyle='#0b101a';c.fillRect(0,y,v.w,v.h-y);c.fillStyle='#1a2434';c.fillRect(0,y,v.w,3);
-        // Soldado → lobo: los ocho cuadros de la transformación, del segundo 2 al 5.
-        const wolf=atlas('wolf',8,7),F=WOLF()?.[0],step=clamp(Math.floor(ramp(t,2,5)*8),0,7);
-        if(wolf&&F){shadow(c,x,y,150,.6);frame(c,wolf.image,F[step],x,y,1.62);if(step>=7)glow(c,x+16,y-150,26,'255,214,90',.25+.2*pulse);}
-        else hunter(c,x,y,190,t,'idle');
-        for(let i=0;i<26;i++){const u=(t*.25+hash(i))%1;c.fillStyle='rgba(190,205,255,'+(.5*(1-u)).toFixed(3)+')';c.fillRect(Math.round(x+(hash(i+9)-.5)*520),Math.round(y-u*330),3,3);}
-        vignette(c,v,.85);
+        nightCity(c,v,t,.61,.45);rooftop(c,v);
+        const x=v.cx,y=FLOOR,k=2.65,u=ramp(t,1.7,4.2);
+        shadow(c,x,y,68);
+        if(t<1.7)worksiteSoldier(c,x,y,46*k);
+        else if(u<1){
+          c.save();c.translate(x,y);c.scale(k,k);
+          const p={x:0,y:0,facing:1,form:'wolf',transformFrom:'soldier',transform:(1-u)*1.2};
+          if(!root.ArcadeFormTransition?.draw(c,p)){
+            const pose=root.ArcadeSoldierAnimation?.transformation(Math.min(7,Math.floor(u*8)));
+            if(pose){
+              const frames={soldier:root.SOLDIER_V2_FRAMES,wolf:root.ACTION_FRAMES?.wolf,transformation:root.ArcadeSoldierAnimation.transformationFrames};
+              frame(c,images[pose.sheet],frames[pose.sheet]?.[pose.row]?.[pose.frame],0,0,pose.scale);
+            }
+          }
+          c.restore();
+        }else{
+          c.save();c.translate(x,y);c.scale(k,k);
+          const wolf={x:0,y:0,form:'wolf',facing:1,grounded:true,anim:t-4.2,idleTime:5+t-4.2,vx:0};
+          const anim=root.ArcadeSoldierAnimation,pose=anim?.wolfIdlePose(wolf);
+          anim?.applyWolfMotion(c,wolf);
+          if(pose&&images.wolfActions)frame(c,atlas('wolfActions',6,4).image,anim.wolfActionFrames[pose.row][pose.frame],0,-pose.lift,pose.scale);
+          else frame(c,images.wolf,root.ACTION_FRAMES?.wolf?.[0][7],0,0,.48);
+          c.restore();
+        }
+        rain(c,v,t,.15);vignette(c,v,.74);
       }},
       // 2 · El rastro: el helicóptero pone rumbo al otro lado de la ciudad, de día.
       {id:'rastro',dur:8,draw(c,t,v){
         fill(c,v,'#6a86a8','#c9b08c');
         plate(c,images.ruins,v,{u:lerp(.1,.55,drift(t,v.dur)),vy:.2});
         shade(c,v,'rgba(40,30,50,.22)');
-        const go=drift(t,v.dur);heli(c,v.cx-260+go*330,lerp(300,190,go)+Math.sin(t*1.6)*4,lerp(300,150,go),t,{tilt:-.06});
-        for(let i=0;i<3;i++)smoke(c,v.w*(.2+i*.3),FLOOR-20,t,i*4+1,1.1);
+        const go=ease(t/v.dur);
+        worksiteHeli(c,lerp(v.cx-235,v.w+88,go),lerp(304,164,go)+Math.sin(t*1.6)*3,lerp(295,122,go),t);
         vignette(c,v,.6);
       }}
     ]
   };
 
   // ═════════════════ MISIÓN 02 · EL UMBRAL DEL REY ═════════════════
+  function cityHunter(c,x,floor,size,t,distance=0,moving=false,data={}){
+    const animation=root.ArcadeSoldierAnimation,F=root.SOLDIER_V2_FRAMES;
+    if(!animation?.drawGait||!F||!images.soldier){hunter(c,x,floor,size,t,moving?'walk':'idle');return;}
+    const form=data.form||'soldier',k=size/46,p={form,x:0,y:0,grounded:true,facing:1,vx:moving?100:0,vy:0,anim:t,aim:{x:1,y:0},walkCycle:distance/((form==='wolf'?110:52)*k)};
+    const loadout={inventory:data.inventory||{selected:3}},actors=data.actors;
+    c.save();c.translate(Math.round(x),Math.round(floor));c.scale(k,k);
+    if(form==='wolf'&&actors){
+      animation.applyWolfMotion(c,p,{});
+      const pose=moving?animation.wolfWalkPose(p):animation.wolfIdlePose(p);
+      const frames=moving?root.WOLF_WALK_FRAMES:animation.wolfActionFrames;
+      frame(c,moving?actors.wolfWalk:actors.wolfActions,frames[pose.row][pose.frame],0,0,moving?root.WOLF_WALK_SCALE:pose.scale);
+    }else if(form==='robot'){
+      root.ArcadeRobotForm.draw(c,p,loadout);root.ArcadeWeaponRenderer.draw(c,p,loadout);
+    }else if(form==='soldier'){
+      const pose=animation.pose(p,{},loadout),gait=animation.gait(p,{},loadout),melee=pose.sheet==='melee';
+      const body=melee?actors?.melee:images.soldier,frames=melee?root.MELEE_FRAMES:F;
+      animation.drawGait(c,p,gait,i=>frame(c,images.soldier,F[1][i],0,0,46/145),
+        bob=>frame(c,body,frames[pose.row][pose.frame],0,bob,melee?root.MELEE_SCALE:46/145),melee?pose:null);
+      if(gait)c.translate(0,gait.bob);
+      if(pose.armed)root.ArcadeWeaponRenderer?.draw(c,p,loadout);
+    }else root.ArcadeZombieForm?.drawPlayer(c,p);
+    c.restore();
+  }
   const two={
     intro:[
       // 1 · El rumbo: el helicóptero cruza la ciudad en ruinas bajo el fuego antiaéreo.
       {id:'ruinas',dur:7.5,draw(c,t,v){
-        fill(c,v,'#86a9cf','#c9c2b0');plate(c,images.ruins,v,{u:lerp(.15,.6,drift(t,v.dur)),vy:.5});
-        for(let i=0;i<4;i++)smoke(c,v.w*(.14+i*.25),400,t,i*5,1.2);
+        fill(c,v,'#86a9cf','#c9c2b0');const bg=plate(c,images.ruins,v,{u:lerp(.15,.6,drift(t,v.dur)),vy:.5});
+        firesOnSet(c,bg,[[312,471,27],[811,502,20],[1165,520,21],[1638,481,29]],t);
         const hx=v.cx-90+drift(t,v.dur)*150,hy=205+Math.sin(t*1.5)*7;
-        heli(c,hx,hy,400,t,{tilt:-.05});
+        worksiteHeli(c,hx,hy,400,t);
         for(let k=0;k<4;k++){const clock=t*1.3+k*.31,cycle=Math.floor(clock),phase=clock-cycle;boom(c,hx+(hash(cycle*5+k)-.5)*520,hy-40+(hash(cycle*11+k)-.5)*220,90,phase*1.6,.9);}
         for(let i=0;i<6;i++){const u=(t*1.4+i*.17)%1;c.fillStyle='#ffe08a';c.fillRect(Math.round(lerp(v.w*(.2+hash(i)*.6),hx+(hash(i+3)-.5)*200,u)),Math.round(lerp(420,hy,u)),4,10);}
         shade(c,v,'rgba(40,24,16,.16)');vignette(c,v,.6);
@@ -308,10 +405,12 @@
       // 2 · El salto: Vega no puede bajar; el cazador se descuelga en paracaídas.
       {id:'salto',dur:7.5,draw(c,t,v){
         fill(c,v,'#86a9cf','#c9c2b0');plate(c,images.ruins,v,{u:.62,vy:.72,zoom:1.15});
-        heli(c,v.cx+120+t*42,128+Math.sin(t*1.4)*4,230,t,{tilt:-.08});
-        const drop=drift(t,v.dur*1.3),px=v.cx-120+Math.sin(t*1.1)*26,py=lerp(110,300,drop),sway=Math.sin(t*1.1)*.08;
-        const chute=atlas('chute',4,2);
-        c.save();c.translate(px,py);c.rotate(sway);put(c,chute,Math.floor(t*3)%4,0,150,150);hunter(c,0,206,62,t,'jump');c.restore();
+        const drop=drift(t,v.dur),px=v.cx-90+Math.sin(t*1.1)*17,feet=lerp(260,410,drop);
+        worksiteHeli(c,v.cx+90+t*45,125+Math.sin(t*1.4)*4,260,t);
+        c.save();c.translate(px,feet);c.rotate(Math.sin(t*1.1)*.045);
+        root.ArcadeParachute?.drawCanopy(c,images.chute,{x:0,y:0},{flight:true,frame:Math.floor(t*5)%4,alpha:1,collapse:0},1.35);
+        frame(c,images.chuteSoldier,root.CLIMB_FRAMES?.[1][0],0,0,.14*1.35);
+        c.restore();
         for(let i=0;i<5;i++){const u=(t*1.1+i*.2)%1;c.fillStyle='#ffe08a';c.fillRect(Math.round(v.w*(.15+hash(i)*.7)+u*40),Math.round(430-u*380),4,12);}
         flak(c,v,t,TOP+10,200,1.1,'255,200,120');
         shade(c,v,'rgba(40,24,16,.14)');vignette(c,v,.6);
@@ -342,7 +441,7 @@
         glow(c,door,floor-90,150,'120,190,255',.5*pulse);
         c.save();c.globalCompositeOperation='screen';for(let i=0;i<3;i++)bolt(c,door+(i-1)*22,floor-170,150,Math.floor(t*11)*7+i*31,2,'rgba(205,236,255,'+(.7*pulse).toFixed(3)+')');c.restore();
         const walk=ramp(t,.3,3.2),x=v.cx-330+walk*150;
-        shadow(c,x,floor,70);hunter(c,x,floor,112,t,walk<1?'walk':'idle');
+        shadow(c,x,floor,70);cityHunter(c,x,floor,112,t,walk*150,t>.3&&walk<1);
         rain(c,v,t,.26);vignette(c,v,.85);
       }}
     ],
@@ -354,7 +453,8 @@
         shade(c,v,'rgba(10,8,20,.38)');
         put(c,atlas('king',6,5),28,v.cx+40,floor+4,150);
         for(const [dx,w,h,up] of [[250,96,74,0],[338,84,66,0],[292,78,58,70]])crate(c,v.cx+dx,floor-up,w,h,.9);
-        shadow(c,v.cx-270,floor,80);hunter(c,v.cx-270,floor,128,t,'idle');
+        const walk=clamp(t/3.2),distance=walk*92,x=v.cx-270+distance;
+        shadow(c,x,floor,80);cityHunter(c,x,floor,128,t,distance,walk<1,v.data);
         for(const dx of [-420,-120,180,470])glow(c,v.cx+dx,floor-150,90,'255,170,80',.22+.08*Math.sin(t*7+dx));
         vignette(c,v,.85);
       }},
@@ -373,20 +473,19 @@
         glow(c,lx,ly,180,'255,236,190',.16);
         for(let i=0;i<22;i++){const u=(t*.12+hash(i))%1;c.fillStyle='rgba(255,240,210,'+(.35*(1-u)).toFixed(3)+')';c.fillRect(Math.round(lx+(hash(i+4)-.5)*300),Math.round(ly+120-u*260),2,2);}
       }},
-      // 3 · Tres rumbos: el helicóptero espera sobre el cementerio mientras amanece.
+      // 3 · Los dos envíos que se pueden perseguir tras la extracción.
       {id:'rumbos',dur:8,draw(c,t,v){
         fill(c,v,'#4a4a78','#f0a868','#a36a78');
         plate(c,images.graves,v,{u:.4,vy:.3});
         const dawn=c.createLinearGradient(0,0,0,v.h);dawn.addColorStop(0,'rgba(60,50,110,.2)');dawn.addColorStop(1,'rgba(255,160,90,.36)');c.fillStyle=dawn;c.fillRect(0,0,v.w,v.h);
         const hx=v.cx-20+Math.sin(t*.7)*10,hy=250+Math.sin(t*1.6)*5;
-        // Aire, carretera y mar: tres trazos que parten del helicóptero hacia el horizonte.
-        const routes=[['AIRE',-300,-150,'150,220,255'],['CARRETERA',40,-185,'255,196,110'],['MAR',320,-130,'120,255,214']];
+        const spread=Math.min(245,v.w*.24),routes=[['AIRE',-spread,-72,'150,220,255'],['CARRETERA',spread,-72,'255,196,110']];
         routes.forEach(([label,dx,dy,rgb],i)=>{
           const show=ease(ramp(t,1+i*.9,2.2+i*.9));if(show<=0)return;
           c.fillStyle='rgba('+rgb+',.9)';for(let s=0;s<14;s++){const u=s/14;if(u>show)break;if((s+Math.floor(t*6))%3===0)continue;c.fillRect(Math.round(hx+dx*u),Math.round(hy-60+dy*u-Math.sin(u*Math.PI)*36),6,4);}
           if(show>=1){glow(c,hx+dx,hy-60+dy,34,rgb,.5+.3*Math.sin(t*4+i));c.font='bold 15px Consolas, monospace';c.textAlign='center';c.fillStyle='rgba('+rgb+',1)';c.fillText(label,hx+dx,hy-84+dy);c.textAlign='left';}
         });
-        heli(c,hx,hy,430,t);
+        worksiteHeli(c,hx,hy,430,t);
         vignette(c,v,.6);
       }}
     ]
@@ -421,17 +520,24 @@
         const hx=v.cx-170+Math.sin(t*.7)*26,hy=262+Math.sin(t*4.6)*9;
         for(let i=0;i<7;i++){const u=(t*1.9+i*.14)%1,ex=hx+(hash(i+Math.floor(t*1.9))-.5)*240,ey=hy+(hash(i+9)-.5)*130;c.fillStyle='#ffe08a';c.fillRect(Math.round(lerp(v.cx+250,ex,u)),Math.round(lerp(250,ey,u)),10,3);}
         for(let k=0;k<5;k++){const clock=t*1.7+k*.23,cycle=Math.floor(clock),phase=clock-cycle;boom(c,hx+(hash(cycle*5+k)-.5)*420,hy-30+(hash(cycle*11+k)-.5)*230,100,phase*1.7,.9);}
-        huey(c,hx,hy,320,t,{tilt:-.07+Math.sin(t*2.3)*.03});
+        worksiteHeli(c,hx,hy,320,t);
         clouds(c,v,t,620,.6,3,700);vignette(c,v,.55);
       }},
       // 3 · El descenso: el cazador baja por la cuerda a la cubierta.
       {id:'descenso',dur:7.5,draw(c,t,v){
         sky(c,v,'#2a4a6c','#74a9c2','#d6dccb');clouds(c,v,t,180,.8,4,460);
-        deck(c,v,FLOOR,t*60);
-        const hx=v.cx+70+Math.sin(t*.9)*10,hy=168+Math.sin(t*2)*5,drop=ease(ramp(t,.8,4)),x=hx-14,y=lerp(hy+70,FLOOR,drop);
-        c.strokeStyle='#cbbd92';c.lineWidth=3;c.beginPath();c.moveTo(x,hy+26);c.lineTo(x,drop<1?y-88:hy+26+lerp(FLOOR-hy-60,0,ramp(t,4,5)));c.stroke();
-        huey(c,hx,hy,360,t,{tilt:-.03});
-        shadow(c,x,FLOOR,80,.35*drop);hunter(c,x,y,104,t,drop<1?'hang':'idle');
+        // Follow the deck until Cap takes his weight on it.
+        const travel=Math.min(t,4);deck(c,v,FLOOR,60*(travel-travel*travel/8));
+        const hx=v.cx+70+Math.sin(t*.9)*10,hy=168+Math.sin(t*2)*5,drop=ease(ramp(t,.8,4)),x=v.cx+56+Math.sin(travel*.9)*10,y=lerp(hy+70,FLOOR,drop);
+        c.strokeStyle='#cbbd92';c.lineWidth=3;c.beginPath();c.moveTo(x,hy+26);c.lineTo(x,drop<1?Math.max(hy+26,y-50):hy+26+lerp(FLOOR-hy-60,0,ramp(t,4,5)));c.stroke();
+
+        shadow(c,x,FLOOR,80,.35*drop);
+        if(drop<1){
+          c.save();c.translate(Math.round(x),Math.round(y));c.scale(1.25,1.25);
+          if(!root.ArcadeSoldierAnimation?.baseSprite(c,{form:'soldier',x:0,y:0,facing:1},7,t*.85))hunter(c,0,0,54,t,'hang');
+          c.restore();
+        }else cityHunter(c,x,y,58,t);
+        worksiteHeli(c,hx,hy,360,t);
         for(let i=0;i<9;i++){const u=(t*1.2+hash(i)*3)%1;c.fillStyle='rgba(255,255,255,'+(.25*(1-u)).toFixed(3)+')';c.fillRect(Math.round(v.w-u*(v.w+200)),90+((i*53)%300),130,2);}
         flak(c,v,t,TOP+10,150,.9,'255,200,120');vignette(c,v,.55);
       }},
@@ -443,44 +549,46 @@
         for(const x of [v.cx-40,v.cx+400]){c.fillStyle='rgba(255,186,105,.25)';c.fillRect(Math.round(x)-3,TOP+30,6,FLOOR-TOP-30);c.fillStyle='#fff2a6';for(let y=TOP+40;y<FLOOR-20;y+=34)c.fillRect(Math.round(x)-2,Math.round(y+(Math.floor(t*20)%20)),4,10);}
         shadow(c,mx,FLOOR,330,.5);put(c,mecha,step,mx,FLOOR+2+(step%2)*2,330);
         glow(c,mx-52,FLOOR-262,26,'255,80,60',.4+.3*Math.sin(t*4));
-        shadow(c,v.cx-290,FLOOR,66);hunter(c,v.cx-290,FLOOR,100,t,'idle');
+        shadow(c,v.cx-290,FLOOR,66);cityHunter(c,v.cx-290,FLOOR,100,t);
         vignette(c,v,.7);
       }}
     ],
-    // La cinemática de cierre (mission-endings.js) ya enseña la extracción del chasis y la
-    // autopista con la moto: el epílogo sigue con la caída del portaaviones y los dos rastros.
+    // Después del rescate se revela el destino de la carta náutica.
     outro:[
       // 1 · La caída: sin su guardián, el portaaviones se escora y pierde altura.
       {id:'caida',dur:8,draw(c,t,v){
         sky(c,v,'#33375f','#b9826c','#f1c894');clouds(c,v,t,90,.8,5,460);
         const sink=drift(t,v.dur),x=v.cx+60+sink*70,y=230+sink*130,w=Math.min(v.w*.8,820);
-        for(let i=0;i<4;i++)smoke(c,x-w*.32+i*w*.2,y-40+i*14,t,i*7+3,1.5);
-        carrier(c,x,y,w,t,{rotate:.06+sink*.12,dead:true});
-        for(let i=0;i<4;i++)fx(c,3,t*10+i,x-w*.3+i*w*.19,y-26+i*16,60,84,.9);
+        c.save();c.translate(x,y);c.rotate(.06+sink*.12);
+        carrier(c,0,0,w,t,{dead:true});
+        for(const [i,dx] of [-.27,-.06,.17].entries()){
+          const base=-w*.036;
+          smoke(c,dx*w,base-12,t,i*7+3,.9);
+          fx(c,3,t*10+i,dx*w,base-20,52,54);
+        }
+        c.restore();
         for(let i=0;i<3;i++)cut(c,images.air,JET,v.cx+260-((t*210+i*330)%(v.w+500)),120+i*40,120);
-        huey(c,v.cx-330+t*36,370+Math.sin(t*2)*5,250,t,{tilt:-.06});
+        worksiteHeli(c,v.cx-330+t*36,370+Math.sin(t*2)*5,250,t);
         clouds(c,v,t,360,.5,3,640);vignette(c,v,.6);
       }},
-      // 2 · Dos rastros: las luces del convoy por la carretera y, al fondo, la ciudad encendida.
-      {id:'huida',dur:8,draw(c,t,v){
-        fill(c,v,'#d98548','#2a2230');
-        const bg=plate(c,images.road,v,{u:lerp(.3,.6,drift(t,v.dur)),vy:.32});
-        shade(c,v,'rgba(24,14,34,.3)');
-        if(bg){
-          // Las luces del convoy se alejan por la calzada; en el horizonte, un resplandor sobre la ciudad.
-          const y=bg.py(520);for(let i=0;i<5;i++){const x=v.cx+120+i*54+t*26;c.fillStyle=Math.floor(t*6+i)%5?'#ff5a44':'#ffb08a';c.fillRect(Math.round(x),Math.round(y-i*4),7,4);glow(c,x,y-i*4,22,'255,90,60',.35);}
-          const cityX=bg.px(1560),cityY=bg.py(250);glow(c,cityX,cityY,110,'255,220,150',.35+.12*Math.sin(t*2));beam(c,cityX,cityY,0,260,10,'255,236,190',.5);
+      // La carta náutica conduce a la siguiente misión, frente al puerto.
+      {id:'huida',dur:6,draw(c,t,v){
+        fill(c,v,'#1c6071','#061d30');
+        plate(c,images.trench,v,{u:lerp(.42,.55,drift(t,v.dur)),vy:.25});
+        const boats=images.submarines;
+        if(boats){
+          const sw=boats.width/8,sh=boats.height/3,x=v.cx+185-t*38,y=275+Math.sin(t*1.3)*5;
+          cut(c,boats,[Math.floor(t*8)%8*sw,2*sh,sw,sh],x,y,245);
         }
-        huey(c,v.cx-250+Math.sin(t*.6)*14,178+Math.sin(t*1.8)*5,330,t,{tilt:-.04});
         vignette(c,v,.65);
       }}
     ]
   };
 
   const files={
-    one:{city:'assets/worlds/ciudad-fondo-v2.png',tower:'assets/worlds/mundo-01-edificio-v1.png',workers:'assets/sprites/trabajadores-carrera-v4.png',whiteWolf:'assets/sprites/lobo-blanco-muerte-v1.png',wolf:'assets/sprites/soldado-lobo-v1.png',ruins:'assets/worlds/mission-02/city-day-v1.png'},
-    two:{ruins:'assets/worlds/mission-02/city-day-v1.png',graves:'assets/worlds/mission-02/cemetery-dusk-v1.png',chute:'assets/sprites/paracaidas-v1.png',zombie:'assets/sprites/zombi-cementerio-v1.png',atlas02:'assets/worlds/mission-02/environment-atlas-v1.png',crypt:'assets/worlds/mission-02/mausoleum-interior-v1.png',king:'assets/sprites/rey-zombi-v3.png'},
-    three:{carrier:'assets/worlds/mission-03/portaaviones-v1.png',air:'assets/worlds/mission-03/cubierta-atlas-v1.png',mecha:'assets/sprites/mecha-aereo-v1.png',road:'assets/worlds/mission-04/carretera-atardecer-v1.png'}
+    one:{city:'assets/worlds/ciudad-fondo-v2.png',tower:'assets/worlds/mundo-01-edificio-v1.png',workers:'assets/sprites/trabajadores-carrera-v4.png',wolfWalk:'assets/sprites/lobo-caminata-v2.png',wolf:'assets/sprites/soldado-lobo-v1.png',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp',capSalute:'assets/sprites/cine-cap-saludo-12.webp'},
+    two:{ruins:'assets/worlds/mission-02/city-day-v1.png',graves:'assets/worlds/mission-02/cemetery-dusk-v1.png',chute:'assets/sprites/paracaidas-v1.png',chuteSoldier:'assets/sprites/soldado-escalada-v2.png',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp',zombie:'assets/sprites/zombi-cementerio-v1.png',atlas02:'assets/worlds/mission-02/environment-atlas-v1.png'},
+    three:{carrier:'assets/worlds/mission-03/portaaviones-v1.png',air:'assets/worlds/mission-03/cubierta-atlas-v1.png',mecha:'assets/sprites/mecha-aereo-v1.png',patrolHeli:'assets/sprites/suceso-helicoptero-8.webp'}
   };
 
   // Otras misiones aportan sus planos sin engordar este archivo. `list` es
@@ -491,5 +599,8 @@
   const tools={TOP,BOTTOM,FLOOR,TAU,clamp,lerp,ease,ramp,drift,hash,atlas,fill,shade,plate,strip,cut,put,frame,silhouette,hunter,heli,huey,fx,boom,glow,beam,searchlights,rain,stars,smoke,dust,shadow,bolt,flash,vignette,flak,clouds,seal,crate};
   const api={register,sequence,load,images,sources,tools,span,sets:[]};
   register('one',files.one,one);register('two',files.two,two);register('three',files.three,three);
+  sources['one:outro']={ruins:'assets/worlds/mission-02/city-day-v1.png',transformation:'assets/sprites/soldado-transformacion-v2.png',wolfActions:'assets/sprites/lobo-reposo-patadas-v2.png'};
+  sources['two:outro']={crypt:'assets/worlds/mission-02/mausoleum-interior-v1.png',king:'assets/sprites/rey-zombi-v3.png'};
+  sources['three:outro']={trench:'assets/worlds/mission-05/fosa-panoramica.webp',submarines:'assets/sprites/submarinos-abismo-8.webp'};
   root.ArcadeStoryScenes=api;
 })(typeof window!=='undefined'?window:globalThis);

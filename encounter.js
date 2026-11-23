@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+  const Grenades=typeof module!=='undefined'&&module.exports?require('./grenades'):root.ArcadeGrenades;
   const Arsenal=typeof module!=='undefined'&&module.exports?require('./arsenal.js'):root.ArcadeArsenal;
   const Enemies=typeof module!=='undefined'&&module.exports?require('./enemies.js'):root.ArcadeEnemies;
   const Final=typeof module!=='undefined'&&module.exports?require('./final-boss.js'):root.ArcadeFinalBoss;
@@ -27,26 +28,41 @@
   }
   function stepGrenade(g,dt,platforms){
     g.age=(g.age||0)+dt;
+    if(g.armed){g.life=Math.max(0,g.life-dt);return;}
     // Small collision steps keep fast throws from crossing thin platform slabs.
     const count=Math.max(1,Math.ceil(dt/ (1/120))),h=dt/count,r=4;
     for(let i=0;i<count;i++){
       g.vy+=g.gravity*h;
       const oldX=g.x;g.x+=g.vx*h;
+      if(g.floorY!==undefined&&(g.x<g.floorLeft||g.x>g.floorRight))g.floorY=undefined;
       for(const raw of platforms){const s=raw.terrain?{...raw,y:Physics.surfaceY(raw,g.x)}:raw;const bottom=s.y+(s.thickness||12);if(g.y+r<=s.y||g.y-r>=bottom)continue;
         if(g.vx>0&&oldX+r<=s.x&&g.x+r>=s.x){g.x=s.x-r;g.vx*=-.4;}
         else if(g.vx<0&&oldX-r>=s.x+s.w&&g.x-r<=s.x+s.w){g.x=s.x+s.w+r;g.vx*=-.4;}
       }
       const oldY=g.y;g.y+=g.vy*h;
       for(const raw of platforms){const s=raw.terrain?{...raw,y:Physics.surfaceY(raw,g.x)}:raw;if(g.x+r<=s.x||g.x-r>=s.x+s.w)continue;const bottom=s.y+(s.thickness||12);
-        if(g.vy>=0&&oldY<=s.y&&g.y+r>=s.y){g.y=s.y-r;g.vy=g.vy>45?-g.vy*.35:0;g.vx*=.72;if(Math.abs(g.vx)<8)g.vx=0;}
+        if(g.vy>=0&&oldY<=s.y&&g.y+r>=s.y){g.floorY=s.y;g.floorSlope=raw.terrain?(Physics.surfaceY(raw,g.x+2)-Physics.surfaceY(raw,g.x-2))/4:0;g.floorLeft=s.x;g.floorRight=s.x+s.w;g.y=s.y-r;
+          if(g.enemy&&!g.tankGrenade){g.vx=g.vy=0;g.armed=true;g.life=.9;return;}
+          g.vy=g.vy>45?-g.vy*.35:0;g.vx*=.72;if(Math.abs(g.vx)<8)g.vx=0;}
         else if(g.vy<0&&oldY-r>=bottom&&g.y-r<=bottom){g.y=bottom+r;g.vy*=-.35;}
       }
     }
     g.life=Math.max(0,g.life-dt);if(g.life<1e-9)g.life=0;
   }
+  function enemyBlast(e,p,b){
+    const radius=b.blastRadius||Grenades.radius,y=b.armed?b.floorY:b.y;
+    e.explosions.push(Impact.create(b.x,y,radius,'grenade'));
+    const nearestY=Math.max(p.y-(p.h||46),Math.min(p.y,y));
+    if(Math.hypot(p.x-b.x,nearestY-y)<=radius)hurtPlayer(e,p,b.x,!!b.tankGrenade,b.damage||2);
+  }
   // scaled=false: daño que el jugador se causa a sí mismo; la dificultad no lo multiplica.
+  function bodyBox(actor){
+    const w=actor.w||28,standing=actor.h||46;
+    const h=!actor.kind&&actor.form==='soldier'&&actor.grounded&&actor.crouching?Math.min(standing,35):standing;
+    return{x:actor.x-w/2,y:actor.y-h,w,h,thickness:h};
+  }
   function hurtPlayer(e,p,sourceX,projectile=false,amount=1,scaled=true){
-    if(e.developerInvulnerable||e.invincible||e.dead||p.burrow||(projectile&&p.cloak>0))return false;
+    if(p.respawnProtection>0||e.developerInvulnerable||e.invincible||e.dead||p.burrow||(projectile&&p.cloak>0))return false;
     if(projectile&&p.shield>0){p.shield--;p.shieldFlash=.2;return false;}
     amount*=(scaled?e.combatDamage||1:1)*(p.form==='zombie'?.5:1);
     e.damageTaken=(e.damageTaken||0)+amount;e.hp=Math.max(0,e.hp-amount);if(e.hp===0)e.dead=true;e.invincible=e.hitProtection||1.2;p.hurt=.32;p.hitDirection=p.x<sourceX?-1:1;p.vx=p.hitDirection*210;
@@ -56,16 +72,16 @@
   function applyFallDamage(e,p){
     const damage=p.fallDamage||0;p.fallDamage=0;
     // La caída no escala con la dificultad, pero respeta la protección tras un golpe o al reaparecer.
-    if(e.developerInvulnerable||e.invincible>0||damage<=0||p.form==='wolf'||p.form==='zombie'||e.dead||p.burrow)return false;
+    if(p.respawnProtection>0||e.developerInvulnerable||e.invincible>0||damage<=0||p.form==='wolf'||p.form==='zombie'||e.dead||p.burrow)return false;
     e.hp=Math.max(0,e.hp-damage);e.damageTaken=(e.damageTaken||0)+damage;e.invincible=1.2;
     p.hurt=.32;p.hitDirection=0;p.vx=0;p.hitX=p.x;p.hitY=p.y-25;p.claw=0;p.kick=0;
     if(e.hp===0)e.dead=true;
     return true;
   }
-  function segmentHit(x,y,dx,dy,box){
-    if(box.terrain)return Physics.terrainHit(x,y,dx,dy,box,segmentHit);
+  function segmentHit(x,y,dx,dy,box,padding=3){
+    if(box.terrain)return Physics.terrainHit(x,y,dx,dy,box,(sx,sy,vx,vy,bounds)=>segmentHit(sx,sy,vx,vy,bounds,padding));
     let enter=0,exit=1;
-    for(const [start,delta,min,max] of [[x,dx,box.x-3,box.x+box.w+3],[y,dy,box.y-3,box.y+box.h+3]]){
+    for(const [start,delta,min,max] of [[x,dx,box.x-padding,box.x+box.w+padding],[y,dy,box.y-padding,box.y+box.h+padding]]){
       if(Math.abs(delta)<1e-9){if(start<min||start>max)return null;continue;}
       let a=(min-start)/delta,b=(max-start)/delta;if(a>b)[a,b]=[b,a];enter=Math.max(enter,a);exit=Math.min(exit,b);if(enter>exit)return null;
     }
@@ -86,18 +102,33 @@
   }
   function transformWolf(e,p){if(e.dead)return;
     if(e.boss.hp<=0&&e.boss.deathAge===undefined){Object.assign(e.boss,{deathAge:0,death:3.2,phase:'dead',flash:0,ladder:null,traverse:null,descending:false,vy:0});}
-p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;p.h=64;p.claw=0;e.maxHp=8+(p.healthBonus||0);e.hp=e.maxHp;e.invincible=1.5;e.bullets=[];e.boss.active=false;e.won=true;}
+p.transformFrom=p.form||'soldier';(typeof module!=='undefined'&&module.exports?require('./zombie-form'):root.ArcadeZombieForm).setBody(p,'wolf');p.heroFlight=false;p.jetpack=false;p.transform=1.2;p.claw=0;e.maxHp=8+(p.healthBonus||0);e.hp=e.maxHp;e.invincible=1.5;e.bullets=[];e.boss.active=false;e.won=true;}
   function transformationFrame(p){const progress=Math.max(0,Math.min(7,Math.floor((1.2-p.transform)/1.2*8)));return p.form==='soldier'?7-progress:progress;}
   function hitForeman(b,damage){
     if(b.hp<=0||!(damage>0))return;
     b.hp=Math.max(0,b.hp-damage);
     b.hit=.18;
   }
-  function resolveSoldierMelee(e,p){
+  function fighterContact(e,p,targets,platforms,applyDamage,boxOf,boss){
+    if(p.form!=='fighter'||p.hurt>0||p.transform>0||p.ladder||p.rope)return false;
+    const forms=typeof module!=='undefined'&&module.exports?require('./advanced-forms'):root.ArcadeAdvancedForms;
+    const landed=forms.connectFighter(p,targets,applyDamage,{platforms,boxOf,boss});
+    if(landed)e.cooldown+=p.fighterFreeze;
+    return landed;
+  }
+  function resolveSoldierMelee(e,p,platforms){
     const action=e.weaponAction;
-    if(!action?.melee||action.hitApplied||action.age<action.duration*.28)return false;
+    if(!action?.melee||action.hitApplied||action.age<action.duration*(action.melee.contact??.28))return false;
     action.hitApplied=true;
-    if(p.form==='wolf'||p.form==='zombie'||p.transform>0||p.ladder||p.rope||e.inventory.selected!==action.slot)return false;
+    if(action.fighter){
+      const b=e.boss,f=e.finalBoss;
+      fighterContact(e,p,[...e.enemies,...(e.won?[]:[b]),...(f.active?[f]:[])],platforms,
+        (n,d)=>n===b?hitForeman(n,d):n===f?Final.damage(n,d):Enemies.damage(n,d),
+        n=>n===f?Final.box(f):null,n=>n===b||n===f);
+      if(!e.won&&b.hp<=0){transformWolf(e,p);return true;}
+      return false;
+    }
+    if(p.form==='fighter'||p.form==='wolf'||p.form==='zombie'||p.transform>0||p.ladder||p.rope||e.inventory.selected!==action.slot)return false;
     const {range,damage}=action.melee;
     Enemies.melee(e.enemies,p,range,damage);Final.melee(e.finalBoss,p,range,damage);
     const b=e.boss;
@@ -165,7 +196,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
     e.explosions=e.explosions.filter(effect=>effect.life>0);
     p.transform=Math.max(0,(p.transform||0)-dt);p.claw=Math.max(0,(p.claw||0)-dt);p.kick=Math.max(0,(p.kick||0)-dt);
     const b=e.boss;b.hit=Math.max(0,(b.hit||0)-dt);Arsenal.tickRobot(e,dt);e.cooldown=Math.max(0,e.cooldown-dt);e.invincible=Math.max(0,e.invincible-dt);e.flash=Math.max(0,e.flash-dt);
-    if(resolveSoldierMelee(e,p))return;
+    if(resolveSoldierMelee(e,p,platforms))return;
     Enemies.ram(e,p,input,dt,platforms,segmentHit);
     const bossHpBeforeCombo=b.hp;
     const Z=typeof module!=='undefined'&&module.exports?require('./zombie-form'):root.ArcadeZombieForm;Z.tick(p,dt);Z.combat(e,p,input,dt,platforms);
@@ -174,15 +205,7 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
       if(b.hp>0&&Math.abs(b.x-p.x)<range&&Math.abs(b.y-p.y)<65&&(b.x-p.x)*p.facing>=0)hitForeman(b,damage);
     });
     if(!e.won&&bossHpBeforeCombo>0&&b.hp<=0){transformWolf(e,p);return;}
-    if(p.form==='fighter'||p.form==='tank'){p.fighterKickInput=!!input.kick;if(input.kick)input={...input,fire:true};}
-    if(input.fire&&p.form!=='wolf'&&p.form!=='zombie'&&e.cooldown===0&&!p.transform){
-      const shot=p.form==='robot'?Arsenal.fireRobot(e,p):Arsenal.fire(e.inventory,p);if(shot){
-        e.cooldown=shot.weapon.rate/(p.rateBonus||1);
-        e.weaponAction={slot:e.inventory.selected,age:0,duration:e.cooldown};
-        if(shot.weapon.range)e.weaponAction.melee={range:shot.weapon.range,damage:shot.weapon.damage*(p.damageBonus||1)};
-        e.lastAim={...(p.aim||{x:p.facing,y:0})};e.flash=.14;e.bullets.push(...shot.bullets);
-      }
-    }
+    Arsenal.startAttack(e,p,input);
     const noises=e.explosions.filter(b=>b.life>.35).map(b=>({x:b.x,y:b.y,radius:600}));if(e.flash>0)noises.push({x:p.x,y:p.y,radius:Arsenal.noiseRadius(e.inventory.selected)});
     Enemies.update(e.enemies,p,dt,platforms,e.bullets,segmentHit,noises);
     Final.update(e,p,dt*(e.finalBoss.hp>0&&e.finalBoss.sticky>0?.45:1),hurtPlayer,platforms);
@@ -232,6 +255,11 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
         }
         continue;
       }
+      if(bullet.slot===9&&bullet.enemy){
+        stepGrenade(bullet,dt,platforms);
+        if(!bullet.life&&(bullet.armed||bullet.tankGrenade))enemyBlast(e,p,bullet);
+        continue;
+      }
       if(bullet.slot===9&&!bullet.enemy){
         stepGrenade(bullet,dt,platforms);
         if(bullet.life===0){
@@ -242,15 +270,30 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
         }
         continue;
       }
-      const oldX=bullet.x,oldY=bullet.y;
-      bullet.vy+=(bullet.gravity||0)*dt;bullet.x+=bullet.vx*dt;bullet.y+=bullet.vy*dt;bullet.life-=dt;
-      if(!bullet.enemy){let target=null,t=Infinity;for(const n of e.enemies){if(n.hp<=0)continue;const hit=segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:n.x-14,y:n.y-46,w:28,h:46});if(hit!==null&&hit<t){t=hit;target=n;}}if(target){Enemies.damage(target,bullet.damage||1);bullet.life=0;continue;}}
-      if(!bullet.enemy&&e.finalBoss?.active&&segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,Final.box(e.finalBoss))!==null){Final.damage(e.finalBoss,bullet.damage||1);bullet.life=0;continue;}
-      let surface=null,surfaceT=Infinity;
-      for(const pl of platforms){if(!Enemies.blocksShot(bullet,pl))continue;const t=segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:pl.x,y:pl.y,w:pl.w,h:pl.thickness||12,terrain:pl.terrain});if(t!==null&&t<surfaceT){surface=pl;surfaceT=t;}}
-      if(surface){chip(e,oldX+(bullet.x-oldX)*surfaceT,oldY+(bullet.y-oldY)*surfaceT,surface);bullet.life=0;continue;}
-      if(bullet.life>0&&b.hp>0&&!bullet.enemy&&segmentHit(oldX,oldY,bullet.x-oldX,bullet.y-oldY,{x:b.x-30,y:b.y-75,w:60,h:75})!==null){hitForeman(b,bullet.damage||1);b.active=b.hp>0;bullet.life=0;if(!b.hp){transformWolf(e,p);return;}}
-      if(bullet.enemy&&!(p.cloak>0)&&Math.abs(bullet.x-p.x)<15&&bullet.y>p.y-(p.h||46)&&bullet.y<p.y){if(Arsenal.reflect(p,bullet))continue;if(e.invincible)continue;hurtPlayer(e,p,bullet.x-bullet.vx*.05,true);bullet.life=0;}
+      const travel=Math.min(dt,bullet.life);
+      bullet.vy+=(bullet.gravity||0)*travel;
+      const dx=bullet.vx*travel,dy=bullet.vy*travel;
+      let first=Infinity,target=null,surface=null;
+      function consider(box,actor,platform){
+        const t=segmentHit(bullet.x,bullet.y,dx,dy,box,platform?0:3);
+        if(t!==null&&t<first){first=t;target=actor;surface=platform;}
+      }
+      for(const pl of platforms)if(Enemies.blocksShot(bullet,pl))consider({...pl,h:pl.thickness||12},null,pl);
+      if(bullet.enemy){if(!(p.cloak>0))consider(bodyBox(p),p,null);}
+      else{
+        for(const n of e.enemies)if(n.hp>0)consider(bodyBox(n),n,null);
+        if(e.finalBoss.active&&e.finalBoss.hp>0)consider(Final.box(e.finalBoss),e.finalBoss,null);
+        if(b.hp>0)consider({x:b.x-30,y:b.y-75,w:60,h:75},b,null);
+      }
+      bullet.x+=dx*Math.min(first,1);bullet.y+=dy*Math.min(first,1);bullet.life-=travel;
+      if(first===Infinity)continue;
+      if(target===p&&Arsenal.reflect(p,bullet))continue;
+      bullet.life=0;
+      if(surface)chip(e,bullet.x,bullet.y,surface);
+      else if(target===p)hurtPlayer(e,p,bullet.x-bullet.vx*.05,true,bullet.damage||1);
+      else if(target===e.finalBoss)Final.damage(target,bullet.damage||1);
+      else if(target===b){hitForeman(b,bullet.damage||1);b.active=b.hp>0;if(!b.hp){transformWolf(e,p);return;}}
+      else Enemies.damage(target,bullet.damage||1);
     }
     for(const n of e.enemies)if(Enemies.contact(n,p,platforms,segmentHit))hurtPlayer(e,p,n.x,n.kind==='knife');
     if(b.active&&!e.invincible&&Math.abs(p.x-b.x)<36&&Math.abs(p.y-b.y)<55){hurtPlayer(e,p,b.x);}
@@ -272,5 +315,5 @@ p.transformFrom=p.form||'soldier';p.form='wolf';p.jetpack=false;p.transform=1.2;
     }
     return{lost,update};
   }
-  const api={START_HP,createHitFeedback,drawEnvironment,chip,updateDebris,createEncounter,updateEncounter,transformWolf,toggleForm,stepGrenade,transformationFrame,hurtPlayer,applyFallDamage,segmentHit,stepMissile};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEncounter=api;
+  const api={bodyBox,fighterContact,enemyBlast,START_HP,createHitFeedback,drawEnvironment,chip,updateDebris,createEncounter,updateEncounter,transformWolf,toggleForm,stepGrenade,transformationFrame,hurtPlayer,applyFallDamage,segmentHit,stepMissile};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeEncounter=api;
 })(typeof window!=='undefined'?window:globalThis);

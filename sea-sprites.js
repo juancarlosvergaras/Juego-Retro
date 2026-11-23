@@ -61,6 +61,14 @@
  function create(images){
   const animal=atlas(images.wildlife,wildlife),swim=atlas(images.swimmers,swimmers);
   const vessel=atlas(images.submarines,submarines);
+  const forms=typeof module!=='undefined'&&module.exports?require('./advanced-forms'):root.ArcadeAdvancedForms;
+  function shield(c,p,powers){
+   const tank=p.form==='tank',vesselCenter=point(p,tank?-recoil(p):0,tank?-2:0);
+   const hit=powers.shieldFlash>0,frame=loopFrame(powers.age*1.25);
+   const img=images.seaShield,fw=img.width/8,h=tank?86:67,w=tank?131:135;
+   c.save();c.translate(vesselCenter.x,vesselCenter.y);c.rotate(angle(p));c.globalAlpha*=hit?.98:.74;
+   c.drawImage(img,frame*fw,0,fw,img.height,-w/2,-h/2,w,h);c.restore();
+  }
   function predator(c,n){
    let name=n.type,frame=loopFrame((n.stroke||0)/turn+(name==='squid'?.20:0));
    const direction=n.facing||-1,cy=n.y-n.h*.5;
@@ -82,6 +90,15 @@
   }
   function player(c,p,e){
    const form=p.form||'soldier',tank=form==='tank',facing=p.facing||1,pitch=angle(p);
+   if(form==='fighter'&&p.fighterPose>0){
+    const frame=forms.fighterFrame(p,8);
+    if(frame>=0){
+     const img=images.fighterSwim,w=img.width/8,h=img.height/4,scale=107/192;
+     c.save();c.translate(p.x,p.y-lift(p));c.rotate(pitch);c.scale(facing*scale,scale);
+     c.drawImage(img,frame*w,forms.fighterMove(p).row*h,w,h,-w/2,-h/2,w,h);
+     c.restore();return true;
+    }
+   }
    if(form==='hero'){
     // The hero's existing twelve-cel gliding strip uses a foot-relative origin.
     // Draw it around the same water pivot used to project his eyes.
@@ -124,7 +141,7 @@
   function ambient(c,name,cycles,x,y,width,flip){
    animal(c,name,loopFrame(cycles),x,y,width,flip);
   }
-  return {ambient,predator,player,enemy};
+  return {ambient,predator,player,enemy,shield};
  }
  const api={create,updatePitch,point,forwardAim,muzzle,robotGun};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSeaSprites=api;

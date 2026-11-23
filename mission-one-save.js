@@ -3,7 +3,7 @@
  const KEY='cap-dollar.mission-one.v1';
  const n=(v,f=0)=>Number.isFinite(v)?Math.max(0,v):f;
  function read(store){try{const s=JSON.parse(store.getItem(KEY));return s?.version===1&&s.checkpoint&&Number.isFinite(s.checkpoint.x)&&Number.isFinite(s.checkpoint.y)?s:null;}catch{return null;}}
- function write(store,{player:p,encounter:e,score,checkpoint,maxFloor,challenges,fuelTanks,checkpoints}){try{store.setItem(KEY,JSON.stringify({version:1,checkpoint,checkpoints,maxFloor,won:e.won,finalWon:e.finalWon,dead:e.dead,landed:true,form:p.form,hp:e.hp,fuel:p.fuel,shield:p.shield,formCooldown:p.formCooldown,inventory:e.inventory,defeated:e.enemies.filter(x=>x.hp<=0).map(x=>x.id),pickups:e.pickups.filter(x=>x.taken).map(x=>x.id),medkits:e.medkits.filter(x=>x.taken).map(x=>x.id),tanks:fuelTanks.filter(x=>x.taken).map(x=>x.id),score:{total:score.total,counts:score.counts,bonuses:score.bonuses,awarded:[...score.awarded]},challenges:{elapsed:challenges.elapsed,damaged:challenges.damaged,done:challenges.done,awarded:challenges.awarded,stars:challenges.stars.filter(x=>x.taken).map(x=>x.id)}}));return true;}catch{return false;}}
+ function write(store,{player:p,encounter:e,score,checkpoint,maxFloor,challenges,fuelTanks,checkpoints}){try{store.setItem(KEY,JSON.stringify({version:1,checkpoint,checkpoints,maxFloor,won:e.won,finalWon:e.finalWon,dead:e.dead,respawnProtection:p.respawnProtection,landed:true,form:p.form,hp:e.hp,fuel:p.fuel,shield:p.shield,formCooldown:p.formCooldown,inventory:e.inventory,defeated:e.enemies.filter(x=>x.hp<=0).map(x=>x.id),pickups:e.pickups.filter(x=>x.taken).map(x=>x.id),medkits:e.medkits.filter(x=>x.taken).map(x=>x.id),tanks:fuelTanks.filter(x=>x.taken).map(x=>x.id),score:{total:score.total,counts:score.counts,bonuses:score.bonuses,awarded:[...score.awarded]},challenges:{elapsed:challenges.elapsed,damaged:challenges.damaged,done:challenges.done,awarded:challenges.awarded,stars:challenges.stars.filter(x=>x.taken).map(x=>x.id)}}));return true;}catch{return false;}}
  function restore(s,{player:p,encounter:e,score,profile,platforms,challenges,fuelTanks,progression,campaign}){
   // Resume at a verified checkpoint, never inside a wall or halfway through an attack.
   const cp=s.checkpoint,support=platforms.find(pl=>Math.abs(pl.y-cp.y)<2&&cp.x>=pl.x&&cp.x<=pl.x+pl.w),fallback=platforms.find(pl=>pl.kind==='ground');
@@ -12,8 +12,9 @@
   e.won=s.won===true;e.finalWon=e.won&&s.finalWon===true;
   if(e.won)e.boss.hp=0;if(e.finalWon){Object.assign(e.finalBoss,{hp:0,stage:2,phase:'dead',death:0,active:false});}
   progression.apply(profile,p,e,true);
-  p.form=s.form==='hero'&&p.heroUnlocked?'hero':s.form==='tank'&&p.tankUnlocked?'tank':s.form==='fighter'&&p.fighterUnlocked?'fighter':s.form==='robot'&&p.robotUnlocked?'robot':s.form==='zombie'&&p.zombieUnlocked?'zombie':s.form==='wolf'&&(e.won||p.zombieUnlocked)?'wolf':'soldier';p.h=p.form==='tank'?53:p.form==='fighter'?57:p.form==='wolf'?64:p.form==='zombie'?68:p.form==='robot'?54:46;
-  p.fuel=Math.min(p.fuelMax,n(s.fuel,p.fuelMax));p.shield=Math.min(10,n(s.shield));p.formCooldown=Math.min(5,n(s.formCooldown));if(s.dead)e.invincible=3;e.hp=s.dead?e.maxHp:Math.max(1,Math.min(e.maxHp,n(s.hp,e.maxHp)));e.inventory=campaign.inventory(s.inventory);
+  const forms=typeof module!=='undefined'&&module.exports?require('./zombie-form'):root.ArcadeZombieForm;
+  forms.restoreBody(p,s.form,e.won);
+  p.fuel=Math.min(p.fuelMax,n(s.fuel,p.fuelMax));p.shield=Math.min(10,n(s.shield));p.formCooldown=Math.min(5,n(s.formCooldown));progression.protect(p,s.dead?progression.RESPAWN_SECONDS:(s.respawnProtection||0));e.hp=s.dead?e.maxHp:Math.max(1,Math.min(e.maxHp,n(s.hp,e.maxHp)));e.inventory=campaign.inventory(s.inventory);
   const contains=(list,id)=>Array.isArray(list)&&list.includes(id);
   for(const enemy of e.enemies)if(contains(s.defeated,enemy.id)){enemy.hp=0;enemy.death=0;}
   for(const [list,ids] of [[e.pickups,s.pickups],[e.medkits,s.medkits],[fuelTanks,s.tanks],[challenges.stars,s.challenges?.stars]])for(const item of list)item.taken=contains(ids,item.id);

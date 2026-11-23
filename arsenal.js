@@ -48,7 +48,8 @@
     }
     return items;
   }
-  function selectWeapon(inv,slot){if(!weapons[slot]||!inv.owned.includes(slot))return false;inv.selected=slot;return true;}
+  function canEquip(form,slot){return !!weapons[slot]&&(!form||form==='soldier'||form==='robot'&&slot>=3);}
+  function selectWeapon(inv,slot,form){if(!canEquip(form,slot)||!inv.owned.includes(slot))return false;inv.selected=slot;return true;}
   function supplyRolls(choices,count,saved){
     if(Array.isArray(saved)&&saved.length===count&&saved.every(value=>choices.includes(value)))return saved.slice();
     const rolls=[],bag=[];
@@ -77,12 +78,13 @@
       tick(dt,p,e,previousAction){
         remaining=Math.max(0,remaining-dt);
         const weapon=weapons[e.inventory.selected];
-        if(e.weaponAction!==previousAction||e.dead||p.form==='wolf'||p.transform>0||p.rope||p.ladder||slot!==e.inventory.selected||weapon.ammo!==null&&!(e.inventory.ammo[slot]>0))remaining=0;
+        if(e.weaponAction!==previousAction||e.dead||p.form==='wolf'||p.transform>0||p.rope||p.ladder||slot!==e.inventory.selected||p.form!=='fighter'&&weapon.ammo!==null&&!(e.inventory.ammo[slot]>0))remaining=0;
         return remaining>0;
       }
     };
   }
-  function movementInput(p,input){return input.fire&&!input.jumpPressed&&!p.rope&&!p.jetpack&&!p.heroFlight&&!input.jetpackPressed&&p.form!=='wolf'?{...input,up:false,down:false}:input;}
+  function lowStance(p,input){return p.form==='soldier'&&p.grounded&&p.crouching&&input.down&&!input.up&&!p.ladder&&!p.rope&&!p.jetpack;}
+  function movementInput(p,input){return input.fire&&!input.jumpPressed&&!p.rope&&!p.jetpack&&!p.heroFlight&&!input.jetpackPressed&&p.form!=='wolf'?{...input,up:false,down:!!lowStance(p,input),blockLadder:true}:input;}
   function firingAim(input,facing,queuedAim){
     // Key releases can straddle simulation frames. A queued tap keeps the
     // direction at trigger time; a held trigger continues to track live aim.
@@ -92,9 +94,9 @@
   // Puntería única de todas las misiones y formas. Arriba y abajo apuntan; las
   // cuatro teclas de diagonal (Q/C y O/M) siguen hacia donde mira el personaje;
   // una pulsación breve conserva la dirección del momento del disparo.
-  function aimInput(input){return{...input,aimUp:!!(input.aimUp||input.up),aimDown:!!(input.aimDown||input.down)};}
+  function aimInput(input,p){const low=p&&lowStance(p,input)&&!input.left&&!input.right;return{...input,aimUp:!!(input.aimUp||input.up),aimDown:!low&&!!(input.aimDown||input.down)};}
   function playerAim(p,input,{queuedAim=null,turn=true}={}){
-    const aim=firingAim(aimInput(input),p.facing||1,queuedAim);
+    const aim=firingAim(aimInput(input,p),p.facing||1,queuedAim);
     if(turn&&aim.x&&!p.rope&&(turn==='always'||p.form!=='wolf'))p.facing=Math.sign(aim.x);
     p.aim=aim;return aim;
   }
@@ -141,6 +143,26 @@
     if(!shots.length)return null;
     return{weapon:{...shots[0].weapon,rate:Math.max(.001,Math.min(...e.robotWait))*(p.rateBonus||1)},bullets:shots.flatMap(s=>s.bullets)};
   }
-  const api={GUN_NOISE,noiseRadius,impactDamage,supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,aimInput,playerAim,weapons,createInventory,createPickups,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
+  // The level resolves contacts against its own scenery and bosses. A trigger
+  // pull always creates the same action, ammunition cost and projectiles.
+  function startAttack(e,p,input,onShot){
+    const fighter=p.form==='fighter',alternate=(fighter||p.form==='tank')&&input.kick;
+    if(!input.fire&&!alternate||e.dead||e.cooldown>0||p.transform||p.rope||p.ladder||
+       p.form==='wolf'||p.form==='zombie'||fighter&&p.hurt>0)return false;
+    if(fighter||p.form==='tank')p.fighterKickInput=!!input.kick;
+    const shot=p.form==='robot'?fireRobot(e,p):fire(e.inventory,p);
+    if(!shot)return false;
+    const {weapon,bullets}=shot;
+    e.cooldown=weapon.rate/(p.rateBonus||1);
+    e.weaponAction={slot:e.inventory.selected,age:0,duration:e.cooldown,fighter,soundHandled:!!onShot};
+    if(weapon.range)e.weaponAction.melee={range:weapon.range,contact:weapon.contact,damage:weapon.damage*(p.damageBonus||1)};
+    e.lastAim={...(p.aim||{x:p.facing,y:0})};e.flash=fighter?0:.14;
+    const serial=e.shotSerial=(e.shotSerial||0)+1;
+    for(const bullet of bullets)bullet.carShot=serial;
+    e.bullets.push(...bullets);
+    if(fighter&&onShot)onShot(p,'fistSwing');
+    return true;
+  }
+  const api={GUN_NOISE,noiseRadius,impactDamage,supplyRolls,grantAmmo,reflect,robotMuzzle,controlCode,fireKeys,triggerInput,createFireBuffer,movementInput,firingAim,aimInput,playerAim,weapons,createInventory,createPickups,canEquip,selectWeapon,collect,aimDirection,muzzle,fire,tickRobot,fireRobot,startAttack};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeArsenal=api;
 })(typeof window!=='undefined'?window:globalThis);
 

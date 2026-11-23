@@ -74,15 +74,16 @@
       try{Scenes?.load(set+':'+kind);}catch{}
       const shots=Scenes?.sequence?.(set,kind)||[];
       if(!player||!Cinema||!shots.length||!list?.length){done();return false;}
-      const cues=Cinema.buildCues(list,shots,options);
-      if(!cues.length||!player.play({cues,label,theme:extra.theme,data:extra.data,onDone:done})){done();return false;}
+      const film=root.ArcadeStoryIllustrations?.decorate(set,shots)||shots;
+      const cues=Cinema.buildCues(list,film,options);
+      if(!cues.length||!player.play({cues,label,musicMode:kind==='intro'?'explore':'victory',theme:extra.theme,data:extra.data,onDone:done})){done();return false;}
       return true;
     }
     return{radio,epilogue:config.epilogue||epilogue,player,
       briefingOpen:()=>!!player?.isOpen(),
       briefing(callback){return run('intro',pages,{title:Cinema?.titleFrom(eyebrow)},'Historia · '+eyebrow,callback);},
-      outro(callback){return run('outro',config.outro,{},'Epílogo · '+eyebrow,callback);},
-      finale(data,callback){const script=typeof config.finale?.script==='function'?config.finale.script(data||{}):config.finale?.script;return run('finale',script,{},'Final de la campaña',callback,{theme:config.finale?.theme,data});},
+      outro(callback,data){return run('outro',config.outro,{},'Epílogo · '+eyebrow,callback,{data});},
+      finale(data,callback){const script=typeof config.finale?.script==='function'?config.finale.script(data||{}):config.finale?.script;return run('finale',script,{},config.finale?.label||'Epílogo',callback,{theme:config.finale?.theme,data});},
       reset(){radio.reset();panel.hidden=true;shown=null;},
       update(c,dt){radio.update(c,dt);},
       render(blocked){const current=blocked?null:radio.state.current;if(current?.id!==shown?.id){shown=current;if(current){speaker.textContent=current.who;text.textContent=current.text;}}panel.hidden=!current;if(current)panel.classList.toggle('leaving',radio.state.age>current.duration-.35);}

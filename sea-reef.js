@@ -46,6 +46,11 @@
   return y;
  }
  function inCave(x,y){return x>=left&&x<=right&&y>seabed(x)-706&&y<seabed(x);}
- const api={left,right,rocks,seabed,freeY,inCave};
+ function floorBelow(x,y){
+    let floor=seabed(x);
+    for(const rock of rocks){const span=interval(rock,x,x);if(span&&span.top>=y)floor=Math.min(floor,span.top);}
+    return floor;
+  }
+  const api={left,right,rocks,seabed,freeY,inCave,floorBelow};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSeaReef=api;
 })(typeof window!=='undefined'?window:globalThis);

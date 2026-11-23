@@ -1,5 +1,28 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const carry={version:1,level:6,hp:1,form:'fighter',fighterUnlocked:true,inventory:{owned:[1,3],selected:3,ammo:{3:90}}},profile={version:1,levels:{life:3},fighterUnlocked:true,wallet:0,earned:0};
+test('the last ray, shield hit and deployed weapons finish their animations without firing again',()=>{
+ const C=require('../mission-combat'),V=require('../powers'),P=require('../physics');
+ const e=C.create({owned:[1],selected:1,ammo:{}}),p=P.createPlayer(),powers=V.create();
+ p.shield=2;e.zombieEffects=[{kind:'ray',life:.16}];
+ Object.assign(powers,{flame:.16,shieldFlash:.3,lastShield:2,beams:[{age:1.5}],
+  turrets:[{life:8,shot:0,flash:.16,age:0}],cooldowns:{orbital:14}});
+ for(let i=0;i<120;i++)C.aftermath(e,p,powers,1/120,[]);
+ assert.equal(e.zombieEffects.length,0);assert.equal(e.bullets.length,0);
+ assert.equal(powers.flame,0);assert.equal(powers.shieldFlash,0);assert.equal(p.shield,2);
+ assert.equal(powers.beams.length,0);assert.equal(powers.turrets[0].flash,0);assert.equal(powers.cooldowns.orbital,14);
+});
+test('the last rocket plays out on the roof while holding fire through the victory sequence',async()=>{
+ const saved={form:'soldier',hp:8,inventory:{owned:[1,6],selected:6,ammo:{6:4}},mall:{floor:3,started:true,x:540,y:472}};
+ const g=await game(6,'?entry=resume',{'cap-dollar.mission-six.v1':JSON.stringify(saved)});
+ const {p,s,e}=g.view;g.tick(2.6);s.boss.hp=1;
+ g.key('KeyJ');g.tick(.12);
+ assert.ok(s.ending>=0&&e.explosions.some(b=>b.kind==='rocket'),'the rocket really supplied the winning impact');
+ const ammo=e.inventory.ammo[6],life=e.explosions[0].life,shots=e.shotSerial;
+ g.tick(.2);assert.ok(e.explosions[0].life<life,'the last impact advances during the collapse');
+ assert.equal(e.flash,0);assert.ok(!e.weaponAction||e.weaponAction.age>=.2);
+ g.tick(2);assert.equal(e.explosions.length,0);assert.equal(e.debris.length,0);
+ assert.equal(e.bullets.length,0);assert.equal(e.inventory.ammo[6],ammo);assert.equal(e.shotSerial,shots);assert.ok(p.grounded);
+});
 test('mall defers loading and entering from campaign heals to maximum',async()=>{const g=await game(6,'',{'cap-dollar.campaign.v1':JSON.stringify(carry),'obra10.progress.v1':JSON.stringify(profile)});assert.equal(g.view,undefined);await g.loader();g.play();g.tick(.1);assert.equal(g.view.e.hp,11);assert.equal(g.view.p.form,'fighter');});
 test('floor checkpoint saves after stairs, resumes there and defeat retries there',async()=>{const g=await game(6,'?entry=resume',{'cap-dollar.mission-six.v1':JSON.stringify({...carry,hp:8,mall:{floor:1,checkpoint:1,started:true,x:4500,y:472}})});assert.ok(g.el('mall-interact').hidden);g.key('ArrowRight');g.tick(.05);g.key('ArrowRight',false);assert.ok(g.view.s.stairs.active);g.tick(3);assert.equal(g.view.s.floor,2);assert.ok(!g.view.s.stairs.active);g.el('pause-two').click();const saved=JSON.parse(g.data.get('cap-dollar.mission-six.v1'));assert.equal(saved.mall.checkpoint,2);const resumed=await game(6,'?entry=resume',Object.fromEntries(g.data));assert.equal(resumed.view.s.floor,2);resumed.view.e.dead=true;resumed.tick(.1);resumed.play();resumed.tick(.1);assert.equal(resumed.view.p.x,140);assert.equal(resumed.view.e.hp,resumed.view.e.maxHp);});
 test('keyboard jump and reverse remain live on an escalator and the Arcade prompt stays hidden',async()=>{

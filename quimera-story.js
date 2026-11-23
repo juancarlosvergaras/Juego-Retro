@@ -34,8 +34,8 @@
     c.drawImage(pic,Math.round((pic.width-w)*clamp(pan)),section*h,w,h,0,0,960,540);
   }
   function lab(c,art,pan){
-    const pic=art.city,w=Math.floor(pic.height*16/9);
-    c.drawImage(pic,(pic.width-w)*clamp(pan),0,w,pic.height,0,0,960,540);
+    const pic=art.city,w=Math.min(pic.width,pic.height*16/9),h=w*9/16;
+    c.drawImage(pic,(pic.width-w)*clamp(pan),(pic.height-h)*.55,w,h,0,0,960,540);
   }
   // One level camera looking across the quay. Positions and sizes are in metres.
   const horizon=352,eyeHeight=1.8,focal=740;
@@ -77,13 +77,20 @@
       c.drawImage(art.actions,12*164,2*112,164,112,-82,-102,164,112);c.restore();
       const x=165+Math.min(2.6,t)*77;
       if(t<2.7)walkCap(c,art,x,446,1.4,x-165,clamp((2.7-t)/.13));
-      else sprite(c,art.fighter,12,t*8,x,446,1.4);
+      else{
+        c.save();c.globalAlpha=1-clamp((t-2.7)/1.2);
+        sprite(c,art.fighter,12,t*8,x,446,1.4);c.restore();
+      }
       if(t>2.7){const glow=clamp((t-2.7)/1.2);
         const aura=c.createRadialGradient(x,390,3,x,390,84);aura.addColorStop(0,'rgba(152,240,255,'+glow+')');aura.addColorStop(1,'transparent');
         c.fillStyle=aura;c.fillRect(x-84,306,168,168);c.save();c.globalAlpha=glow;sprite(c,art.hero,18,t*10,x,446,1.4);c.restore();}
       transmission(c,t,'LABORATORIO  /  SUERO NEUTRALIZADO','INÉS  ·  El traje responde a tus ojos. Apunta a la cerradura.');
     }else if(t<10){
-      const a=t-4.5;lab(c,art,.95);const doorX=568,sill=431;
+      const a=t-4.5;
+      if(a>=1.4&&a<4.15&&root.ArcadeStoryIllustrations?.draw(c,'quimera-outro',a-1.4,{w:960,h:540},2.6)){
+        transmission(c,a,'COMPUERTA DE SERVICIO','INÉS  ·  ¡Está abierta! Primero los heridos. Yo cierro la marcha.');return;
+      }
+      lab(c,art,.95);const doorX=568,sill=431;
       c.drawImage(art.booth,doorX-126,sill-181,252,190);
       const lift=clamp((a-1.25)/1.45),height=Math.round(114*(1-lift));
       c.fillStyle='#515750';c.fillRect(doorX-91,sill-115,183,height);
@@ -93,6 +100,7 @@
         for(let i=0;i<8;i++){const f=(a*4+i*.14)%1;c.fillStyle='#ffd476';c.fillRect(doorX-77+Math.cos(i)*f*28,398+Math.sin(i)*f*26,3,3);}}
       for(let i=0;i<3;i++){
         const run=a-2.35-i*.45;if(run<0)continue;
+        if(i===2&&root.ArcadeStorySprites?.draw(c,'ines',run,doorX+run*132,sill+Math.min(24,run*30)+i*5,90))continue;
         const [sx,sy,sw,sh,pivot,dir]=root.WORKER_RUN_FRAMES[Math.floor(run*12)%8];
         c.save();c.translate(doorX+run*132,sill+Math.min(24,run*30)+i*5);c.scale(dir,1);
         c.drawImage(art.workers,sx,sy,sw,sh,-pivot*.24,-sh*.24,sw*.24,sh*.24);c.restore();

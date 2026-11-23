@@ -42,3 +42,9 @@ test('mausoleum doors only work near the ground-level opening in the matching sc
  assert.equal(L.canExit({x:100,y:620},true),true);assert.equal(L.canExit({x:2180,y:620},true),false);
  assert.equal(L.geometry(true).buildings.length,0);assert.equal(L.geometry(true).platforms[0].w,L.INTERIOR_WIDTH);
 });
+test('ascender en vuelo junto a la puerta del mausoleo conserva la escena',()=>{
+ for(const flag of ['heroFlight','jetpack']){
+  const p={x:L.ENTRANCE,y:L.WORLD.ground-2,grounded:false,[flag]:true};
+  assert.equal(L.canEnter(p,false),false);p.x=100;assert.equal(L.canExit(p,true),false);
+ }
+});

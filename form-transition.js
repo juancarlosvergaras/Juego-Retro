@@ -37,7 +37,7 @@
     endpoints[form]={image,x:frame[0],y:frame[1],w:frame[2],h:frame[3],pivot:pivot??frame[0]+(frame[5]??frame[2]/2),height};
   }
   function setSheet(image){
-    const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d');ctx.drawImage(image,0,0);
+    const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
     const pixels=ctx.getImageData(0,0,c.width,c.height).data,rows=[],bands=[0,379,706,1024];
     for(let row=0;row<3;row++){const frames=[];
       for(let col=0;col<6;col++){

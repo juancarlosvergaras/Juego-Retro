@@ -44,3 +44,28 @@ test('shark anticipation and strike play a complete bite, and firing preserves t
  assert.ok(hull.every(call=>call[2]===0),'the hull and turret keep the cruising registration');
  assert.equal(calls.filter(call=>call[3]===46).length,2,'only the early firing cels show the muzzle flash');
 });
+
+test('el escudo de inmersión envuelve el casco y comparte su inclinación al girar',()=>{
+ const img={width:1312,height:108},sprites=create({seaShield:img,swimmers:{},submarines:{},wildlife:{}});
+ for(const facing of [-1,1]){
+  const transforms=[],c={globalAlpha:1,save(){},restore(){},translate(...xy){transforms.push(xy);},rotate(a){transforms.push(a);},drawImage(...a){transforms.push(a);}};
+  const p={x:340,y:250,facing,swimPitch:.22,form:'tank'};
+  sprites.shield(c,p,{age:.81,shieldFlash:.2});
+  const [center,tilt,draw]=transforms;
+  assert.equal(tilt,.22*facing);assert.ok(Math.abs(center[0]-340)<1&&Math.abs(center[1]-218)<1);
+  assert.equal(draw[0],img);assert.equal(draw[7],131);assert.equal(draw[8],86);
+ }
+});
+
+test('each underwater fighter move uses eight attack cels then returns to the swimming stroke',()=>{
+ const forms=require('../advanced-forms'),image={width:1536,height:512};
+ const {ctx,calls}=setup(),sprites=create({swimmers:{width:1536,height:768},submarines:{},wildlife:{},fighterSwim:image});
+ for(let row=0;row<4;row++)for(const facing of [-1,1]){
+  const p={form:'fighter',x:200,y:320,facing,swimPitch:-.2,fighterPose:.8,fighterCombo:row%3,fighterKick:row===3};
+  const move=forms.fighterMove(p);
+  for(let i=0;i<8;i++){p.fighterAge=move.duration*(i+.2)/8;sprites.player(ctx,p);}
+  const attack=calls.splice(0);checkStrip(attack,128);
+  assert.ok(attack.every(a=>a[0]===image&&a[2]===128*row));
+  p.fighterAge=move.duration;sprites.player(ctx,p);assert.notEqual(calls.pop()[0],image);
+ }
+});

@@ -1,7 +1,7 @@
 (function(root){
  'use strict';
  const KEY='cap-dollar.dev-session.v1',PREFIX='cap-dollar.dev-data.v1:';
- const SAVE_KEYS=['obra10.progress.v1','cap-dollar.campaign.v1','cap-dollar.mission-one-loadout.v1','cap-dollar.mission-two.v1','cap-dollar.mission-three.v1','cap-dollar.mission-four.v1','cap-dollar.mission-five.v1','cap-dollar.mission-six.v1','cap-dollar.mission-seven.v1','cap-dollar.mission-eight.v1','cap-dollar.mall-arcade.v1','cap-dollar.difficulty.v1','cap-dollar.tutorial.v1','cap-dollar.mission-one.v1','cap-dollar.quimera.v1',...Array.from({length:8},(_,i)=>'cap-dollar.completed.v1:'+(i+1))];
+ const SAVE_KEYS=['obra10.progress.v1','cap-dollar.campaign.v1','cap-dollar.mission-one-loadout.v1','cap-dollar.mission-two.v1','cap-dollar.mission-three.v1','cap-dollar.mission-four.v1','cap-dollar.mission-five.v1','cap-dollar.mission-six.v1','cap-dollar.mission-seven.v1','cap-dollar.mission-eight.v1','cap-dollar.mission-nine.v1','cap-dollar.mission-ten.v1','cap-dollar.mall-arcade.v1','cap-dollar.difficulty.v1','cap-dollar.tutorial.v1','cap-dollar.mission-one.v1','cap-dollar.quimera.v1',...Array.from({length:10},(_,i)=>'cap-dollar.completed.v1:'+(i+1))];
  function create(persistent,session,now=()=>Date.now()){
   function read(){try{const value=JSON.parse(session.getItem(KEY));return value?.version===1&&typeof value.token==='string'&&Number.isFinite(value.expires)?value:null;}catch{return null;}}
   // Every page retains its original store. A pagehide save after disabling or
@@ -9,7 +9,7 @@
   const initial=read(),isolated=!!initial;
   const active=()=>{const s=read();return !!(s&&s.expires>now()&&(!initial||s.token===initial.token));};
   function clear(){session.removeItem(KEY);for(const key of SAVE_KEYS)session.removeItem(PREFIX+key);}
-  function start(){try{clear();for(const key of SAVE_KEYS){const value=persistent?.getItem(key);if(value!==null&&value!==undefined)session.setItem(PREFIX+key,value);}const config={version:1,token:String(now())+'-'+Math.random().toString(36).slice(2),expires:now()+30*60*1000,god:true,resources:true};session.setItem(KEY,JSON.stringify(config));return !!read();}catch{try{clear();}catch{}return false;}}
+  function start(){try{clear();for(const key of SAVE_KEYS){const value=persistent?.getItem(key);if(value!==null&&value!==undefined)session.setItem(PREFIX+key,value);}const config={version:1,token:String(now())+'-'+Math.random().toString(36).slice(2),expires:now()+30*60*1000,god:false,resources:true};session.setItem(KEY,JSON.stringify(config));return !!read();}catch{try{clear();}catch{}return false;}}
   function stop(){try{clear();return true;}catch{return false;}}
   function storage(base=persistent){if(!isolated)return persistent||base;return{getItem(key){try{return session.getItem(PREFIX+key);}catch{return null;}},setItem(key,value){const s=read();if(s?.token!==initial.token||s.expires<=now())return;session.setItem(PREFIX+key,String(value));},removeItem(key){if(read()?.token===initial.token)session.removeItem(PREFIX+key);}};}
   function option(name,value){if(!['god','resources'].includes(name)||!active())return;const s=read();s[name]=!!value;session.setItem(KEY,JSON.stringify(s));}
@@ -17,7 +17,7 @@
  }
  function inventory(inv,refill=true){inv.owned=Array.from({length:9},(_,i)=>i+1);inv.ammo=inv.ammo||{};if(!inv.owned.includes(inv.selected))inv.selected=3;if(refill)for(let i=3;i<=9;i++)inv.ammo[i]=9999;}
  function grant(profile,p,e,powers,progression){
-  profile.tankUnlocked=true;profile.fighterUnlocked=true;profile.robotUnlocked=true;profile.zombieUnlocked=true;profile.jetpackMk2=true;profile.wallet=Math.max(profile.wallet||0,99999);profile.levels=profile.levels||{};
+  profile.heroUnlocked=true;profile.tankUnlocked=true;profile.fighterUnlocked=true;profile.robotUnlocked=true;profile.zombieUnlocked=true;profile.jetpackMk2=true;profile.wallet=Math.max(profile.wallet||0,99999);profile.levels=profile.levels||{};
   for(const c of progression.catalog)if(c.kind==='upgrade')profile.levels[c.id]=c.max;
   profile.owned=progression.catalog.filter(c=>c.kind==='power').map(c=>c.id);if(!profile.owned.includes(profile.equipped))profile.equipped=profile.owned[0];profile.shield=10;
   progression.apply(profile,p,e,true);inventory(e.inventory);p.formCooldown=0;p.fallDamage=0;if(powers)for(const id of Object.keys(powers.cooldowns))powers.cooldowns[id]=0;

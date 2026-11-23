@@ -45,13 +45,13 @@ test('la armería ofrece todas las armas menos el cuchillo inicial',()=>{
 test('la campaña tiene cuatro recorridos y todos pasan por el abismo',()=>{
   const {nodes,edges,forks}=Map.graph();
   assert.deepEqual(forks.map(f=>f.choices),[['m3','m4'],['m6','m7']]);
-  assert.equal(new Set(nodes.map(n=>n.x+','+n.y)).size,10);
+  assert.equal(new Set(nodes.map(n=>n.x+','+n.y)).size,12);
   function paths(id){
-    if(id==='m8')return [[id]];
+    if(id==='m10')return [[id]];
     return edges.filter(e=>e.from.id===id).flatMap(e=>paths(e.to.id).map(t=>[id,...t]));
   }
   assert.deepEqual(paths('m1').map(p=>p.join('-')).sort(),[
-    'm1-m2-m3-m5-m6-m8','m1-m2-m3-m5-m7-m8','m1-m2-m4-m5-m6-m8','m1-m2-m4-m5-m7-m8'
+    'm1-m2-m3-m5-m6-m8-m9-m10','m1-m2-m3-m5-m7-m8-m9-m10','m1-m2-m4-m5-m6-m8-m9-m10','m1-m2-m4-m5-m7-m8-m9-m10'
   ]);
   for(const n of nodes.filter(n=>n.special)){
     assert.deepEqual(edges.filter(e=>e.to===n).map(e=>e.from.id),[n.id==='fuga'?'m4':'m5']);
@@ -86,7 +86,7 @@ test('el mapa recuerda las victorias del perfil tras repetir y distingue las rut
   save('two',{inside:false,king:{defeated:true}});
   Campaign.markCompleted(store,8);
   assert.deepEqual(Campaign.completedMissions(store),[2,4,8]);
-  assert.equal(Map.states(8,Map.graph().nodes,false,false,[2,4,8]).at(-1),'done');
+  assert.equal(Map.states(8,Map.graph().nodes,false,false,[2,4,8])[Map.graph().nodes.findIndex(n=>n.id==='m8')],'done');
 });
 
 test('un enlace directo respeta el perfil activo y devuelve al mapa sin avanzar la campaña',()=>{

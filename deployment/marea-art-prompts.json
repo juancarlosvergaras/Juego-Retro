@@ -1,0 +1,28 @@
+{
+  "herramienta": "ImageGen integrada",
+  "assets": [
+    {
+      "archivo": "assets/worlds/delta-torre-petrolera.webp",
+      "descripcion": "Panorama lateral de una plataforma petrolera de varios pisos al atardecer, con una torre roja de perforación, grúas, tuberías, pasarelas y pilotes sobre el agua. Pixel art detallado de arcade, sin texto ni personajes."
+    },
+    {
+      "archivo": "assets/sprites/delta-patrulleras.webp",
+      "descripcion": "Dos vistas del mismo yate de patrulla rojo artillado en perspectiva elevada. A la izquierda se ve la proa apuntando hacia el espectador y a la derecha la popa con sus dos motores. Fondo transparente, sin estelas."
+    },
+    {
+      "archivo": "assets/sprites/delta-contramaestre.webp",
+      "formato_comun": "Hoja transparente de ocho poses distintas en cuatro columnas por dos filas. El mismo obrero de la plataforma petrolera mira a la izquierda, con casco naranja, brazos muy musculosos, camiseta sin mangas, vaqueros y botas. Estilo pixel art de los jefes de Cap Dollar. Mantén el tamaño del cuerpo, una silueta clara y la continuidad del apoyo. ",
+      "acciones": [
+        "Agacharse, levantar un bidón rojo de acero, lanzarlo hacia la izquierda y recuperar el equilibrio.",
+        "Sacar una gran llave de mecánico, levantarla, lanzarla como un búmeran y extender los dedos al soltarla.",
+        "Agachar el hombro y cargar hacia la izquierda. Alternar las zancadas y recuperar el equilibrio al frenar.",
+        "Flexionar ambas piernas, saltar, recoger las rodillas y aterrizar con un pisotón.",
+        "Sacar el control de la grúa, alzar la mano, señalar, accionar el control y bajarlo."
+      ]
+    },
+    {
+      "archivo": "assets/sprites/delta-cubierta.webp",
+      "origen": "Fotogramas existentes del soldado, escalada, marcha, agachado, deslizamiento y guardias de las primeras misiones, agrupados a la escala del juego."
+    }
+  ]
+}

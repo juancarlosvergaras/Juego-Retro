@@ -213,3 +213,11 @@ canvas.hit-shake{animation:hit-shake .15s linear}
   .map-detail .mission-card>div{padding:6px;gap:3px}
   .map-detail .mission-card strong{font-size:14px}
 }
+
+@media(max-width:720px) and (orientation:portrait){
+  .mission-map{min-height:375px}
+  .mission-map .map-node{--node:clamp(30px,min(13cqw,6.6cqh),61px)}
+}
+@media(min-width:721px) and (orientation:landscape){
+  .mission-map .map-node{--node:clamp(29px,8.2cqw,76px)}
+}

@@ -10,17 +10,26 @@
   const STONES=[9980,10480,10990,11560,12290,12700,13600,14420,14830,15420,15820,16420];
   const LANTERNS=[9900,10900,11450,11950,12650,13560,14600,15550,16500];
   const HANDS=[10620,12340,14300,15480].map(x=>({x,w:110}));
-  const PIT={left:11395,right:11975,gate:14,height:232,enterFrom:11560,enterTo:11800,leave:260,waves:[[11480,11600,11760,11880],[11520,11840]],ids:300};
+  const PIT={left:11395,right:11975,gate:14,height:232,enterFrom:11560,enterTo:11800,leave:260,waves:[[11480,11600,11760,11880],[11520,11840]],ids:600};
   const STRIKE={warn:1.15,flash:.45,radius:28,reach:44,minWait:5.5,maxWait:9.5};
   const hash=n=>{const s=Math.sin(n*127.1+311.7)*43758.5453;return s-Math.floor(s);};
   function platforms(){return TOMBS.map(([x,w,h],i)=>({id:6000+i,x,y:GROUND-h,w,kind:'deck',thickness:10,tomb:true}));}
   function gates(){return [PIT.left,PIT.right].map((x,i)=>({id:6100+i,x,y:GROUND-PIT.height,w:PIT.gate,kind:'barricade',solid:true,thickness:PIT.height,gate:true}));}
-  function create(saved={}){
+  function create(saved={},exteriorDefeated=[]){
     const broken=new Set(Array.isArray(saved.stones)?saved.stones:[]);
+    const count=PIT.waves.flat().length;
+    const kills=new Set((Array.isArray(saved.pitKills)?saved.pitKills:
+      exteriorDefeated.filter(id=>id>=300&&id<300+count).map(id=>PIT.ids+id-300))
+      .filter(id=>Number.isInteger(id)&&id>=PIT.ids&&id<PIT.ids+count));
     return{stones:STONES.map((x,id)=>({id,x,y:GROUND,hp:broken.has(id)?0:2,shake:0})),
-      pit:{state:saved.pit==='done'?'done':'idle',wave:0,spawned:[],gateRise:0,age:0},strike:null,strikeWait:4,strikes:0,debris:[],crows:TOMBS.filter((_,i)=>i%2===0).map(([x,w,h],id)=>({id,x:x+w*.3,y:GROUND-h,vx:0,vy:0,flying:false,gone:false})),time:0,platforms:platforms(),gates:gates()};
+      pit:{state:saved.pit==='done'?'done':'idle',kills,wave:0,spawned:[],gateRise:0,age:0},strike:null,strikeWait:4,strikes:0,debris:[],crows:TOMBS.filter((_,i)=>i%2===0).map(([x,w,h],id)=>({id,x:x+w*.3,y:GROUND-h,vx:0,vy:0,flying:false,gone:false})),time:0,platforms:platforms(),gates:gates()};
   }
-  function snapshot(s){return{stones:s.stones.filter(x=>x.hp<=0).map(x=>x.id),pit:s.pit.state==='done'?'done':'idle'};}
+  function snapshot(s){return{stones:s.stones.filter(x=>x.hp<=0).map(x=>x.id),pit:s.pit.state==='done'?'done':'idle',pitKills:[...s.pit.kills]};}
+  function leavePit(s,enemies,platforms){
+    release(s,platforms);s.pit.state='idle';
+    if(enemies)for(let i=enemies.length-1;i>=0;i--)if(enemies[i].ambush&&enemies[i].hp>0)enemies.splice(i,1);
+    s.pit.spawned=[];
+  }
   function inZone(p,inside){return !inside&&p.x>ZONE.from&&p.x<ZONE.to;}
   // Factor de velocidad: las manos frenan solo a quien pisa el suelo entre ellas.
   function slow(s,p,inside){if(inside||!p.grounded||p.jetpack||p.burrow||Math.abs(p.y-GROUND)>3)return 1;return HANDS.some(h=>p.x>h.x&&p.x<h.x+h.w)?.55:1;}
@@ -67,11 +76,19 @@
     if(pit.state==='idle'&&p.x>PIT.enterFrom&&p.x<PIT.enterTo&&Math.abs(p.y-GROUND)<90){pit.state='fight';pit.wave=0;pit.age=0;pit.spawned=[];ctx.platforms?.push(...s.gates);events.push({type:'pitStart'});}
     if(pit.state==='fight'){
       pit.age+=dt;
-      const alive=pit.spawned.filter(n=>n.hp>0).length;
-      if(pit.wave<PIT.waves.length&&alive===0&&(pit.wave===0||pit.age>.8)){PIT.waves[pit.wave].forEach((x,i)=>{const id=PIT.ids+pit.spawned.length,n=spawnZombie(x,id,(pit.wave+i)%3,p);pit.spawned.push(n);enemies?.push(n);});pit.wave++;pit.age=0;events.push({type:'pitWave',wave:pit.wave,total:PIT.waves.length});}
-      else if(pit.wave>=PIT.waves.length&&alive===0){pit.state='done';release(s,ctx.platforms);events.push({type:'pitEnd',x:(PIT.left+PIT.right)/2});}
-      // Salir volando por encima anula el encierro sin premio.
-      else if(p.x<PIT.left-PIT.leave||p.x>PIT.right+PIT.leave){pit.state='idle';release(s,ctx.platforms);for(const n of pit.spawned)if(n.hp>0){n.hp=0;n.death=0;}pit.spawned=[];events.push({type:'pitAbort'});}
+      for(const n of pit.spawned)if(n.hp<=0)pit.kills.add(n.id);
+      const alive=pit.spawned.some(n=>n.hp>0);
+      if(p.x<PIT.left-PIT.leave||p.x>PIT.right+PIT.leave){leavePit(s,enemies,ctx.platforms);events.push({type:'pitAbort'});}
+      else if(pit.wave<PIT.waves.length&&!alive&&(pit.wave===0||pit.age>.8)){
+        const difficulty=common?require('./difficulty'):root.ArcadeDifficulty;
+        PIT.waves[pit.wave].forEach((x,i)=>{
+          const id=PIT.ids+pit.spawned.length,n=spawnZombie(x,id,(pit.wave+i)%3,p);
+          difficulty.scaleEnemy(n,difficulty.get(e.difficulty));
+          const previous=enemies?.findIndex(actor=>actor.id===id)??-1;
+          if(previous>=0)enemies[previous]=n;else enemies?.push(n);
+          pit.spawned.push(n);
+        });pit.wave++;pit.age=0;events.push({type:'pitWave',wave:pit.wave,total:PIT.waves.length});}
+      else if(pit.wave>=PIT.waves.length&&!alive){pit.state='done';release(s,ctx.platforms);events.push({type:'pitEnd',x:(PIT.left+PIT.right)/2});}
     }
     return events;
   }
@@ -142,6 +159,6 @@
     for(let band=0;band<4;band++){const y=Math.round(base-6-band*9),speed=10+band*7,offset=(s.time*speed+band*90+camera.x*(.9+band*.05))%64;c.fillStyle='rgba(190,204,214,'+(amount*(.2-band*.04)).toFixed(3)+')';
       for(let x=-64-offset;x<width+64;x+=64){c.fillRect(Math.round(x),y,38,3);c.fillRect(Math.round(x+18+band*5),y-3,26,3);}}
   }
-  const api={GROUND,ZONE,TOMBS,STONES,LANTERNS,HANDS,PIT,STRIKE,platforms,gates,create,snapshot,inZone,slow,drop,update,lights,drawBack,drawFront,fog};
+  const api={GROUND,ZONE,TOMBS,STONES,LANTERNS,HANDS,PIT,STRIKE,platforms,gates,create,snapshot,leavePit,inZone,slow,drop,update,lights,drawBack,drawFront,fog};
   if(common)module.exports=api;else root.ArcadeCemeteryEvents=api;
 })(typeof window!=='undefined'?window:globalThis);

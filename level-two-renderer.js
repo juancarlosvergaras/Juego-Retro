@@ -1,6 +1,6 @@
 (function(root){
   'use strict';
-  function create(images){
+  function create(images,audio){
     if(root.ArcadeAmbience)root.ArcadeAmbience.setSpriteSheet(images.effects);
     const skyColors=new Map();
     for(const img of [images.cityStart,images.city,images.cemetery]){
@@ -126,6 +126,29 @@
         if(env.mechas>0)panorama(c,images.city,cam,w,base+2,540,.24,env.mechas);
         for(let x=-((cam.x*.24)%180);x<w;x+=180)c.drawImage(images.cityStart,0,images.cityStart.height-32,400,32,x,base-30,181,32);
         if(env.cemetery>0)panorama(c,images.cemetery,cam,w,base+4,550,.3,env.cemetery);
+        const decor=root.ArcadeSceneryAnimation;
+        if(decor){
+          if(decor.next){
+            if(env.cemetery<.8){
+              const building=decor.next(s,'ciudad',s.time);
+              const scroll=cam.x*.24;
+              decor.place(c,building,scroll,base-32,w,135,.90*(1-env.cemetery));
+              if(building&&building.frame>=1&&!building.sounded){
+                building.sounded=true;
+                const pan=(building.anchor-scroll-w/2)/(w/2);
+                if(building.frame<4&&Math.abs(pan)<1.1)audio?.play('explosion',{gain:.32,pan:Math.max(-1,Math.min(1,pan))});
+              }
+            }else{
+              const skeleton=decor.next(s,'cementerio',s.time);
+              decor.place(c,skeleton,cam.x*.30,base-31,w,46,.83*env.cemetery);
+            }
+          }
+          const lead=decor.pass(w*.10+130+s.time*21-cam.x*.24,w,130);
+          for(let i=0;i<3;i++){
+            const x=lead-i*31,y=Math.max(48,h*.145)+(620-h*.84-cam.y)*.24-i%2*13+Math.sin(s.time*1.5+i)*4;
+            if(x>-22&&x<w+22)decor.draw(c,'raven',s.time,x,y,30-i*4,.83,i*3);
+          }
+        }
         if(env.cemetery<1){
           c.save();c.globalAlpha=1-env.cemetery;
           if(root.ArcadeBackgroundBattle&&root.ArcadeAmbience)for(const f of root.ArcadeBackgroundBattle.flights(s.time,cam))if(f.x>-100&&f.x<w+100&&f.y>-60&&f.y<h+60)root.ArcadeAmbience.drawPlane(c,f.x,f.y,f.dir,f.enemy,f.t);

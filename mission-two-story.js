@@ -11,7 +11,7 @@
   ];
   // Tras la salida del mausoleo (mission-two-outro.js): lo que había en la cripta.
   const outro=[
-    {text:'El rey cayó. En su cripta había cajas que no tenían siglos.'},
+    {text:'Antes de subir al helicóptero, Cap encontró unas cajas nuevas junto al rey caído.'},
     {text:'Todas llevaban el mismo sello: el Consorcio, la empresa militar que compró la ciudad cuando acabó la guerra.'},
     {text:'Hay dos envíos en marcha: uno por aire y otro por carretera. Cap tendrá que elegir qué rastro sigue.'}
   ];
@@ -34,7 +34,7 @@
     {id:'barricade',who:VEGA,text:'Última barricada de la milicia. Ellos tampoco pudieron pasar del cementerio.',when:c=>c.x>12700&&!c.inside},
     {id:'herald',who:VEGA,text:'Lectura eléctrica disparada. Ese es el Heraldo: salta sus descargas y castígalo cuando recarga.',when:c=>c.heraldNear},
     {id:'suit',who:CAP,text:'Su poder se me pega a la piel… otra forma más. La puerta del mausoleo se abre.',when:c=>c.heraldDown},
-    {id:'inside',who:CAP,text:'Hace frío aquí dentro. Algo enorme respira bajo la piedra.',when:c=>c.inside},
+    {id:'inside',who:VEGA,text:'Los muertos custodian el pedestal. Despeja la sala y acércate al rey para despertarlo.',when:c=>c.inside},
     {id:'king',who:VEGA,text:'¡El Rey de Piedra! Su coraza aguanta las balas: busca el momento en que se agrieta.',when:c=>c.kingActive},
     {id:'rot',who:VEGA,text:'¡La coraza ha caído y lo de dentro sigue vivo! ¡No pares, Cap!',when:c=>c.kingStage===2},
     {id:'done',who:VEGA,text:'El rey ha caído. Te recojo en la puerta. En su cripta hay cajas con un sello: el Consorcio. Veo dos rutas en los albaranes: aire y carretera.',when:c=>c.kingDown}

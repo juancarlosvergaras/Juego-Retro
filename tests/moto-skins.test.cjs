@@ -67,7 +67,8 @@ test('the earlier helmet correction preserved the bike and the new rider sheet i
   for(let y=230;y<CH;y+=2)for(let x=x0;x<x0+CW;x+=2){const i=(y*old.width+x)*4;for(let k=0;k<4;k++)if(old.data[i+k]!==now.data[i+k])assert.fail('frame '+frame+' changed at '+x+','+y);}}
  // The other riders on this sheet are untouched.
  for(let y=CH;y<old.height;y+=3)for(let x=0;x<old.width;x+=3){const i=(y*old.width+x)*4;for(let k=0;k<4;k++)if(old.data[i+k]!==now.data[i+k])assert.fail('pixel '+x+','+y+' changed');}
- for(const file of ['level-four-game.js','level-three-game.js','mission-four-scenes.js'])assert.ok(read(file).includes('motos-carretera-v3.webp')&&!read(file).includes('motos-carretera-v2.png'),file+' uses the unified soldier');
+ for(const file of ['level-four-game.js','mission-four-scenes.js'])assert.ok(read(file).includes('motos-carretera-v3.webp')&&!read(file).includes('motos-carretera-v2.png'),file+' uses the unified soldier');
+ assert.doesNotMatch(read('level-three-game.js')+read('mission-endings.js'),/motos-carretera|endingRiders/);
 });
 test('on the bike the shield covers rider and machine',()=>{
  const powers=read('powers.js');assert.ok(powers.includes('ride=!!p.onMotorcycle'));assert.ok(powers.includes('ride?136:wolf?78:58'),'wide enough for both wheels');

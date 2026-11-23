@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+  const Grenades=typeof module!=='undefined'&&module.exports?require('./grenades'):root.ArcadeGrenades;
   const finish=8050,clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   const lanes=[-3.4,0,3.4],kinds=['sedan','traffic','truck','turret','traffic','sedan','truck','sedan','turret'];
   function center(z){return 43*Math.sin(z/237)+21*Math.sin(z/121+.7)+65*Math.sin(z/537);}
@@ -9,14 +10,14 @@
   function create(){return {mode:'launch',age:0,time:0,z:0,x:0,vx:0,speed:0,hp:100,nitro:1,boost:false,
     driftSide:0,driftHeld:false,driftBuffer:0,slideTime:0,assistedDrift:false,lastSteer:0,slip:0,skids:[],marking:false,
     posts:roadblocks.map(([z,side])=>({z,side,x:side*3.4,officerX:side*4.65,phase:'watch',reaction:0,steps:0,hitAt:null})),
-    boss:{kind:'boss',z:13,x:-2.6,speed:0},cars:[],shots:[],wrecks:0,next:0,immune:0,shake:0,events:[]};}
+    boss:{kind:'boss',z:13,x:-2.6,speed:0},cars:[],shots:[],grenades:[],wrecks:0,next:0,immune:0,shake:0,events:[]};}
   function spawn(s){
     const i=s.next++,kind=kinds[i%kinds.length],lane=lanes[(i*7+Math.floor(i/3))%3];
     s.cars.push({id:i,kind,z:105+i*136,x:lane,lane,vx:0,speed:kind==='truck'?34:kind==='traffic'?41:47+i%6,
       width:kind==='truck'?1.35:1,shot:1.4+i%3,flash:0,bump:0,spin:0,crash:0});
   }
   function wreck(s,n){if(n.crash)return;n.crash=.01;n.speed*=.70;s.wrecks++;if(Math.abs(n.z-s.z)<110){s.shake=.16;s.events.push('wreck');}}
-  function hurt(s,amount){if(s.immune>0)return;s.hp=Math.max(0,s.hp-amount);s.immune=1;s.shake=.25;s.events.push('hurt');}
+  function hurt(s,amount){if(s.respawnProtection>0||s.immune>0)return;s.hp=Math.max(0,s.hp-amount);s.immune=1;s.shake=.25;s.events.push('hurt');}
   function passingLane(posts,z,lane){
     const post=posts.find(p=>p.hitAt===null&&p.z-z<100&&p.z-z> -10&&Math.abs(lane-p.x)<2.6);
     return post?post.x-post.side*3.65:lane;
@@ -104,7 +105,11 @@
       n.shot-=dt;
       if(armed&&delta>10&&delta<105&&n.shot<=0){
         n.flash=.3;n.shot=n.kind==='turret'?1.45:2.4;
-        s.shots.push({z:n.z,x:n.x,vx:(s.x-n.x)*118/(delta+4),speed:s.speed-118});s.events.push('shot');
+        if(n.kind==='sedan'&&!n.justLobbed&&!s.grenades.length&&s.speed>22){
+          const flight=.58,fuse=.83,targetZ=s.z+s.speed*(flight+fuse);
+          s.grenades.push(Grenades.lob(n.x+1,n.z,1.17,s.x,targetZ,2.65,{flight,fuse,rise:2.3}));
+          n.flash=0;n.justLobbed=true;s.events.push('grenade');
+        }else{n.justLobbed=false;s.shots.push({z:n.z,x:n.x,vx:(s.x-n.x)*118/(delta+4),speed:s.speed-118});s.events.push('shot');}
       }
       if(Math.abs(delta)<5.1&&Math.abs(n.x-s.x)<n.width+1&&!n.bump){
         const dir=Math.abs(s.vx)>1?Math.sign(s.vx):(n.x>=s.x?1:-1);
@@ -120,6 +125,13 @@
       if(Math.abs(a.z-s.z)<110)s.events.push('bump');
     }
     s.cars=s.cars.filter(n=>n.z>s.z-26&&n.crash<2.2);
+    for(const g of s.grenades){
+      if(Grenades.advance(g,dt))s.events.push('blast');
+      if(!g.hit&&g.age>=g.flight+g.fuse&&!Grenades.spent(g)&&Grenades.inside(g,s.x,s.z)){
+        g.hit=true;hurt(s,13);
+      }
+    }
+    s.grenades=s.grenades.filter(g=>!Grenades.spent(g));
     for(const b of s.shots){const before=b.z-s.z;b.z+=b.speed*dt;b.x+=b.vx*dt;if(before>=-4&&b.z-s.z<=3&&Math.abs(b.x-s.x)<1.1){hurt(s,5);b.hit=true;}}
     s.shots=s.shots.filter(b=>!b.hit&&b.z>s.z-6&&b.z<s.z+200);
   }
@@ -136,6 +148,7 @@
     s.boss.x+=(passingLane(s.posts,s.boss.z,lane)-s.boss.x)*(1-Math.exp(-2.4*dt));
     traffic(s,dt);
     if(s.hp<=0)s.mode='wrecked';else if(s.boss.z-s.z<=4)s.mode='caught';else if(s.boss.z>=finish)s.mode='escaped';
+    if(s.mode!=='race')s.grenades=[];
   }
   const api={create,update,finish,center,slope};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.FugaRoad=api;
 })(typeof window==='undefined'?globalThis:window);

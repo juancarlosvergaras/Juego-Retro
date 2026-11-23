@@ -1,5 +1,5 @@
 // The escalators of mission six, frame by frame (1/120 s): a short scripted
-// crossing with a veil, the same on the way up and on the way down.
+// crossing between interior floors, with a change of shot only at the roof.
 const test=require('node:test'),assert=require('node:assert/strict');
 const M=require('../mall-world'),P=require('../physics'),C=require('../mission-combat'),V=require('../powers'),A=require('../soldier-animation');
 const dt=1/120,forms=['soldier','wolf','zombie','robot','tank','fighter','hero'];
@@ -19,7 +19,7 @@ function step(g,input={},combat=false){
  const events=M.update(s,p,e,input,dt);
  return {floor:s.floor,x:p.x,y:p.y,vx:p.vx,grounded:p.grounded,facing:p.facing,walk:p.walkCycle||0,
   bx:p.x+across(s.floor),by:p.y-146*s.floor,camera:s.camera.x,cameraY:s.camera.y,sx:p.x-s.camera.x,sy:p.y-s.camera.y,
-  active:s.stairs.active,phase:s.stairs.phase,fade:s.stairs.fade,events};
+  active:s.stairs.active,roof:s.stairs.roof,phase:s.stairs.phase,fade:s.stairs.fade,events};
 }
 // Holds a direction until a crossing has started and finished; returns its frames.
 function cross(g,input,limit=6){
@@ -47,7 +47,12 @@ test('each escalator is a short crossing to the next floor, and the way down mir
   assert.equal(down.s.floor,floor);assert.equal(down.s.checkpoint,floor);
   assert.ok(foot.x<=st.entry-4&&foot.x>st.entry-10&&foot.y===M.FLOOR&&foot.grounded&&foot.facing===-1,'steps off at the foot');
   assert.ok(Math.abs(seconds(rise)-seconds(fall))<.25,'both directions take the same time: '+seconds(rise).toFixed(2)+' / '+seconds(fall).toFixed(2));
-  // The veil: closes, holds, opens. 0.5–0.9 s in all and identical in both directions.
+  assert.ok([...rise,...fall].every(r=>r.roof===(floor===2&&r.active)),'only the roof approach opens the camera');
+  if(floor<2){
+   assert.ok([...rise,...fall].every(r=>r.fade===0),'both interior galleries stay visible');
+   continue;
+  }
+  // The roof has a separate skyline and camera. Its veil is symmetric.
   const veils=[rise,fall].map(rows=>{
    const veil=rows.filter(r=>r.fade>0),peak=veil.findIndex(r=>r.fade===1),end=veil.findLastIndex(r=>r.fade===1);
    assert.ok(peak>0&&end>=peak,'it closes completely');
@@ -73,11 +78,12 @@ test('nothing jumps: the walk through the building is continuous and the frame o
      // No teleport: both rooms share the landing, so the path is a single line.
      assert.ok(Math.hypot(b.bx-a.bx,b.by-a.by)<3.2,label+' moves '+Math.hypot(b.bx-a.bx,b.by-a.by).toFixed(2)+' px');
      assert.ok((b.bx-a.bx)*dir>=0,label+' never steps back');
-     const onScreen=Math.hypot(b.sx-a.sx,b.sy-a.sy),frame=Math.abs(b.camera-a.camera);
+     const onScreen=Math.hypot(b.sx-a.sx,b.sy-a.sy);
+     const frame=Math.hypot(b.camera+across(b.floor)-a.camera-across(a.floor),b.cameraY-146*b.floor-a.cameraY+146*a.floor);
      if(onScreen>3.2||frame>3){cuts++;assert.ok(b.fade===1&&a.fade>.99,label+' cuts in view');}
-     assert.equal(b.cameraY,0);
+     if(floor===2)assert.equal(b.cameraY,0);
     }
-    assert.equal(cuts,1,form+' exactly one cut, when the rooms change');
+    assert.equal(cuts,floor===2?1:0,form+' only the roof has a camera cut');
     // A walk, not a slide: on its feet the whole way, striding with its own gait.
     assert.ok(rows.every(r=>r.grounded),form+' stays on the treads');
     assert.ok(rows.slice(12).every(r=>r.vx*dir>100),form+' keeps walking');
@@ -86,9 +92,9 @@ test('nothing jumps: the walk through the building is continuous and the frame o
   }
  }
 });
-test('the frame of each floor is its own: it settles at both ends without showing the next room',()=>{
+test('the interior galleries share a tracking shot and the camera settles at the outside ends',()=>{
  for(const floor of [0,1,2]){
-  const low=floor?-90:0,high=M.widths[floor]-870;let previous=M.cameraX(floor,0);
+  const low=floor?-320:0,high=M.widths[floor]-(floor===2?870:320);let previous=M.cameraX(floor,0);
   assert.equal(previous,low);assert.equal(M.cameraX(floor,M.widths[floor]),high);
   for(let x=1;x<=M.widths[floor];x++){
    const camera=M.cameraX(floor,x);
@@ -96,9 +102,10 @@ test('the frame of each floor is its own: it settles at both ends without showin
   }
   assert.ok(Math.abs(M.cameraX(floor,2000)-1680)<1e-9,'mid-floor the player stays a third into the frame');
   const st=M.escalator(floor);
-  assert.equal(M.cameraX(floor,st.entry),high,'the frame rests before boarding');
-  assert.equal(M.cameraX(floor+1,M.arrivalX),floor===2?0:-90,'and on arrival');
-  assert.ok(st.exit-high<960&&st.entry-high>300,'the whole escalator is in the frame');
+  const entryCam=M.cameraX(floor,st.entry);
+  assert.ok(st.exit-entryCam<960&&st.entry-entryCam>=300,'the whole escalator is visible before boarding');
+  if(floor<2)assert.equal(st.exit-M.cameraX(floor,st.exit),M.landingX-M.cameraX(floor+1,M.landingX),'the comb plate stays registered across the handoff');
+  else assert.equal(entryCam,high,'the roof approach has a fixed frame');
  }
  for(const x of [20,84,270,400,936])assert.equal(M.cameraX(3,x),0,'the roof is one fixed frame');
 });
@@ -182,7 +189,7 @@ test('a crossing can start anywhere on the escalator, even from the landing at t
    const g=setup(floor,x);g.s.y=M.treadY(st,x);M.configure(g.s,g.p,g.e);
    const rows=cross(g,{right:true});
    assert.equal(g.s.floor,floor+1,'from x='+x);assert.ok(g.p.x>=M.arrivalX&&g.p.grounded&&seconds(rows)<2.6);
-   assert.equal(rows.find(r=>r.floor===floor+1).fade,1);
+   assert.equal(rows.find(r=>r.floor===floor+1).fade,floor===2?1:0);
   }
   for(const x of [M.returnX,60,30]){
    const g=setup(floor+1,x),rows=cross(g,{left:true});
@@ -217,7 +224,7 @@ test('a save made at any moment of a crossing restores a valid state and complet
  const st=M.escalator(0),old=setup(0,st.lower+96,'soldier',{y:M.treadY(st,st.lower+96)});
  assert.ok(old.p.grounded&&old.p.y===M.treadY(st,old.p.x));for(let i=0;i<60;i++)step(old,{});assert.ok(!old.s.stairs.active&&old.s.floor===0);
  // Dying never resumes a crossing: the retry starts at the checkpoint of the floor.
- const g=upFrom(1);while(g.s.stairs.phase!=='in')step(g,{right:true});
+ const g=upFrom(1);for(let i=0;i<6/dt&&g.s.floor!==2;i++)step(g,{right:true});assert.equal(g.s.stairs.phase,'exit');
  const retry=M.retry(g.s);assert.equal(retry.floor,2);assert.equal(retry.x,140);assert.equal(retry.resume,0);assert.ok(!retry.stairs.active);
 });
 test('rooms, checkpoints and the roof keep working around the crossings',()=>{
@@ -239,5 +246,5 @@ test('rooms, checkpoints and the roof keep working around the crossings',()=>{
  before=belt.s.belt;step(belt,{});assert.ok(belt.s.belt<before);
  // The world announces the crossing so the game can play a short sound.
  const sound=upFrom(0);let events=[];for(let i=0;i<4/dt;i++)events.push(...step(sound,{right:true}).events);
- assert.deepEqual(events.filter(v=>v.type==='stairs').map(v=>v.phase+v.dir),['walk1','out1']);
+ assert.deepEqual(events.filter(v=>v.type==='stairs').map(v=>v.phase+v.dir),['walk1']);
 });

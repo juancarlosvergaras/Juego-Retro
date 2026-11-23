@@ -30,12 +30,16 @@ ASSET_REF = re.compile(r'''["'](assets/[^"']+\.(?:png|webp|jpg|ogg|mp3|wav))["']
 PAGE_REF = re.compile(r'''["']([a-z0-9-]+\.html)(?:[?#][^"']*)?["']''')
 # Rutas que quimera.js construye en tiempo de ejecución (characterSprites).
 DYNAMIC = ['assets/sprites/quimera-*.png', 'assets/sprites/quimera-pasos-*.webp']
-# Hojas que el juego analiza por color al cargar: se guardan sin pérdida.
-LOSSLESS = [re.compile(p) for p in (
-    r'^assets/worlds/mundo-01-edificio-v1\.png$', r'^assets/worlds/ciudad-fondo-v2\.png$',
-    r'^assets/worlds/mission-02/', r'^assets/sprites/poderes-v1\.png$',
-    r'^assets/sprites/rey-', r'^assets/sprites/jefe-convoy-v3\.png$')]
-QUALITY = 90
+# La obra y el convoy usan el color para construir máscaras durante el juego.
+# Los panoramas y las hojas recortadas por alfa conservan resolución y alfa.
+LOSSLESS = {'assets/worlds/mundo-01-edificio-v1.png', 'assets/sprites/jefe-convoy-v3.png'}
+# Estas hojas siempre pasan por prepareWhiteDeath en sus consumidores.
+CUTOUT = {f'assets/sprites/{name}.png' for name in (
+    'transformacion-energia-v1', 'enemigos-estilo-soldado-v2', 'poder-alien-v1',
+    'mini-tanque-submarino-v1', 'robot-movilidad-v2', 'ataques-jefes-v1', 'armamento-jefes-v1')}
+KING_STRIPS = {f'assets/sprites/rey-zombi-{action}-v4.png'
+               for action in ('marcha','plasma','salto','garras','derrota')}
+QUALITY = 82
 
 
 def sha(data):
@@ -81,8 +85,8 @@ def crawl():
 
 
 def cache_path(name, data):
-    lossless = any(p.search(name) for p in LOSSLESS)
-    return CACHE / (sha(data) + ('-ll' if lossless else '-q%d' % QUALITY) + '.webp'), lossless
+    lossless = name in LOSSLESS
+    return CACHE / (sha(data) + ('-cutout' if name in CUTOUT else '') + ('-ll' if lossless else '-q%d' % QUALITY) + '.webp'), lossless
 
 
 def convert(name):
@@ -95,6 +99,9 @@ def convert(name):
     image = Image.open(io.BytesIO(data))
     if image.mode not in ('RGB', 'RGBA'):
         image = image.convert('RGBA' if 'A' in image.getbands() or 'transparency' in image.info else 'RGB')
+    if name in CUTOUT:
+        image = image.convert('RGBA')
+        image.putalpha(image.getchannel('A').point(lambda a: 255 if a >= 200 else 0))
     buffer = io.BytesIO()
     if lossless:
         image.save(buffer, 'WEBP', lossless=True, quality=80, method=4, exact=True)
@@ -113,7 +120,7 @@ def to_webp(name, data):
     if not cached.exists():
         convert(name)
     out = cached.read_bytes()
-    return ('webp', out) if len(out) < len(data) else ('png', data)
+    return ('webp', out) if len(out) < len(data) or name in CUTOUT else ('png', data)
 
 
 def hashed(name, data, ext=None):
@@ -126,9 +133,10 @@ def build(check=False):
     if check:
         print(json.dumps({'count': len(files)}))
         return
-    published, output = {}, {}
+    from king_strips import pack_strip
+    published, output, king_frames = {}, {}, {}
     # Las conversiones pendientes se reparten entre los núcleos disponibles.
-    pngs = [n for n in files if n.startswith('assets/') and n.endswith('.png')]
+    pngs = [n for n in files if n.startswith('assets/') and n.endswith('.png') and n not in KING_STRIPS]
     with ProcessPoolExecutor(max_workers=max(1, (os.cpu_count() or 2) - 1)) as pool:
         for done, _ in enumerate(pool.map(convert, pngs), 1):
             if done % 20 == 0 or done == len(pngs):
@@ -139,10 +147,15 @@ def build(check=False):
             continue
         data = (ROOT / name).read_bytes()
         ext = None
-        if name.startswith('assets/') and name.endswith('.png'):
+        if name in KING_STRIPS:
+            data, frames = pack_strip(data, CACHE)
+            ext = 'webp'
+        elif name.startswith('assets/') and name.endswith('.png'):
             ext, data = to_webp(name, data)
-        target = name if name.startswith('icons/') else hashed(name, data, ext)
+        target = name if name.startswith('icons/') else hashed(name.replace('.png', '.cutout.png') if name in CUTOUT else name, data, ext)
         published[name], output[name] = target, data
+        if name in KING_STRIPS:
+            king_frames[Path(target).name] = frames
     assets = sorted((n for n in published if n.startswith('assets/')), key=len, reverse=True)
     quoted = re.compile('|'.join(re.escape(n) for n in assets)) if assets else None
     def rewrite_assets(text):
@@ -158,6 +171,8 @@ def build(check=False):
         if not name.endswith(('.js', '.css')):
             continue
         text = rewrite_assets((ROOT / name).read_text(encoding='utf-8'))
+        if name == 'mausoleum-king.js':
+            text = 'window.ArcadeKingStrips=%s;\n%s' % (json.dumps(king_frames, separators=(',', ':')), text)
         if name == 'quimera.js':
             # Las rutas dinámicas se resuelven con un mapa incrustado.
             text = 'window.ARCADE_ASSETS=Object.assign(window.ARCADE_ASSETS||{},%s);\n%s' % (json.dumps(dynamic, sort_keys=True), text)

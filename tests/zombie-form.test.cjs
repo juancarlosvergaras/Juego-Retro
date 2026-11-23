@@ -85,5 +85,8 @@ test('zombie transformations blend from and to the actual soldier or wolf portra
  for(const [form,image]of [['soldier',soldier],['wolf',wolf]]){
   calls.length=0;Z.drawPlayer(c,{form:'zombie',transformFrom:form,transform:1.2,x:0,y:100,facing:1});assert.ok(calls.some(a=>a.image===image&&a.alpha===1));
   calls.length=0;Z.drawPlayer(c,{form,transformFrom:'zombie',transform:.001,x:0,y:100,facing:1});assert.ok(calls.some(a=>a.image===image&&a.alpha>.99));
+  c.globalAlpha=.2;calls.length=0;
+  Z.drawPlayer(c,{form:'zombie',transformFrom:form,transform:1.2,x:0,y:100,facing:1});
+  assert.ok(calls.some(a=>a.image===image&&a.alpha===.2));c.globalAlpha=1;
  }
 });

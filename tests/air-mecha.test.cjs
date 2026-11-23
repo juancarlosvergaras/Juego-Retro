@@ -7,3 +7,19 @@ test('mecha has a warning period then cycles through bullets, marked missiles an
 test('dual identical guns consume two bullets; an almost empty magazine fires only the available bullet',()=>{const p={form:'robot',x:100,y:620,facing:1,aim:{x:1,y:0}},inv={owned:[3],selected:3,secondary:3,ammo:{3:3}};assert.equal(A.fire(inv,p).bullets.length,2);assert.equal(inv.ammo[3],1);assert.equal(A.fire(inv,p).bullets.length,1);assert.equal(inv.ammo[3],0);assert.equal(A.fire(inv,p),null);});
 test('dual weapons preserve separate slots, gravity, diagonal aim and the slower weapon cooldown',()=>{const inv={owned:[3,9],selected:3,secondary:9,ammo:{3:9,9:4}},p={form:'robot',x:0,y:100,facing:-1,aim:{x:-Math.SQRT1_2,y:-Math.SQRT1_2}};const shot=A.fire(inv,p);assert.equal(shot.bullets.length,2);assert.equal(shot.weapon.rate,A.weapons[9].rate);assert.deepEqual(shot.bullets.map(b=>b.slot),[3,9]);assert.ok(shot.bullets.every(b=>b.vx<0&&b.vy<0));assert.equal(shot.bullets[1].gravity,420);assert.equal(inv.ammo[9],3);});
 test('third campaign transfer retains progress and robot unlock without overwriting mission one loadout',()=>{const map=new Map(),store={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v)};map.set('cap-dollar.mission-one-loadout.v1','original');C.transferThree(store,{robotUnlocked:true,zombieUnlocked:true,fuel:100},{hp:5,inventory:{owned:[3,5],selected:5,secondary:3,ammo:{3:20,5:50}}},{total:12500});assert.equal(C.read(store).level,3);assert.equal(C.read(store).robotUnlocked,true);assert.equal(map.get('cap-dollar.mission-one-loadout.v1'),'original');assert.equal(C.inventory(C.read(store).inventory).secondary,3);assert.deepEqual(Z.forms({robotUnlocked:true,zombieUnlocked:true},true),['soldier','wolf','zombie','robot']);});
+
+test('el Centinela localiza jugadores altos y alterna ataques que llegan a su altura',()=>{
+ const mech=require('../air-mecha'),n=mech.create(),p={x:7480,y:120,h:46},shots=[];
+ const patterns=new Set();
+ for(let i=0;i<1800;i++){mech.update(n,p,1/120,shots,{right:8000});patterns.add(n.phase);}
+ assert.equal(n.active,true);assert.ok(patterns.has('volley')&&patterns.has('missiles'));assert.ok(!patterns.has('stomp'));
+ assert.ok(shots.some(b=>b.vy<0&&b.y+b.vy*b.life<p.y));
+ assert.ok(shots.some(b=>b.tankShell&&b.x===p.x&&b.y<p.y-p.h&&b.y+b.vy*b.life>p.y));
+});
+
+test('la carga sólida deja accesibles las armas y los soldados de cubierta',()=>{
+ const boxes=L.geometry().platforms.filter(p=>p.solid),loot=L.loot();
+ for(const actor of [...loot.weapons,...loot.medkits,...loot.fuelTanks,...L.soldiers()]){
+  assert.ok(!boxes.some(box=>actor.x>box.x&&actor.x<box.x+box.w&&actor.y>box.y),'objeto dentro de un contenedor '+actor.id);
+ }
+});

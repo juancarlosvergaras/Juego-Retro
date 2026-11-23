@@ -63,7 +63,7 @@
       function vehicle(n){
         const p=project(n.z,n.x),idx=tiles[n.kind],w=p.k*(n.kind==='truck'?3.95:n.kind==='turret'?3.25:2.65),h=w*176/256;
         c.fillStyle='#16162091';c.beginPath();c.ellipse(p.x,p.y-w*.032,w*.45,Math.max(1,w*.055),0,0,7);c.fill();
-        c.save();c.translate(p.x,p.y);if(n.crash)c.rotate(Math.sin(n.spin)*.8);else if(n.bump)c.rotate(n.vx*.017);
+        c.save();if(n.kind==='hero'&&s.respawnProtection>0)c.globalAlpha*=root.ArcadeProgression.respawnAlpha(s);c.translate(p.x,p.y);if(n.crash)c.rotate(Math.sin(n.spin)*.8);else if(n.bump)c.rotate(n.vx*.017);
         if(n.kind==='hero'&&s.boost){for(const d of [-1,1])poly('#66e8fd',[d*w*.33,-h*.11,d*w*.24,-h*.11,d*w*.30,8+8*Math.sin(s.age*62)]);}
         if(n.kind==='hero'){
           const yaw=s.slip+Math.atan2(s.vx,Math.max(25,s.speed))*.42;
@@ -118,12 +118,43 @@
           if(post.phase==='alert')label('!',p.x,p.y-1.94*p.k,Math.max(8,p.k*.55),'#ffe4a0','center');
         }});
       }
-      const boss=ui==='ending'?{...s.boss,z:s.z+3,x:2.6}:s.boss;
+      for(const z of [210,1840]){
+        if(z<=s.z||z>s.z+550)continue;
+        objects.push({z,draw:()=>{
+          const p=project(z,-44),width=p.k*12;
+          if(p.x+width/2>0&&p.x-width/2<W)root.ArcadeSceneryAnimation?.draw(c,'lighthouse',s.age,p.x,p.y,width);
+        }});
+      }
+      const boss=s.boss;
       for(const n of [...s.cars,boss,{kind:'hero',x:s.x,z:s.z}])if(n.z>s.z-4&&n.z<s.z+860)objects.push({z:n.z,draw:()=>vehicle(n)});
+      for(const g of s.grenades||[]){
+        if(g.ty>s.z-3&&g.ty<s.z+220)objects.push({z:g.ty+.03,draw:()=>{
+          c.save();c.beginPath();
+          for(let i=0;i<=40;i++){const a=2*Math.PI*i/40,p=project(g.ty+Math.sin(a)*g.radius,g.tx+Math.cos(a)*g.radius);if(i)c.lineTo(p.x,p.y);else c.moveTo(p.x,p.y);}
+          c.closePath();c.fillStyle=g.age>=g.flight+g.fuse?'#ffac5ea0':'#e32b3238';c.fill();
+          c.strokeStyle=Math.sin(g.age*18)>0?'#ff917a':'#fb4644';c.lineWidth=2;c.stroke();c.restore();
+        }});
+        if(g.y>=s.z-2&&g.age<g.flight+g.fuse)objects.push({z:g.y,draw:()=>{
+          const p=project(g.y,g.x);root.ArcadeGrenades.body(c,p.x,p.y-(g.height+.12)*p.k,g.age<g.flight?g.age*9:0,p.k*.045);
+        }});
+      }
       for(const shot of s.shots)if(shot.z>=s.z)objects.push({z:shot.z,draw:()=>{const p=project(shot.z,shot.x);c.fillStyle='#ffe48b';c.fillRect(p.x,p.y-p.k*.64,Math.max(2,p.k*.07),Math.max(3,p.k*.18));}});
       objects.sort((a,b)=>b.z-a.z).forEach(o=>o.draw());
       c.restore();if(ui==='ready')return;
-      if(ui==='ending'){label('INTERCEPCIÓN CONFIRMADA',480,110,24,'#fff4cf','center');return;}
+      if(ui==='race'&&s.mode==='launch'&&s.age<2.25&&root.ArcadeStoryIllustrations?.draw(c,'fuga-intro',s.age,{w:W,h:H},2.15)){
+        label('EL FUGITIVO SE ADELANTA',480,43,20,'#fff5d7','center');return;
+      }
+      if(ui==='ending'){
+        if(end>=.65&&root.ArcadeStoryIllustrations?.draw(c,'fuga-outro',end-.65,{w:W,h:H},2.85)){
+          label('MÓDULO DE INVISIBILIDAD',480,475,18,'#a5eeef','center');return;
+        }
+        const reveal=Math.max(0,Math.min(1,(end-.65)/.45));
+        c.save();c.globalAlpha=reveal;
+        if(reveal>0){c.fillStyle='#101f2bdc';c.fillRect(342,50,276,150);
+          root.ArcadeStorySprites?.draw(c,'modulo',end,480,161,93);
+          label('MÓDULO DE INVISIBILIDAD',480,185,15,'#a5eeef','center');}c.restore();
+        label('INTERCEPCIÓN CONFIRMADA',480,37,21,'#fff4cf','center');return;
+      }
       c.fillStyle='#16212ce8';c.fillRect(18,17,225,48);label('COSTA SUR   /   0'+(zone+1),30,35,12,'#ffc589');label(names[zone],30,55,17,'#fff3d9');
       c.fillStyle='#16212ce8';c.fillRect(697,17,245,48);label('DISTANCIA AL FUGITIVO',711,34,12,'#f8c68e');label(Math.ceil(Math.max(0,s.boss.z-s.z))+' m',927,55,21,'#fff1ce','right');
       c.fillStyle='#16212ce8';c.fillRect(18,469,155,54);label('KM/H',120,508,12,'#e2c593');label(String(Math.round(s.speed*3.6)).padStart(3,'0'),30,509,36,'#fff1d3');

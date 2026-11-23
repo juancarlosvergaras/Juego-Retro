@@ -7,6 +7,7 @@
     // A contact shadow belongs to the supporting floor, never to airborne feet.
     if(player.grounded&&!player.jetpack&&!player.rope&&!player.ladder){ctx.fillStyle='#16202255';ctx.beginPath();ctx.ellipse(player.x,player.y+1,16,3,0,0,Math.PI*2);ctx.fill();}
     if(player.transform>0){const t=Math.min(7,Math.floor((1-player.transform/1.2)*8)),pose=ArcadeSoldierAnimation.transformation(player.form==='wolf'?t:7-t),frames={soldier:SOLDIER_V2_FRAMES,wolf:ACTION_FRAMES.wolf,transformation:ArcadeSoldierAnimation.transformationFrames};sprite(images[pose.sheet],frames[pose.sheet],pose.row,pose.frame,pose.scale);return;}
+    if(ArcadeSoldierAnimation.basePose(ctx,player,mode,stats))return;
     if(player.form==='wolf'){
       const idlePose=ArcadeSoldierAnimation.wolfIdlePose(player,mode),comboPose=ArcadeSoldierAnimation.wolfComboPose(player),ramPose=ArcadeSoldierAnimation.wolfRamPose(player),airPose=ArcadeSoldierAnimation.wolfAirPose(player),sprintPose=ArcadeSoldierAnimation.wolfSprintPose(player),walkPose=ArcadeSoldierAnimation.wolfWalkPose(player,mode);
       if(player.ladder||player.rope?.mantle)sprite(images.wolfClimb,WOLF_CLIMB_FRAMES,0,((Math.floor(player.y/6.5)%4)+4)%4,WOLF_CLIMB_SCALE);
@@ -82,6 +83,20 @@
     const x=Math.round(i*tile-s.camera.x);c.save();c.translate(i%2?x+tile:x,0);if(i%2)c.scale(-1,1);
     c.drawImage(img,0,s.floor===0?0:half+2,img.width,half-3,0,0,tile,Math.round((half-3)*scale));c.restore();
    }
+   const decor=root.ArcadeSceneryAnimation;
+   if(s.floor===0&&decor){
+     if(decor.next&&s.intro>=4){
+       const floater=decor.next(s,'espacio',s.time);
+       decor.place(c,floater,s.camera.x*.18,272+12*Math.sin(s.time*.5),960,60,.85,420);
+     }
+     // Each pair of mirrored hull panels shares a single open view of the planet.
+     const opening=Math.floor(s.camera.x/(2*tile))*2*tile;
+     const orbit=tile*(.94+.055*Math.sin(s.time*.15));
+     for(const panel of [opening,opening+tile*2]){
+       const x=panel+orbit-s.camera.x;
+       if(x>-42&&x<1002)decor.draw(c,'satellite',s.time,x,308+Math.sin(s.time*.31)*8,68,.85);
+     }
+   }
    if(s.floor===0){for(let i=0;i<6;i++){const x=((i*317-s.time*24-s.camera.x*.08)%1900+1900)%1900-45;if(x>750&&x<980)art(c,images.aliens,aliens[8],x,26+i%3*17,.075);}}
    c.save();c.translate(-Math.round(s.camera.x),0);
    for(const pl of s.geometry.platforms.slice(1)){if(pl.x+pl.w<s.camera.x||pl.x>s.camera.x+960)continue;
@@ -94,7 +109,7 @@
    }
    if(s.floor>0&&s.camera.x<220)airlock(c,140,472,s.travel>=0?Math.min(1,s.travel-1):Math.max(0,1-Math.abs(p.x-140)/110));
    for(const n of s.enemies)if(n.x>s.camera.x-150&&n.x<s.camera.x+1110&&(n.hp>0||n.death>0))enemy(c,n);if(s.floor===2)boss(c,s);
-   c.save();if(s.ending<0)ArcadePhysics.jumpTurn.apply(c,p);drawPlayer();if(!['wolf','zombie'].includes(p.form)&&!p.transform&&!p.rope&&!p.ladder)ArcadeWeaponRenderer.draw(c,p,e);if(p.jetpack)drawJetpack('front');c.restore();
+   c.save();if(p.respawnProtection>0)c.globalAlpha*=ArcadeProgression.respawnAlpha(p);if(s.ending<0)ArcadePhysics.jumpTurn.apply(c,p);drawPlayer();if(!['wolf','zombie'].includes(p.form)&&!p.transform&&!p.rope&&!p.ladder)ArcadeWeaponRenderer.draw(c,p,e);if(p.jetpack)drawJetpack('front');c.restore();
    ArcadeMissionCombat.draw(c,e,powers,p,{left:s.camera.x,right:s.camera.x+960,top:0,bottom:540});
    for(const h of s.hazards){if(h.type==='tentacle'){alienFx(c,0,h.age<.18?0:h.age<.4?1:h.age<.56?2:3,h.x,472,130,120,true);}else if(h.type==='laser'){const frame=fxFrames[4+Math.floor(h.age*18)%4],sx=frame[0]+frame[2]*.34,sw=frame[2]*.66;const mouth=ArcadeSpaceWorld.laserSegment(s.boss,h.y,h.aimX);c.save();c.translate(mouth.x,mouth.y);const dx=mouth.tx-mouth.x,dy=mouth.ty-mouth.y;c.rotate(Math.atan2(dy,dx));c.drawImage(images.sovereignFx,sx,frame[1],sw,frame[3],0,-16,Math.hypot(dx,dy),32);c.restore();}else if(h.type==='wave'){alienFx(c,2,Math.floor(h.age*12)%4,h.x,h.y,66,50,true);}else alienFx(c,3,Math.floor(h.age*10)%2,h.x,h.y,56,65);}
    for(const f of s.debris)alienFx(c,3,2+Math.min(1,Math.floor(f.age*3)),f.x,f.y,95,80,true);

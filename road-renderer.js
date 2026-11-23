@@ -7,7 +7,18 @@
  const AMBIENT=.3;
  function create(images){const Stage=root.ArcadeRoadStage,War=root.ArcadeRoadWar,Fire=root.ArcadeAirMecha,Kit=root.ArcadeMissionKit;images.rig=scrub(images.rig,2,3,5);const mounted=images.mounted?atlas(images.mounted,4,2):null,obstacles=images.obstacles?atlas(images.obstacles,3,2):null,crashes=images.crashes?root.ArcadeAdvancedForms.atlas(images.crashes,4,4,{y:[0,.27,.52,.765,1]}):null,actions=images.actions?atlas(images.actions,3,3):null,riders=atlas(images.riders,4,3),rig=atlas(images.rig,2,3),foes=images.foes?root.ArcadeAdvancedForms.atlas(images.foes,3,2,{x:[[0,1/3,992/1536,1],[0,1/3,992/1536,1]],y:[0,.515,1]}):null,rigAim=images.rigAim?atlas(images.rigAim,2,3):rig,soldierCrash=images.soldierCrash?atlas(images.soldierCrash,4,1):null;
   function sprite(c,img,f,x,y,width,angle=0,alpha=1){c.save();c.globalAlpha*=alpha;c.translate(Math.round(x),Math.round(y));c.rotate(angle);c.drawImage(img,...f,-width/2,-width*f[3]/f[2],width,width*f[3]/f[2]);c.restore();}
-  function background(c,scroll,time){const img=images.road,cut=Math.round(img.height*.48),skyW=1280;for(let x=-(scroll*.05%skyW);x<960;x+=skyW)c.drawImage(img,0,0,img.width,cut,Math.round(x),0,skyW,322);const roadW=1180;for(let x=-(scroll%roadW);x<960;x+=roadW)c.drawImage(img,0,cut,img.width,img.height-cut,Math.round(x),322,roadW+1,218);c.fillStyle='#edcd8f';for(let i=0;i<7;i++){const x=((i*211-scroll*1.5)%1200+1200)%1200-120;c.globalAlpha=.25;c.fillRect(x,506+i%3*8,18+(i%2)*20,2);}c.globalAlpha=1;
+  function background(c,s){const {scroll,time}=s;const img=images.road,cut=Math.round(img.height*.48),skyW=1280;for(let x=-(scroll*.05%skyW);x<960;x+=skyW)c.drawImage(img,0,0,img.width,cut,Math.round(x),0,skyW,322);const roadW=1180;for(let x=-(scroll%roadW);x<960;x+=roadW)c.drawImage(img,0,cut,img.width,img.height-cut,Math.round(x),322,roadW+1,218);c.fillStyle='#edcd8f';for(let i=0;i<7;i++){const x=((i*211-scroll*1.5)%1200+1200)%1200-120;c.globalAlpha=.25;c.fillRect(x,506+i%3*8,18+(i%2)*20,2);}c.globalAlpha=1;
+   const decor=root.ArcadeSceneryAnimation;
+   if(decor){
+     if(decor.next&&s.intro>=5){
+       const cameo=decor.next(s,'carretera',time);
+       if(cameo?.id==='helicoptero')decor.place(c,cameo,scroll*.05,122+8*Math.sin(cameo.age*.55),960,108,.80,1190);
+       else decor.place(c,cameo,scroll*.12,316,960,68,.91,560);
+     }
+     const x=358-(scroll*.05%1280);
+     const pumpX=x<-56?x+1280:x;
+     if(pumpX<1016)decor.draw(c,'pump',time,pumpX,304,76,.87);
+   }
    // The sign is planted on the guardrail, so it travels with the road.
    const signX=((1100-scroll)%1900+1900)%1900-200;c.fillStyle='#575a52';c.fillRect(signX,255,5,78);c.fillStyle='#254941';c.fillRect(signX-57,236,118,34);c.strokeStyle='#bec4a0';c.strokeRect(signX-55,238,114,30);c.fillStyle='#e6e5c6';c.font='bold 11px monospace';c.textAlign='center';c.fillText('AUTOPISTA 04 →',signX+2,257);c.textAlign='start';
    // Farolas del guardarraíl: poste, brazo y lámpara encendida.
@@ -18,7 +29,7 @@
    if(boost){c.fillStyle='#ffe9c2';for(let i=0;i<9;i++){const u=((scroll*.011+i*.37)%1+1)%1;c.globalAlpha=.18*(1-u);c.fillRect(Math.round(960-u*1100),350+((i*53)%150),90,1);}c.globalAlpha=1;}}
   // Sombra de contacto: nada de lo que rueda flota sobre el asfalto.
   function shadow(c,x,y,w,k=1){c.fillStyle='rgba(8,12,16,'+(.5*k).toFixed(3)+')';c.fillRect(Math.round(x-w*.4),Math.round(y-2),Math.round(w*.8),3);c.fillStyle='rgba(8,12,16,'+(.3*k).toFixed(3)+')';c.fillRect(Math.round(x-w*.48),Math.round(y),Math.round(w*.96),3);}
-  function exhaust(c,x,y,t,boost=false){for(let i=0;i<7;i++){const phase=(t*6+i*.7)%4;c.globalAlpha=(1-phase/4)*.3;c.fillStyle=boost?'#d0ad76':'#899093';const size=4+phase*3;c.fillRect(x-phase*12,y-phase*3,size,size);}c.globalAlpha=1;}
+  function exhaust(c,x,y,t,boost=false){const opacity=c.globalAlpha;for(let i=0;i<7;i++){const phase=(t*6+i*.7)%4;c.globalAlpha=opacity*(1-phase/4)*.3;c.fillStyle=boost?'#d0ad76':'#899093';const size=4+phase*3;c.fillRect(x-phase*12,y-phase*3,size,size);}c.globalAlpha=opacity;}
   function spokes(c,x,y,w,t){c.strokeStyle='#b9a98688';c.lineWidth=1;for(const dx of [-w*.32,w*.34]){c.save();c.translate(x+dx,y-w*.12);c.rotate(t*28);c.beginPath();c.moveTo(-w*.065,0);c.lineTo(w*.065,0);c.moveTo(0,-w*.065);c.lineTo(0,w*.065);c.stroke();c.restore();}}
   // Caída del soldado con el mismo arte con el que conduce: el bache lo lanza en
   // una voltereta completa, aterriza con rebote y recupera el equilibrio.
@@ -45,6 +56,16 @@
    }
    if(mounted&&!s.crash&&(p.form==='robot'||p.form==='fighter')){
     const robot=p.form==='robot',row=robot?0:4,index=row+(robot?3:s.jump?2:s.ram>0?3:s.boost?1:0),f=mounted[index],scale=104/mounted[row][2],cw=Math.floor(images.mounted.width/4),offset=(f[0]%cw+f[2]/2-cw/2)*scale;
+    const forms=root.ArcadeAdvancedForms,frame=robot||s.stuntMount||!images.stunts?-1:forms.fighterFrame(p,12);
+    if(frame>=0){
+     if(!s.stuntMount)exhaust(c,x-43,y-12,s.time,!!s.boost);
+     const pose=War.fighterMount(s,{x,y}),base=mounted[4];
+     c.save();c.globalAlpha*=alpha;c.translate(pose.x,pose.y);c.rotate(pose.angle);
+     c.drawImage(images.stunts,0,6*112,192,112,-96,-104,192,112);
+     c.save();c.beginPath();c.rect(-62,-52,128,54);c.clip();
+     sprite(c,images.mounted,base,(base[0]%cw+base[2]/2-cw/2)*scale,0,base[2]*scale);c.restore();
+     forms.drawSeatedStrike(c,p,frame);c.restore();return;
+    }
     c.save();c.globalAlpha*=alpha;if(!s.stuntMount)exhaust(c,x-43,y-12,s.time,!!s.boost);c.translate(x,y);c.rotate(s.jump?Math.max(-.16,Math.min(.13,s.jumpV*-.0005)):0);const bob=Math.sin(s.time*23)*.6;sprite(c,images.mounted,f,offset,bob,f[2]*scale);
     if(robot)root.ArcadeWeaponRenderer.draw(c,{...p,x:0,y:bob,onMotorcycle:true},{inventory:s.inventory,flash:s.shotFlash});c.restore();return;
    }
@@ -81,7 +102,7 @@
   function effects(c,s){for(const f of s.effects){const age=f.max-f.life,fx=root.ArcadeBossAttackSprites;if(f.color==='ray'){fx?.beam(c,'lightning',s.time,f.x,f.y,f.toX,f.toY,20);continue;}fx?.draw(c,f.color==='plasma'?'plasma':f.color==='dust'?'shock':f.color==='claw'?'slash':'blast',age,f.x,f.y,Math.max(20,f.size*2),Math.max(20,f.size*1.5),{loop:false,duration:f.max,alpha:Math.min(1,f.life*5)});}
    for(const p of s.parts){const f=p.rig?rig[0]:riders[10],img=p.rig?images.rig:images.riders,cuts=[[.08,.67,.2,.29],[.23,.22,.18,.22],[.47,.34,.2,.23],[.64,.58,.18,.3]],a=cuts[p.part];c.save();c.globalAlpha=Math.min(1,p.life);c.translate(p.x,p.y);c.rotate(p.rotation);c.drawImage(img,f[0]+f[2]*a[0],f[1]+f[3]*a[1],f[2]*a[2],f[3]*a[3],-16,-13,32,26);c.restore();}
   }
-  function draw(c,s,p,e,powers,profile){s.inventory=e.inventory;c.save();c.imageSmoothingEnabled=false;background(c,s.scroll,s.time);s.boost=p.roadBoost?1:0;
+  function draw(c,s,p,e,powers,profile){s.inventory=e.inventory;c.save();c.imageSmoothingEnabled=false;background(c,s);s.boost=p.roadBoost?1:0;
    const posts=War?.CHECKPOINTS||[3200,7800],stations=posts.map((d,i)=>({id:'road-cp-'+i,x:220+(d-s.distance)*5,y:338,inside:false}));const active=Math.max(-1,posts.indexOf(s.checkpoint));root.ArcadeCheckpoints?.draw(c,{stations,active:active<0?null:'road-cp-'+active,visited:new Set(stations.filter((_,i)=>i<=active).map(p=>p.id)),flash:Math.max(0,2.8-(s.distance-s.checkpoint)/72)},false,s.time,{left:0,right:960,top:0,bottom:540});
    for(const o of s.obstacles||[])if(o.x>-180&&o.x<1140&&obstacles){
     const ramp=o.type==='ramp',f=obstacles[(ramp?3:0)+Math.floor(s.time*(ramp?3:5))%3],w=ramp?200:116,h=ramp?65:34;
@@ -91,17 +112,19 @@
    }
    for(const pool of s.pools||[]){c.globalAlpha=Math.min(.7,pool.life);c.fillStyle='#40ca7199';for(let i=0;i<8;i++)c.fillRect(pool.x-45+i*12,pool.y-8+Math.sin(i*3+s.time*9)*3,15,7);c.globalAlpha=1;}
    for(const item of s.pickups)root.ArcadePickupRenderer.draw(c,{...item,amount:3},s.time,p);
+   for(const g of s.grenades||[])root.ArcadeGrenades.draw(c,g,s.scroll);
    for(const m of s.mines)root.ArcadeBossAttackSprites?.draw(c,'mine',m.age,m.x,m.y,29,21,{ground:true});
    const cut=Stage&&s.intro<Stage.INTRO?Stage.intro(s.intro,p.lane):null,end=Stage&&s.ending>=0?Stage.ending(s.ending,p.x):null;
    const things=s.enemies.map(n=>({y:n.y,draw:()=>enemy(c,n,s)}));if(s.boss.active)things.push({y:s.boss.y,draw:()=>boss(c,s.boss,s,p)});
    if(cut){for(const n of cut.convoy)things.push({y:n.y,draw:()=>enemy(c,{...n,w:n.type==='sidecar'?124:104,h:76,hp:1,maxHp:1,age:0,hit:0,flash:0,death:0,escort:true},s)});if(cut.rider.visible)things.push({y:p.lane,draw:()=>player(c,p,{...s,jump:0,ram:0,shotFlash:0,wheelie:cut.rider.wheelie,boost:cut.rider.boost?1:0},cut.rider.x,cut.rider.y)});}
    else if(end)things.push({y:p.lane,draw:()=>hero(c,p,s,end)});
    else if(s.ending<4)things.push({y:p.lane,draw:()=>{
-    if(!p.jumpTurn||s.crash>0){player(c,p,s);return;}
+    c.save();if(p.respawnProtection>0)c.globalAlpha*=root.ArcadeProgression.respawnAlpha(p);
+    if(!p.jumpTurn||s.crash>0){player(c,p,s);c.restore();return;}
     shadow(c,p.x,p.lane,104,Math.max(.35,1-s.jump/160));
-    c.save();root.ArcadePhysics.jumpTurn.apply(c,p);player(c,p,{...s,shadowed:true});c.restore();
+    root.ArcadePhysics.jumpTurn.apply(c,p);player(c,p,{...s,shadowed:true});c.restore();
    }});
-   things.sort((a,b)=>a.y-b.y).forEach(t=>t.draw());if(cut?.heli.visible)helicopter(c,cut.heli,s.time);
+   things.sort((a,b)=>a.y-b.y).forEach(t=>t.draw());if(p.fighterImpact&&!cut&&!end)root.ArcadeAdvancedForms.drawFighterImpact(c,p);if(cut?.heli.visible)helicopter(c,cut.heli,s.time);
    for(const b of s.bullets){if(root.ArcadeBossAttackSprites?.projectile(c,b,s.time))continue;c.fillStyle=b.eyeRay?'#71cfff':b.plasma?'#83ff88':b.enemy?'#ff6259':'#fff1b1';if(b.plasma){c.fillRect(b.x-7,b.y-5,14,10);c.fillStyle='#d8ffc5';c.fillRect(b.x-3,b.y-3,6,5);}else{c.save();c.translate(b.x,b.y);c.rotate(Math.atan2(b.vy,b.vx));c.fillRect(-9,-2,b.slot===6?19:12,b.slot===6?6:3);c.restore();}}
    if(powers&&s.ending<0&&!cut){root.ArcadePowers?.draw(c,powers,p,e,{top:0,bottom:540});root.ArcadePowerFx?.draw(c,powers,p,e);}effects(c,s);foreground(c,s.scroll,s.boost&&!cut&&!end);
    // Atardecer: el cielo conserva su luz y la calzada se oscurece entre farolas.

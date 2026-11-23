@@ -5,9 +5,9 @@
   const number=(n,f=0)=>Number.isFinite(n)?Math.max(0,n):f;
   function read(store){try{const s=JSON.parse(store.getItem(key)||'null');return s&&s.version===1?s:null;}catch{return null;}}
   function write(store,data){try{store.setItem(key,JSON.stringify({version:1,...data}));return true;}catch{return false;}}
-  const missionKeys=['one','two','three','four','five','six','seven','eight'];
+  const missionKeys=['one','two','three','four','five','six','seven','eight','nine','ten'];
   // Los especiales son desvíos opcionales y nunca abren una misión principal.
-  const previous={m1:[],m2:[1],m3:[2],m4:[2],m5:[3,4],m6:[5],m7:[5],m8:[6,7],fuga:[4],quimera:[5]};
+  const previous={m1:[],m2:[1],m3:[2],m4:[2],m5:[3,4],m6:[5],m7:[5],m8:[6,7],m9:[8],m10:[9],fuga:[4],quimera:[5]};
   function available(id,current,completed,fighterUnlocked,developer=false){
     if(developer)return true;
     if(id==='quimera')return !!fighterUnlocked;
@@ -39,7 +39,7 @@
         const s=JSON.parse(store.getItem('cap-dollar.mission-'+name+'.v1')||'null');
         // Earlier versions saved the last objective within each mission.
         const cleared=[s?.finalWon,s?.king?.defeated&&!s.inside,s?.ending,s?.road?.complete,
-          s?.sea?.complete,s?.mall?.complete,s?.space?.complete,s?.newYork?.complete];
+          s?.sea?.complete,s?.mall?.complete,s?.space?.complete,s?.newYork?.complete,s?.horizon?.phase==='won',s?.horizon?.phase==='won'];
         if(cleared[index]){markCompleted(store,level);return [level];}
       }catch{}
       return [];
@@ -55,7 +55,7 @@
     return{owned,...(owned.includes(source.secondary)&&source.secondary>=3?{secondary:source.secondary}:{}),selected:owned.includes(source.selected)?source.selected:owned[0],ammo:Object.fromEntries(owned.filter(n=>n>2).map(n=>[n,Math.floor(number(source.ammo?.[n]))]))};
   }
   function loadout(store,entry,saved={}){const current=read(store),original=first(store);return entry==='campaign'?current||original||{}:entry==='select'?original||current||{}:{...original,...current,...saved};}
-  const routePages={3:'level-three.html',4:'level-four.html',5:'level-five.html',6:'level-six.html',7:'level-seven.html',8:'level-eight.html'};
+  const routePages={3:'level-three.html',4:'level-four.html',5:'level-five.html',6:'level-six.html',7:'level-seven.html',8:'level-eight.html',9:'level-nine.html',10:'level-ten.html'};
   function enterRoute(level,store,player,encounter,score,powers){
     write(store,{level,arrival:true,...snapshot(player,encounter,score,powers)});
     return routePages[level]+'?entry=campaign';

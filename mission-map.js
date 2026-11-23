@@ -3,16 +3,17 @@
   // El eje principal avanza por etapas. Los especiales son desvíos opcionales.
   const lanes=[{id:'sky',name:'RUTA ALTERNATIVA',short:'ALTERNATIVA',y:18},{id:'land',name:'CAMPAÑA',short:'CAMPAÑA',y:50},{id:'sea',name:'MISIONES ESPECIALES',short:'ESPECIALES',y:82}];
   const campaign=typeof module!=='undefined'&&module.exports?require('./campaign'):root.ArcadeCampaign;
-  const COLUMNS=6;
+  const COLUMNS=8;
   const upcoming={};
   const plan=[
     {id:'m1',mission:1,col:0,lane:'land'},{id:'m2',mission:2,col:1,lane:'land'},
     {id:'m3',mission:3,col:2,lane:'sky'},{id:'m4',mission:4,col:2,lane:'land'},
     {id:'m5',mission:5,col:3,lane:'land'},{id:'fuga',special:true,col:3,lane:'sea'},
     {id:'m6',mission:6,col:4,lane:'land'},{id:'m7',mission:7,col:4,lane:'sky'},
-    {id:'quimera',special:true,col:4,lane:'sea'},{id:'m8',mission:8,col:5,lane:'land'}
+    {id:'quimera',special:true,col:4,lane:'sea'},{id:'m8',mission:8,col:5,lane:'land'},
+    {id:'m9',mission:9,col:6,lane:'land'},{id:'m10',mission:10,col:7,lane:'land'}
   ];
-  const shortNames={m1:'La obra',m2:'El umbral',m3:'Aire',m4:'Carretera',m5:'Abismo',m6:'Centro',m7:'Espacio',m8:'Nueva York',quimera:'Quimera',fuga:'Fuga'};
+  const shortNames={m1:'La obra',m2:'El umbral',m3:'Aire',m4:'Carretera',m5:'Abismo',m6:'Centro',m7:'Espacio',m8:'Nueva York',m9:'Marea',m10:'Último vector',quimera:'Quimera',fuga:'Fuga'};
   const links=plan.flatMap(n=>campaign.previous[n.id].map(level=>['m'+level,n.id]));
   function graph(){
     const nodes=plan.map(n=>({...n,x:8+n.col*(84/(COLUMNS-1)),y:lanes.find(l=>l.id===n.lane).y}));

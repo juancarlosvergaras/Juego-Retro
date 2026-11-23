@@ -53,7 +53,7 @@
   if(freshMission&&window.ArcadeMissionOneSave)try{saveStore.removeItem(window.ArcadeMissionOneSave.KEY);}catch{}
   const savedMission=freshMission?null:window.ArcadeMissionOneSave?.read(saveStore);
   let checkpoints=ArcadeCheckpoints.create(1,platforms,savedMission?.checkpoints);
-  const mainMenu=window.ArcadeMainMenu?.create({soundControls,difficulty,tutorial,resumeAvailable:!!savedMission,onNewGame(){const begin=()=>{briefed=true;respawn(true);sound.setRunning(true);};if(story)story.briefing(begin);else begin();},onDifficulty(id){difficulty=id;ArcadeDifficulty.apply(encounter,id);return ArcadeDifficulty.save(id,window.ArcadeDeveloperMode?.storage());},onPlay(){if(story&&!briefed&&arrival?.active&&!arrival.t){briefed=true;story.briefing(()=>{if(paused)togglePause();});}else togglePause();},onPause(){rememberLoadout();paused=true;clearInput();accumulator=0;canvas.inert=true;ui['weapon-slots'].inert=true;ui.overlay.hidden=true;sound.setRunning(false);},onSound(){sound.setRunning(false);}});
+  const mainMenu=window.ArcadeMainMenu?.create({soundControls,difficulty,tutorial,resumeAvailable:!!savedMission,onNewGame(){const begin=()=>{briefed=true;respawn(true);sound.setRunning(true);};if(story)story.briefing(begin);else begin();},onDifficulty(id){difficulty=id;ArcadeDifficulty.apply(encounter,id);return ArcadeDifficulty.save(id,window.ArcadeDeveloperMode?.storage());},onPlay(){if(profile.lives===0||encounter.dead){respawn(profile.lives===0);sound.setRunning(true);return;}if(story&&!briefed&&arrival?.active&&!arrival.t){briefed=true;story.briefing(()=>{if(paused)togglePause();});}else togglePause();},onPause(){rememberLoadout();paused=true;clearInput();accumulator=0;canvas.inert=true;ui['weapon-slots'].inert=true;ui.overlay.hidden=true;sound.setRunning(false);},onSound(){sound.setRunning(false);}});
   document.getElementById('open-main-menu')?.addEventListener('click',()=>mainMenu?.show());
 
   const profile=ArcadeProgression.load(saveStore);if(!savedMission&&window.ArcadeCampaign?.read(saveStore)?.level!==2){ArcadeProgression.beginWorld(profile);ArcadeProgression.save(profile,saveStore);}let powers=ArcadePowers.create(),powerQueued=false;
@@ -104,7 +104,7 @@
   new ResizeObserver(resize).observe(canvas);
   function imageLoad(img,src){return new Promise((resolve,reject)=>{img.onload=()=>{window.ArcadeLoading?.step();resolve();};img.onerror=()=>reject(new Error(src));img.src=src;});}
   function notify(text){ui.message.textContent=text;toastTimer=4;ui.message.style.opacity='1';}
-  function chooseWeapon(slot){if(player.form==='robot'&&slot<3){notify('Robot · Elige un arma de disparo (3–9)');return;}if(arrival?.active)return;player.idleTime=0;player.idleGesture=false;if(player.form==='wolf'||player.form==='zombie'){notify('Vuelve al soldado para usar armas.');return;}if(ArcadeArsenal.selectWeapon(encounter.inventory,slot))notify(slot+' · '+ArcadeArsenal.weapons[slot].name);else notify('Primero encuentra '+ArcadeArsenal.weapons[slot].name.toLowerCase()+'.');}
+  function chooseWeapon(slot){if(['tank','hero','fighter'].includes(player.form)||encounter.extraction)return;if(player.form==='robot'&&slot<3){notify('Robot · Elige un arma de disparo (3–9)');return;}if(arrival?.active)return;player.idleTime=0;player.idleGesture=false;if(player.form==='wolf'||player.form==='zombie'){notify('Vuelve al soldado para usar armas.');return;}if(ArcadeArsenal.selectWeapon(encounter.inventory,slot,player.form))notify(slot+' · '+ArcadeArsenal.weapons[slot].name);else notify('Primero encuentra '+ArcadeArsenal.weapons[slot].name.toLowerCase()+'.');}
   for(let slot=1;slot<=9;slot++){
     const button=document.createElement('button');button.type='button';button.dataset.slot=slot;
     button.innerHTML='<b class="slot-number">'+slot+'</b><canvas class="weapon-icon" width="44" height="34" aria-hidden="true"></canvas><span class="slot-name">'+ArcadeArsenal.weapons[slot].name+'</span><small class="slot-ammo"></small>';
@@ -121,7 +121,30 @@
     if(paused){rememberLoadout();overlay('Partida en pausa','Tu partida queda detenida mientras consultas el menú.','Continuar');ui['pause-options'].hidden=false;ui.shortcuts.hidden=true;ui['show-shortcuts'].textContent='Ver atajos de teclado';ui['show-shortcuts'].setAttribute('aria-expanded','false');ui.resume.focus({preventScroll:true});}
     else{ui.overlay.hidden=true;canvas.focus({preventScroll:true});}
   }
-  function respawn(full=false){window.ArcadeRobotForm&&(window.ArcadeRobotForm.dock=null);document.getElementById('robot-second-weapon')?.remove();const savedFuel=player.fuel,savedFormCooldown=player.formCooldown||0;presentation?.reset();score.floating=[];nextMission.hidden=true;if(full){story?.reset();checkpoints=ArcadeCheckpoints.create(1,platforms);try{saveStore.removeItem(window.ArcadeMissionOneSave?.KEY);}catch{}if(ambience.crane)ambience.crane.x=ambience.origin;ambience=ArcadeAmbience.create(platforms,WORLD.ground);ArcadeProgression.beginWorld(profile);persist();score=ArcadeScore.create();challenges=ArcadeChallenges.create(platforms);fuelTanks.forEach(t=>t.taken=false);checkpoint={x:145,y:WORLD.ground,floor:0};maxFloor=0;}const defeated=encounter.enemies.filter(n=>n.hp<=0).map(n=>n.id);const savedInventory=encounter.inventory,savedPickups=encounter.pickups,savedMedkits=encounter.medkits;const keepWolf=!full&&encounter.won,savedForm=player.form,savedFinalWon=encounter.finalWon;player=createPlayer();if(!full)player.fuel=savedFuel;player.x=checkpoint.x;player.y=checkpoint.y;encounter=createEncounter(full?{}:{pickups:savedPickups});window.ArcadeDifficulty?.apply(encounter,difficulty);if(!full){encounter.inventory=savedInventory;encounter.pickups=savedPickups;encounter.medkits=savedMedkits;for(const n of encounter.enemies)if(defeated.includes(n.id)){n.hp=0;n.death=0;}encounter.invincible=3;}if(keepWolf){encounter.boss.hp=0;transformWolf(encounter,player);player.form=savedForm;player.h=savedForm==='wolf'?64:savedForm==='zombie'?68:savedForm==='robot'?54:46;player.transform=0;if(savedFinalWon){encounter.finalWon=true;encounter.finalBoss.hp=0;encounter.finalBoss.stage=2;}}if(!full&&!keepWolf&&profile.zombieUnlocked){player.form=savedForm;player.h=savedForm==='wolf'?64:savedForm==='zombie'?68:savedForm==='robot'?54:46;}ArcadeProgression.apply(profile,player,encounter,true);fuelMax=player.fuelMax;if(!full){player.fuel=Math.min(fuelMax,savedFuel);player.formCooldown=savedFormCooldown;}powers=ArcadePowers.create();arrival=full?ArcadeArrival.create(player):null;opening=arrival?{age:0}:null;paused=false;canvas.inert=false;ui['weapon-slots'].inert=false;accumulator=0;clearInput();resize(true);ui.overlay.hidden=true;ui.pause.innerHTML='Menú <kbd>ESC</kbd>';window.ArcadeDeveloperMode?.prepare(profile,player,encounter,powers);fuelMax=player.fuelMax;notify(full?'La misión ha comenzado. Da caza al Capataz.':'De vuelta al checkpoint. Salud y combate reiniciados.');canvas.focus({preventScroll:true});}
+  function showFall(){
+    clearInput();
+    ArcadeProgression.loseLife(profile,encounter);
+    persist();rememberLoadout();
+    if(profile.lives===0){const end=ArcadeProgression.gameOver;overlay(end.title,end.message,end.action);}
+    else overlay('Te han alcanzado.','Vuelve al último punto de control con cinco segundos de protección.',checkpoints.active?'Volver al CHECK POINT':'Reintentar');
+    ui.resume.focus({preventScroll:true});
+  }
+  function respawn(full=false){
+    const died=encounter.dead,remaining=player.respawnProtection||0;
+    const previousCooldowns={...powers.cooldowns},previousShield=player.shield;
+    if(ArcadeProgression.restartLives(profile,saveStore))full=true;
+    window.ArcadeRobotForm&&(window.ArcadeRobotForm.dock=null);document.getElementById('robot-second-weapon')?.remove();const savedFuel=player.fuel,savedFormCooldown=player.formCooldown||0;presentation?.reset();score.floating=[];nextMission.hidden=true;if(full){story?.reset();checkpoints=ArcadeCheckpoints.create(1,platforms);try{saveStore.removeItem(window.ArcadeMissionOneSave?.KEY);}catch{}if(ambience.crane)ambience.crane.x=ambience.origin;ambience=ArcadeAmbience.create(platforms,WORLD.ground);ArcadeProgression.beginWorld(profile);persist();score=ArcadeScore.create();challenges=ArcadeChallenges.create(platforms);fuelTanks.forEach(t=>t.taken=false);checkpoint={x:145,y:WORLD.ground,floor:0};maxFloor=0;}const defeated=encounter.enemies.filter(n=>n.hp<=0).map(n=>n.id);const savedInventory=encounter.inventory,savedPickups=encounter.pickups,savedMedkits=encounter.medkits;const keepWolf=!full&&encounter.won,savedForm=player.form,savedFinalWon=encounter.finalWon;player=createPlayer();if(!full)player.fuel=savedFuel;player.x=checkpoint.x;player.y=checkpoint.y;encounter=createEncounter(full?{}:{pickups:savedPickups});window.ArcadeDifficulty?.apply(encounter,difficulty);if(!full){encounter.inventory=savedInventory;encounter.pickups=savedPickups;encounter.medkits=savedMedkits;for(const n of encounter.enemies)if(defeated.includes(n.id)){n.hp=0;n.death=0;}ArcadeProgression.protect(player,died?ArcadeProgression.RESPAWN_SECONDS:remaining);}if(keepWolf){
+      encounter.won=true;Object.assign(encounter.boss,{hp:0,active:false,phase:'dead',death:0});
+      if(savedFinalWon){encounter.finalWon=true;Object.assign(encounter.finalBoss,{hp:0,stage:2,phase:'dead',death:0,active:false});}
+    }
+    ArcadeProgression.apply(profile,player,encounter,true);fuelMax=player.fuelMax;
+    powers=ArcadePowers.create();
+    if(!full){
+      ArcadeZombieForm.restoreBody(player,savedForm,keepWolf);
+      player.fuel=Math.min(fuelMax,savedFuel);player.formCooldown=savedFormCooldown;player.shield=previousShield;
+      Object.assign(powers.cooldowns,previousCooldowns);
+    }
+    arrival=full?ArcadeArrival.create(player):null;opening=arrival?{age:0}:null;paused=false;canvas.inert=false;ui['weapon-slots'].inert=false;accumulator=0;clearInput();resize(true);ui.overlay.hidden=true;ui.pause.innerHTML='Menú <kbd>ESC</kbd>';window.ArcadeDeveloperMode?.prepare(profile,player,encounter,powers);fuelMax=player.fuelMax;rememberLoadout();notify(full?'La misión ha comenzado. Da caza al Capataz.':'De vuelta al checkpoint. Salud y combate reiniciados.');canvas.focus({preventScroll:true});}
   const movementKeys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyA','KeyD','KeyW','KeyS','ShiftLeft','ShiftRight','KeyE','KeyJ','KeyX','Numpad0','KeyL','KeyT','KeyI','KeyK','KeyQ','KeyC','KeyO','KeyM','KeyF','KeyG','KeyB','KeyH'];
   window.addEventListener('keydown',e=>{
     const code=ArcadeArsenal.controlCode(e);
@@ -133,15 +156,15 @@
     if(e.repeat)return;
     if(code==='KeyP'||code==='Escape'){e.preventDefault();togglePause();return;}if(code==='KeyR'&&loaded&&!encounter.extraction){
       // Volver al checkpoint por voluntad propia no cura: solo quien ha caído reaparece con la vida completa.
-      const kept=encounter.dead?0:encounter.hp;respawn();if(kept>0&&kept<encounter.maxHp){encounter.hp=kept;notify('De vuelta al checkpoint. Conservas la salud que tenías.');}return;}
+      const kept=encounter.dead?0:encounter.hp;respawn();if(kept>0&&kept<encounter.maxHp){encounter.hp=kept;rememberLoadout();notify('De vuelta al checkpoint. Conservas la salud que tenías.');}return;}
     if(opening&&!paused&&(code==='Space'||code==='Enter')){opening.age=99;return;}
-    if(paused||encounter.dead||encounter.extraction||arrival?.active)return;if(code==='BracketRight'||code==='BracketLeft'){const inv=encounter.inventory,list=inv.owned.slice().sort((a,b)=>a-b);chooseWeapon(list[(list.indexOf(inv.selected)+(code==='BracketRight'?1:-1)+list.length)%list.length]);return;}if(code==='KeyT'){changeForm();return;}if(/^(Digit|Numpad)[1-9]$/.test(code)){chooseWeapon(Number(code.slice(-1)));return;}if(code==='KeyH'||code==='KeyB'){cyclePower();return;}keys.add(code);if(code==='KeyG')useFront();if(code==='KeyF')jetpackQueued=true;if(code==='Space')jumpQueued=true;if(code==='KeyE')hookQueued=true;if((code==='KeyW'||code==='ArrowUp')&&player.rope)climbQueued=true;if(ArcadeArsenal.fireKeys.includes(code)){fireQueued=true;fireBuffer.press(encounter.inventory.selected);queuedAim=ArcadeArsenal.aimDirection(window.ArcadeControls?.decorate(input())||input(),player.facing);}if(code==='KeyL'){if(player.form==='robot'){ArcadeRobotForm.cycle(encounter.inventory);persist();}else kickQueued=true;}
+    if(paused||encounter.dead||encounter.extraction||arrival?.active)return;if(code==='BracketRight'||code==='BracketLeft'){const inv=encounter.inventory,list=inv.owned.slice().sort((a,b)=>a-b);chooseWeapon(list[(list.indexOf(inv.selected)+(code==='BracketRight'?1:-1)+list.length)%list.length]);return;}if(code==='KeyT'){changeForm();return;}if(/^(Digit|Numpad)[1-9]$/.test(code)){chooseWeapon(Number(code.slice(-1)));return;}if(code==='KeyH'||code==='KeyB'){cyclePower();return;}keys.add(code);if(code==='KeyG')useFront();if(code==='KeyF')jetpackQueued=true;if(code==='Space')jumpQueued=true;if(code==='KeyE')hookQueued=true;if((code==='KeyW'||code==='ArrowUp')&&player.rope)climbQueued=true;if(ArcadeArsenal.fireKeys.includes(code)){fireQueued=true;fireBuffer.press(encounter.inventory.selected);queuedAim=ArcadeArsenal.aimDirection(ArcadeArsenal.aimInput(window.ArcadeControls?.decorate(input())||input(),player),player.facing);}if(code==='KeyL'){if(player.form==='robot'){ArcadeRobotForm.cycle(encounter.inventory);persist();}else kickQueued=true;}
   });
   window.addEventListener('keyup',e=>{keys.delete(ArcadeArsenal.controlCode(e));keys.delete(e.code);});
   canvas.addEventListener('pointerdown',e=>{
     if(e.button!==0||!loaded||paused||encounter.dead||encounter.extraction||arrival?.active)return;
     e.preventDefault();canvas.focus({preventScroll:true});canvas.setPointerCapture(e.pointerId);
-    touch.add('fire');fireQueued=true;fireBuffer.press(encounter.inventory.selected);queuedAim=ArcadeArsenal.aimDirection(window.ArcadeControls?.decorate(input())||input(),player.facing);
+    touch.add('fire');fireQueued=true;fireBuffer.press(encounter.inventory.selected);queuedAim=ArcadeArsenal.aimDirection(ArcadeArsenal.aimInput(window.ArcadeControls?.decorate(input())||input(),player),player.facing);
   });
   for(const event of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(event,()=>touch.delete('fire'));
 
@@ -157,7 +180,9 @@
   // Radio and toast timers also run during the rescue, where update() returns early.
   function tickNarration(dt){story?.update({arrived:!!arrival&&!arrival.active,workersAlerted:!!ambience.workersAlerted,enemyAlert:encounter.enemies.some(n=>n.hp>0&&n.alert),hp:encounter.hp,floor:maxFloor,bossActive:encounter.boss.active&&encounter.boss.hp>0,won:encounter.won,transforming:player.transform>0,finalActive:encounter.finalBoss.active&&encounter.finalBoss.hp>0,finalStage:encounter.finalBoss.stage,extraction:!!encounter.extraction},dt);
     toastTimer=Math.max(0,toastTimer-dt);ui.message.style.opacity=toastTimer>0?'1':'0';}
-  function update(dt){window.ArcadeDeveloperMode?.tick(player,encounter);loadoutAge+=dt;if(loadoutAge>=2){loadoutAge=0;rememberLoadout();}
+  function update(dt){if(encounter.dead)return;window.ArcadeDeveloperMode?.tick(player,encounter);loadoutAge+=dt;if(loadoutAge>=2){loadoutAge=0;rememberLoadout();}
+    const opponent=encounter.won?encounter.finalBoss:encounter.boss;
+    sound.music?.follow?.(dt,player,encounter,{quiet:!!opening||arrival?.active,boss:opponent.active&&opponent.hp>0,victory:!!encounter.extraction||encounter.finalWon});
     // Establishing shot: the rooftop and what waits there, then down the whole
     // tower to the street where the jeep is about to pull in. Space skips it.
     if(opening){
@@ -178,19 +203,24 @@
       }
     }
     ArcadeAmbience.update(ambience,dt,[player,encounter.boss,...encounter.enemies],ArcadeAmbience.gunshotNoises(encounter,player));
-    if(encounter.extraction){tickNarration(dt);ArcadeEncounter.updateDebris(encounter,dt,platforms);encounter.finalBoss.age+=dt;encounter.finalBoss.hit=Math.max(0,encounter.finalBoss.hit-dt);encounter.finalBoss.death=Math.max(0,encounter.finalBoss.death-dt);encounter.explosions=encounter.explosions.filter(b=>(b.life-=dt)>0);const s=encounter.extraction;ArcadeExtraction.update(s,player,dt);const rewards=ArcadeChallenges.update(challenges,player,encounter,dt);let earned=0;for(const reward of rewards)earned+=ArcadeScore.bonus(score,reward);if(earned){ArcadeProgression.credit(profile,earned);persist();}ArcadeExtraction.updateCamera(camera,s,player,{width:canvas.width,height:canvas.height},dt);if(s.done&&!s.shown){s.shown=true;if(victory){paused=true;clearInput();ui.overlay.hidden=true;victory.start();}else overlay('¡Misión cumplida!','El helicóptero te ha sacado de la obra.\n\n'+(story?story.epilogue+'\n\n':'')+ArcadeScore.summary(score),'Reiniciar aventura');}return;}
+    if(encounter.extraction){tickNarration(dt);ArcadeEncounter.updateDebris(encounter,dt,platforms);encounter.finalBoss.age+=dt;encounter.finalBoss.hit=Math.max(0,encounter.finalBoss.hit-dt);encounter.finalBoss.death=Math.max(0,encounter.finalBoss.death-dt);encounter.explosions=encounter.explosions.filter(b=>(b.life-=dt)>0);const s=encounter.extraction;ArcadeExtraction.update(s,player,dt);const rewards=ArcadeChallenges.update(challenges,player,encounter,dt);let earned=0;for(const reward of rewards)earned+=ArcadeScore.bonus(score,reward);if(earned){ArcadeProgression.credit(profile,earned);persist();rememberLoadout();}ArcadeExtraction.updateCamera(camera,s,player,{width:canvas.width,height:canvas.height},dt);if(s.done&&!s.shown){s.shown=true;if(victory){paused=true;clearInput();ui.overlay.hidden=true;victory.start();}else overlay('¡Misión cumplida!','El helicóptero te ha sacado de la obra.\n\n'+(story?story.epilogue+'\n\n':'')+ArcadeScore.summary(score),'Reiniciar aventura');}return;}
+    ArcadeProgression.tickProtection(player,dt);
     const controls=window.ArcadeControls?.decorate(input())||input();if(controls.left!==controls.right)player.facing=controls.left?-1:1;ArcadeArsenal.playerAim(player,controls,{queuedAim,turn:'always'});
     if(controls.hookPressed&&!player.rope){if(player.form==='wolf'||player.form==='zombie')notify('El gancho solo está disponible para el soldado');else if(!findAnchor(player,anchors,platforms))notify('No hay techo al alcance hacia donde miras.');}
     mode=step(player,ArcadeArsenal.movementInput(player,controls),dt,platforms,{ladders:ArcadePhysics.availableLadders(ladders,encounter),anchors});jumpQueued=false;hookQueued=false;climbQueued=false;if(jetpackQueued)notify(player.form==='wolf'||player.form==='zombie'?'El jetpack solo está disponible para el soldado':player.fuel<=0?'Sin gasolina · Busca un depósito':player.jetpack?'Jetpack activo':'Jetpack apagado');jetpackQueued=false;if(player.aim.x&&player.form!=='wolf'&&!player.rope)player.facing=Math.sign(player.aim.x);player.crouching=!!mode.crouching;player.aimHeight=mode.crouching||mode.sliding?20:28;ArcadeSoldierAnimation.advanceWalk(player,dt);
     if(player.grounded&&player.ground?.kind==='deck')maxFloor=Math.max(maxFloor,player.ground.floor||0);
-    if(player.y>WORLD.height+50){respawn();return;}
+    if(player.y>WORLD.height+50){
+      if(player.respawnProtection>0||encounter.developerInvulnerable){player.x=checkpoint.x;player.y=checkpoint.y;player.vy=0;player.fallPeak=player.y;}
+      else{encounter.hp=0;encounter.dead=true;showFall();}
+      return;
+    }
     for(const tank of fuelTanks)if(!tank.taken&&player.form!=='wolf'&&player.fuel<fuelMax&&Math.abs(player.x-tank.x)<25&&Math.abs(player.y-tank.y)<28){tank.taken=true;player.fuel=fuelMax;notify('Gasolina repuesta · Depósito lleno');}
     const collected=ArcadeArsenal.collect(encounter.inventory,encounter.pickups,player);if(collected.length)notify(collected.join(', ')+' recogida');
     player.healGlow=Math.max(0,(player.healGlow||0)-dt);const healed=ArcadeMedkits.collect(encounter,player);if(healed)notify(healed.full?'Botiquín fluorescente · Vida al 100%':'Botiquín rojo · +'+healed.amount+' de vida');
     const wasFinalActive=encounter.finalBoss.active,wasFinalStage=encounter.finalBoss.stage,wasFinalWon=encounter.finalWon,wasActive=encounter.boss.active,wasDefeated=encounter.won;
     updateCamera(camera,player,{width:canvas.width,height:canvas.height},dt);
     const powerMessage=ArcadePowers.update(powers,encounter,player,profile,powerQueued||controls.power||keys.has('KeyG')||touch.has('power'),dt,platforms,{left:camera.x,right:camera.x+canvas.width,top:camera.y,bottom:camera.y+canvas.height});powerQueued=false;if(powerMessage)notify(powerMessage);if(encounter.boss.hp<=0&&!encounter.won)transformWolf(encounter,player);
-    const previousAction=encounter.weaponAction;updateEncounter(encounter,player,controls,dt,platforms);const rewards=ArcadeChallenges.update(challenges,player,encounter,dt);let earned=ArcadeScore.sync(score,encounter,fuelTanks);for(const reward of rewards)earned+=ArcadeScore.bonus(score,reward);if(rewards.length)notify(rewards.map(r=>r.label+' +'+r.points+' pts').join(' · '));if(earned){ArcadeProgression.credit(profile,earned);persist();}if(profile.shield!==player.shield){profile.shield=player.shield;persist();}updateIdle(player,controls,dt);fireQueued=fireBuffer.tick(dt,player,encounter,previousAction);if(!fireQueued)queuedAim=null;kickQueued=false;
+    const previousAction=encounter.weaponAction;updateEncounter(encounter,player,controls,dt,platforms);const rewards=ArcadeChallenges.update(challenges,player,encounter,dt);let earned=ArcadeScore.sync(score,encounter,fuelTanks);for(const reward of rewards)earned+=ArcadeScore.bonus(score,reward);if(rewards.length)notify(rewards.map(r=>r.label+' +'+r.points+' pts').join(' · '));if(earned){ArcadeProgression.credit(profile,earned);persist();rememberLoadout();}if(profile.shield!==player.shield){profile.shield=player.shield;persist();}updateIdle(player,controls,dt);fireQueued=fireBuffer.tick(dt,player,encounter,previousAction);if(!fireQueued)queuedAim=null;kickQueued=false;
     if(!wasActive&&encounter.boss.active){notify('EL CAPATAZ · Combate iniciado');presentation?.intro('EL CAPATAZ','Lobo Blanco · Señor de la obra');}
     if(wasFinalStage!==2&&encounter.finalBoss.stage===2)presentation?.phase('LOBO ZOMBI','Fase 2 · La manada no muere');
     if(!wasFinalActive&&encounter.finalBoss.active&&encounter.finalBoss.stage!==2){notify('LOBO NEGRO · Jefe de la manada');presentation?.intro('LOBO NEGRO','Jefe de la manada');}
@@ -198,7 +228,7 @@
     firingPose=controls.fire?.15:Math.max(0,firingPose-dt);
 
     if(!wasDefeated&&encounter.won){notify('¡Forma de lobo desbloqueada! Acceso a la azotea abierto.');presentation?.defeat('EL CAPATAZ HA CAÍDO','Su mordida te ha cambiado');}
-    else if(encounter.dead){clearInput();rememberLoadout();overlay('Te han alcanzado.','Vuelve a la última PC activada. Conservas tus armas y tu progreso.',checkpoints.active?'Volver al CHECK POINT':'Reintentar');}
+    if(encounter.dead){showFall();return;}
     const activated=ArcadeCheckpoints.update(checkpoints,player,dt,{blocked:encounter.dead||!!encounter.extraction});if(activated){checkpoint={x:activated.x,y:activated.y,floor:activated.floor};notify('CHECK POINT · Progreso guardado');sound.play('pickup',{gain:.45});rememberLoadout();}
     tutorial?.update({p:player,e:encounter,input:controls,ladders:ArcadePhysics.availableLadders(ladders,encounter),hookAvailable:!!findAnchor(player,anchors,platforms),floor:maxFloor,mission:1,blocked:encounter.dead||!!encounter.extraction},dt);
     tickNarration(dt);
@@ -235,7 +265,10 @@
   function drawPlayer(){if(player.cloak>0&&Math.floor(player.cloak*9)%4!==0)return;
     if(ArcadeZombieForm.drawPlayer(ctx,player))return;if(window.ArcadeRobotForm?.draw(ctx,player,encounter)){ArcadeWeaponRenderer.draw(ctx,player,encounter);return;}
     if(encounter.invincible>0&&!player.transform&&!(player.hurt>0)&&Math.floor(player.anim*16)%2===0)return;
-    const falling=!player.grounded&&player.vy>0&&!player.ladder&&!player.rope;
+    if(ArcadeSoldierAnimation.basePose(ctx,player,mode,encounter)){
+      if(!powers.flame&&!encounter.extraction&&player.form!=='wolf'&&ArcadeSoldierAnimation.pose(player,mode,encounter).armed)ArcadeWeaponRenderer.draw(ctx,player,encounter);
+      return player.h;
+    }
     let row=0,frame=Math.floor(player.anim*4)%8,img=soldier,frames=SOLDIER_FRAMES,scale=.39,lift=0;
     if(player.rescueGrip){if(player.form==='wolf'){img=wolf;frames=ACTION_FRAMES.wolf;row=4;frame=3;scale=.48;}else{img=soldierClimb;frames=CLIMB_FRAMES;row=1;frame=0;scale=CLIMB_SCALE;}}
     else if(player.transform>0){const pose=ArcadeSoldierAnimation.transformation(transformationFrame(player));img=pose.sheet==='soldier'?soldierV2:pose.sheet==='wolf'?wolf:transformationSheet;frames=pose.sheet==='soldier'?SOLDIER_V2_FRAMES:pose.sheet==='wolf'?ACTION_FRAMES.wolf:ArcadeSoldierAnimation.transformationFrames;row=pose.row;frame=pose.frame;scale=pose.scale;}
@@ -261,7 +294,7 @@
       ArcadeJetpackRenderer.pose(ctx,player);
       drawJetpack();
     }
-    if(player.hurt>0){ctx.translate(Math.round(Math.sin(player.hurt*75)*3),0);ctx.globalAlpha=.8;}
+    if(player.hurt>0){ctx.translate(Math.round(Math.sin(player.hurt*75)*3),0);ctx.globalAlpha*=.8;}
     if(player.form==='wolf'&&!player.rescueGrip)ArcadeSoldierAnimation.applyWolfMotion(ctx,player,mode);
     const gait=encounter.extraction&&!['walk','return'].includes(encounter.extraction.phase)?null:ArcadeSoldierAnimation.gait(player,encounter.extraction?{}:mode,encounter.extraction?null:encounter);
     const facing=player.ladder&&player.form==='wolf'?1:player.ladder&&player.form!=='wolf'?(ArcadeSoldierAnimation.pose(player).frame<2?1:-1):player.kick>0?player.kickFacing:player.facing;
@@ -279,6 +312,7 @@
   }
   function drawPlayerWithMarker(){
     ctx.save();
+    ctx.globalAlpha*=ArcadeProgression.respawnAlpha(player);
     ArcadePhysics.jumpTurn.apply(ctx,player);
     const height=drawPlayer();
     ctx.restore();
@@ -325,7 +359,7 @@
       }else{if(final.hp>0)ArcadeBossRenderer.blackCannon(ctx,final);sprite(blackWolf,BLACK_WOLF_FRAMES,pose.row,pose.frame,final.x,final.y-hop,BLACK_WOLF_SCALE,final.facing,final.hit);}ctx.restore();
       if(final.phase==='windup'||final.phase==='charge'){ctx.fillStyle='#ffd17b';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(final.phase==='charge'?'¡MISILES!':final.kind==='kick'?'¡PATADA!':'¡ZARPAZO!',final.x,final.y-100);ctx.textAlign='start';}
     }
-    for(const shot of encounter.bullets){if(window.ArcadeBossAttackSprites?.projectile(ctx,shot,player.anim)||ArcadeImpact.projectile(ctx,shot))continue;ctx.save();ctx.translate(shot.x,shot.y);ctx.rotate(Math.atan2(shot.vy,shot.vx));ctx.fillStyle=shot.enemy?'#f37c5d':shot.slot===9?'#acc46b':shot.slot===6?'#ffc15b':'#fff1ad';const arrow=shot.slot===7||shot.slot===8;ctx.fillRect(-(arrow?7:4),shot.slot===9?-4:-2,arrow?14:shot.slot===6?12:shot.slot===4?3:8,shot.slot===9?8:arrow?1:3);if(shot.slot===9){ctx.fillStyle=Math.floor(shot.life*(shot.life<.7?18:6))%2?'#ff6845':'#ffe49a';ctx.fillRect(-1,-6,3,3);}ctx.restore();}
+    for(const shot of encounter.bullets){if(shot.slot===9&&Number.isFinite(shot.floorY))ArcadeGrenades.ring(ctx,shot.x,shot.floorY,shot.blastRadius||ArcadeGrenades.radius,10,shot.age,shot.floorSlope);if(window.ArcadeBossAttackSprites?.projectile(ctx,shot,player.anim)||ArcadeImpact.projectile(ctx,shot))continue;ctx.save();ctx.translate(shot.x,shot.y);ctx.rotate(Math.atan2(shot.vy,shot.vx));ctx.fillStyle=shot.enemy?'#f37c5d':shot.slot===9?'#acc46b':shot.slot===6?'#ffc15b':'#fff1ad';const arrow=shot.slot===7||shot.slot===8;ctx.fillRect(-(arrow?7:4),shot.slot===9?-4:-2,arrow?14:shot.slot===6?12:shot.slot===4?3:8,shot.slot===9?8:arrow?1:3);if(shot.slot===9){ctx.fillStyle=Math.floor(shot.life*(shot.life<.7?18:6))%2?'#ff6845':'#ffe49a';ctx.fillRect(-1,-6,3,3);}ctx.restore();}
     for(const blast of encounter.explosions)ArcadeImpact.draw(ctx,blast);
     if(b.hp>0){ctx.fillStyle='#15212eee';ctx.fillRect(b.x-40,b.y-103,80,7);ctx.fillStyle='#ed7657';ctx.fillRect(b.x-39,b.y-102,78*b.hp/b.maxHp,5);}
   }
@@ -334,21 +368,31 @@
     tutorialView?.render(paused||encounter.dead||!!encounter.extraction||!!arrival?.active,player.x-camera.x<canvas.width/2);
     story?.render(paused||encounter.dead||!!arrival?.active);
     ui['hook-status'].hidden=tutorial?.state.enabled===false;
-    ctx.imageSmoothingEnabled=false;ctx.save();if(powers.shake>0)ctx.translate(Math.sin(powers.age*83)*powers.shake,Math.cos(powers.age*67)*powers.shake*.7);skyline();window.ArcadeMissionOneFx?.sky(ctx,camera,canvas.width,canvas.height,ambience.t,WORLD,ArcadeAmbience.cityPlacement(camera,WORLD.ground,canvas.height));ArcadeAmbience.background(ctx,ambience,camera,canvas.width,canvas.height);drawBuilding();window.ArcadeWorldLighting?.sky(ctx,camera,canvas.width,canvas.height,ambience.t);ctx.save();ctx.translate(-Math.round(camera.x),-Math.round(camera.y));drawPlatforms();window.ArcadeWorldLighting?.fixtures(ctx,1,{platforms},camera,canvas.width,canvas.height,ambience.t);ArcadeAmbience.crane(ctx,ambience,building);ArcadeAmbience.workers(ctx,ambience);ArcadeEncounter.drawEnvironment(ctx,encounter,player,platforms);ArcadeChallenges.draw(ctx,challenges);drawPickups();drawFuelTanks();ArcadeCheckpoints.draw(ctx,checkpoints,false,player.anim,{left:camera.x,right:camera.x+canvas.width,top:camera.y,bottom:camera.y+canvas.height});ArcadeMedkits.draw(ctx,encounter.medkits,player,camera,canvas.height);drawTraversal();drawEncounter();if(encounter.extraction)ArcadeExtraction.draw(ctx,encounter.extraction);if(arrival?.visible)ArcadeArrival.draw(ctx,arrival,player);if(!encounter.extraction?.boarded&&!arrival?.active)drawPlayerWithMarker();ArcadeZombieForm.drawEffects(ctx,encounter);if(!encounter.extraction){ArcadePowers.draw(ctx,powers,player,encounter,{top:camera.y,bottom:camera.y+canvas.height});window.ArcadePowerFx?.draw(ctx,powers,player,encounter);}if(player.jetpack){const ratio=Math.max(0,Math.min(1,player.fuel/fuelMax)),x=player.x+20,y=player.y-48;ctx.fillStyle='#10232e';ctx.fillRect(x-2,y-12,40,21);ctx.fillStyle='#e5f5ee';ctx.font='7px monospace';ctx.fillText('GAS '+Math.ceil(ratio*100)+'%',x,y-3);ctx.fillStyle='#364953';ctx.fillRect(x,y,35,5);ctx.fillStyle=ratio<.2?'#ff7257':'#f1c553';ctx.fillRect(x,y,35*ratio,5);}
+    ctx.imageSmoothingEnabled=false;ctx.save();if(powers.shake>0)ctx.translate(Math.sin(powers.age*83)*powers.shake,Math.cos(powers.age*67)*powers.shake*.7);skyline();window.ArcadeMissionOneFx?.sky(ctx,camera,canvas.width,canvas.height,ambience.t,WORLD,ArcadeAmbience.cityPlacement(camera,WORLD.ground,canvas.height));ArcadeAmbience.background(ctx,ambience,camera,canvas.width,canvas.height);drawBuilding();window.ArcadeWorldLighting?.sky(ctx,camera,canvas.width,canvas.height,ambience.t);ctx.save();ctx.translate(-Math.round(camera.x),-Math.round(camera.y));drawPlatforms();
+    const decor=window.ArcadeSceneryAnimation;
+    if(decor?.next){
+      const bird=decor.next(ambience,'obra',ambience.t);
+      if(bird){
+        if(bird.anchor===null){
+          const beams=platforms.filter(b=>b.w>65&&b.y>camera.y+45&&b.y<camera.y+canvas.height-12&&b.x<camera.x+canvas.width-30&&b.x+b.w>camera.x+30);
+          const b=beams[Math.floor(bird.seed*beams.length)];
+          if(b){bird.anchor=Math.max(b.x+18,Math.min(b.x+b.w-18,camera.x+canvas.width*(.27+.46*bird.seed)));bird.base=b.y;}
+        }
+        if(bird.anchor!==null)decor.paint(ctx,bird.id,bird.frame,bird.anchor,bird.base,30,bird.alpha*.88);
+      }
+    }
+    if(WORLD.ground>camera.y&&WORLD.ground-55<camera.y+canvas.height)window.ArcadeSceneryAnimation?.draw(ctx,'mixer',ambience.t,333,WORLD.ground,58);
+    window.ArcadeWorldLighting?.fixtures(ctx,1,{platforms},camera,canvas.width,canvas.height,ambience.t);ArcadeAmbience.crane(ctx,ambience,building);ArcadeAmbience.workers(ctx,ambience);ArcadeEncounter.drawEnvironment(ctx,encounter,player,platforms);ArcadeChallenges.draw(ctx,challenges);drawPickups();drawFuelTanks();ArcadeCheckpoints.draw(ctx,checkpoints,false,player.anim,{left:camera.x,right:camera.x+canvas.width,top:camera.y,bottom:camera.y+canvas.height});ArcadeMedkits.draw(ctx,encounter.medkits,player,camera,canvas.height);drawTraversal();drawEncounter();if(encounter.extraction)ArcadeExtraction.draw(ctx,encounter.extraction);if(arrival?.visible)ArcadeArrival.draw(ctx,arrival,player);if(!encounter.extraction?.boarded&&!arrival?.active)drawPlayerWithMarker();if(player.fighterImpact)ArcadeAdvancedForms.drawFighterImpact(ctx,player);ArcadeZombieForm.drawEffects(ctx,encounter);if(!encounter.extraction){ArcadePowers.draw(ctx,powers,player,encounter,{top:camera.y,bottom:camera.y+canvas.height});window.ArcadePowerFx?.draw(ctx,powers,player,encounter);}if(player.jetpack){const ratio=Math.max(0,Math.min(1,player.fuel/fuelMax)),x=player.x+20,y=player.y-48;ctx.fillStyle='#10232e';ctx.fillRect(x-2,y-12,40,21);ctx.fillStyle='#e5f5ee';ctx.font='7px monospace';ctx.fillText('GAS '+Math.ceil(ratio*100)+'%',x,y-3);ctx.fillStyle='#364953';ctx.fillRect(x,y,35,5);ctx.fillStyle=ratio<.2?'#ff7257':'#f1c553';ctx.fillRect(x,y,35*ratio,5);}
     if(player.healGlow>0){ctx.save();ctx.globalAlpha=player.healGlow/.7;ctx.fillStyle='#c4ff84';const hy=player.y-58-(.7-player.healGlow)*24;ctx.fillRect(player.x-2,hy-5,4,12);ctx.fillRect(player.x-6,hy-1,12,4);ctx.restore();}
     if(player.hurt>0){const t=1-player.hurt/.32;ctx.save();ctx.globalAlpha=1-t;for(let i=0;i<10;i++){const a=i*Math.PI/5,d=8+t*30;ctx.fillStyle=i%2?'#ff805c':'#ffe5ab';ctx.fillRect(Math.round(player.hitX+Math.cos(a)*d),Math.round(player.hitY+Math.sin(a)*d),i%2?4:2,3);}ctx.restore();}ArcadeScore.draw(ctx,score);ctx.restore();
     window.ArcadeMissionOneFx?.draw(ctx,camera,canvas.width,canvas.height,{player,encounter,platforms,powers,time:ambience.t,arrival,checkpoint:checkpoints.active?checkpoint:null},WORLD);
     ArcadeAmbience.rain(ctx,ambience,camera,canvas.width,canvas.height);ctx.restore();
     if(player.hurt>0){ctx.strokeStyle='rgba(244,93,62,'+(player.hurt/.32*.65)+')';ctx.lineWidth=6;ctx.strokeRect(3,3,canvas.width-6,canvas.height-6);}
     presentation?.draw(ctx,canvas.width,canvas.height);
-    if(!updateHud)return;window.ArcadeMobile?.update(player,encounter,profile,powers,paused||encounter.dead||player.transform>0||!!encounter.extraction||!!arrival?.active);
+    if(!updateHud)return;ArcadeProgression.showLives(document,profile);window.ArcadeMobile?.update(player,encounter,profile,powers,paused||encounter.dead||player.transform>0||!!encounter.extraction||!!arrival?.active);
     document.getElementById('score-value').textContent=profile.wallet.toLocaleString('es-CO');
     characterWheel.update(player.form,encounter.won,paused||encounter.dead||!!encounter.extraction||!!arrival?.active||player.transform>0||!!player.burrow,player.zombieUnlocked,player.formCooldown,player.robotUnlocked,player.tankUnlocked,player.fighterUnlocked,player.heroUnlocked);
-    const inv=encounter.inventory,w=ArcadeArsenal.weapons[inv.selected],isWolf=player.form==='wolf',isZombie=player.form==='zombie',unarmed=player.form==='hero'||isWolf||isZombie||player.form==='tank'||player.form==='fighter';
-    ui['weapon-name'].textContent=isZombie?'ZOMBI · J Rayos / L Plasma':isWolf?(player.ram?'LOBO · Embestida':player.wolfAttack?'LOBO · '+(player.wolfAttack.stage===3?'REMATE':player.wolfAttack.kind==='kick'?'Patada':'Zarpazo')+' '+player.wolfAttack.stage+'/3':'LOBO · Zarpazos'):inv.selected+' · '+w.name;if(player.form==='robot')ui['weapon-name'].textContent='ROBOT · '+w.name+' + '+ArcadeArsenal.weapons[window.ArcadeRobotForm.secondary(inv)].name;ui['ammo-count'].textContent=unarmed||w.ammo===null?'∞':inv.ammo[inv.selected]||0;ui['ammo-unit'].textContent=isZombie?'RAYOS SIN MUNICIÓN':isWolf||w.ammo===null?'CUERPO A CUERPO':inv.selected===6?'MISILES':inv.selected===7?'FLECHAS':inv.selected===8?'VIROTES':inv.selected===9?'GRANADAS':'BALAS';
-    if(player.form==='hero'){ui['weapon-name'].textContent='CENTELLA · RAYOS OCULARES';ui['ammo-unit'].textContent='F · VUELO LIBRE';}
-    if(player.form==='tank'){ui['weapon-name'].textContent='MINI TANQUE · SÚPER CAÑÓN';ui['ammo-unit'].textContent='RECARGA AUTOMÁTICA';}if(player.form==='fighter'){ui['weapon-name'].textContent='LUCHADOR · COMBO J / PATADA L';ui['ammo-unit'].textContent='CUERPO A CUERPO';}
-    for(const button of ui['weapon-slots'].children){const slot=Number(button.dataset.slot),owned=inv.owned.includes(slot);button.disabled=paused||encounter.dead||!!arrival?.active||player.transform>0||unarmed||!owned;button.classList.toggle('locked',!owned);button.classList.toggle('selected',!unarmed&&slot===inv.selected);button.setAttribute('aria-pressed',String(!unarmed&&slot===inv.selected));const ammo=owned?(ArcadeArsenal.weapons[slot].ammo===null?'∞':String(inv.ammo[slot]||0)):'—';button.querySelector('.slot-ammo').textContent=ammo;button.setAttribute('aria-label',slot+' · '+ArcadeArsenal.weapons[slot].name+(owned?' · '+ammo+' disponibles':' · Sin recoger')+(unarmed?' · Vuelve a soldado con T':''));button.title=owned?(ArcadeArsenal.weapons[slot].ammo===null?'No necesita munición':(inv.ammo[slot]||0)+' restantes'):'Sin recoger';}
+    ArcadeMissionHud.updateLoadout(ui,player,encounter.inventory,paused||encounter.dead||!!arrival?.active||!!encounter.extraction||player.transform>0);
     ui.jumps.textContent=Array.from({length:player.maxJumps||2},(_,i)=>i<player.jumps?'○':'●').join(' ');ui.health.textContent=String(encounter.hp).replace('.',',')+' / '+encounter.maxHp;ui['health-fill'].style.width=(100*encounter.hp/encounter.maxHp)+'%';
     ui['health-fill'].parentElement.setAttribute('aria-valuenow',encounter.hp);ui['health-fill'].parentElement.setAttribute('aria-valuemax',encounter.maxHp);
     // Golpe recibido: sacudida breve del lienzo y destello del marcador de salud.
@@ -360,18 +404,123 @@
     const equipped=ArcadeProgression.catalog.find(c=>c.id===profile.equipped),wait=powers.cooldowns[profile.equipped]||0;document.getElementById('power-status').textContent=(equipped?'G · '+equipped.name+(wait?' · '+Math.ceil(wait)+' s':' · LISTO'):'G · Sin poder equipado')+' | ESC: tienda · Escudo '+(player.shield||0)+'/10';
     ui['hook-status'].textContent=(player.form||'soldier')!=='soldier'?'GANCHO · SOLO SOLDADO':player.jetpack?'SHIFT · TURBO / F · APAGAR':player.rope?'A/D: RECORRER · W: TREPAR · E/ESPACIO: SOLTAR':player.ladder?'ESCALANDO':findAnchor(player,anchors,platforms)?'E · AGARRARSE AL TECHO':'BUSCA UN TECHO';
 
-    ui.state.textContent=player.transform>0?'Transformándose en '+ArcadeZombieForm.label(player.form).toLowerCase():player.burrow?'Bajo tierra · ↑ / Espacio para salir':player.form==='zombie'?'Zombi · Resistencia ×2':player.jetpack?(player.jetBoost?'Jetpack · Turbo':mode.hovering?'Jetpack · Suspendido':'Jetpack · Volando'):player.transform>0?(player.form==='wolf'?'Transformándose en lobo':'Transformándose en soldado'):encounter.dead?'Sin salud':paused?'En pausa':player.ladder?'Escalando':player.rope?'Agarrado al techo':!player.grounded?(player.vy<0?'En el aire':'Descendiendo'):mode.sliding?'Deslizándose':mode.crouching?'Agachado':Math.abs(player.vx)>170?'Corriendo':Math.abs(player.vx)>15?'Caminando':'En reposo';
+    ui.state.textContent=player.transform>0?'Transformándose en '+ArcadeZombieForm.label(player.form).toLowerCase():player.burrow?'Bajo tierra · ↑ / Espacio para salir':player.heroFlight?'Centella · Volando':player.jetpack?(player.jetBoost?'Jetpack · Turbo':mode.hovering?'Jetpack · Suspendido':'Jetpack · Volando'):encounter.dead?'Sin salud':paused?'En pausa':player.ladder?'Escalando':player.rope?'Agarrado al techo':!player.grounded?(player.vy<0?'En el aire':'Descendiendo'):mode.sliding?'Deslizándose':mode.crouching?'Agachado':Math.abs(player.vx)>170?'Corriendo':Math.abs(player.vx)>15?'Caminando':'En reposo';
     if(arrival?.active)ui.state.textContent=arrival.phase==='reverse'?'Llegando en jeep':arrival.phase==='jump'?'Desembarco':'Preparando la misión';
 
   }
-  function loop(t){window.ArcadeDeveloperMode?.poll();window.ArcadeControls?.poll(t);const budget=frameBudget?.plan(t,{paused:paused||encounter.dead,hidden:document.hidden,width:canvas.width,height:canvas.height})||{render:true,hud:true};const elapsed=Math.min((t-last)/1000||0,.1);last=t;if(victory?.isActive()){sound.setRunning(!document.hidden);if(!document.hidden){victory.update(elapsed);sound.loop('helicopter',.22,0,.9);}accumulator=0;requestAnimationFrame(loop);return;}sound.setRunning(loaded&&!paused&&!encounter.dead&&!document.hidden&&!encounter.extraction?.done);if(loaded){if(!paused)ArcadeScore.tick(score,elapsed);if(!paused&&!encounter.dead){accumulator+=elapsed*(presentation?presentation.tick(elapsed):1);while(accumulator>=1/120){update(1/120);soundEvents.update({player,encounter,powers,ambience,arrival,fuelTanks,weather:{wind:.25+.75*(window.ArcadeMissionOneFx?.altitude(camera,canvas.height,WORLD)||0),rain:.55,distant:true}},1/120);accumulator-=1/120;if(paused||encounter.dead||victory?.isActive()){accumulator=0;break;}}}else accumulator=0;if(budget.render)render(budget.hud);}requestAnimationFrame(loop);}
+  function loop(t){window.ArcadeDeveloperMode?.poll();window.ArcadeControls?.poll(t);const budget=frameBudget?.plan(t,{paused:paused||encounter.dead,hidden:document.hidden,width:canvas.width,height:canvas.height})||{render:true,hud:true};const elapsed=Math.min((t-last)/1000||0,.1);last=t;if(victory?.isActive()){sound.setRunning(!document.hidden);if(!document.hidden){victory.update(elapsed);sound.loop('helicopter',.22,0,.9);}accumulator=0;requestAnimationFrame(loop);return;}sound.setRunning(loaded&&!paused&&!encounter.dead&&!document.hidden&&!encounter.extraction?.done);if(loaded){if(!paused)ArcadeScore.tick(score,elapsed);if(!paused&&!encounter.dead){accumulator+=elapsed*(presentation?presentation.tick(elapsed):1);while(accumulator>=1/120&&!encounter.dead){update(1/120);soundEvents.update({player,encounter,powers,ambience,arrival,fuelTanks,weather:{wind:.25+.75*(window.ArcadeMissionOneFx?.altitude(camera,canvas.height,WORLD)||0),rain:.55,distant:true}},1/120);accumulator-=1/120;if(paused||encounter.dead||victory?.isActive()){accumulator=0;break;}}}else accumulator=0;if(budget.render)render(budget.hud);}requestAnimationFrame(loop);}
   let loadPromise;
   function loadLevel(){if(loaded)return Promise.resolve(true);if(loadPromise)return loadPromise;
-  window.ArcadeLoading?.begin(50,loadLevel);
-  loadPromise=Promise.all([window.ArcadeAdvancedForms?.load(),window.ArcadeRobotForm?.load(),imageLoad(zombieCast,'assets/sprites/zombi-disparo-direcciones-v1.png'),imageLoad(jetMk2,'assets/sprites/jetpack-mk2-v1.png'),imageLoad(zombieRun,'assets/sprites/zombi-carrera-v2.png'),imageLoad(shockSheet,'assets/sprites/electrocucion-v1.png'),imageLoad(checkpointPc,'assets/sprites/checkpoint-pc-v1.png'),imageLoad(wolfJump,'assets/sprites/lobo-salto-carrera-v1.png'),imageLoad(formTransition,'assets/sprites/transformaciones-jugador-v3.png'),imageLoad(zombieIdle,'assets/sprites/zombi-soldado-reposo-v1.png'),imageLoad(zombieSoldier,'assets/sprites/zombi-soldado-v1.png'),imageLoad(zombieSoldierExtra,'assets/sprites/zombi-soldado-extra-v1.png'),imageLoad(zombiePlayer,'assets/sprites/zombi-electrico-v1.png'),imageLoad(zombieExtra,'assets/sprites/zombi-electrico-extra-v1.png'),imageLoad(wolfActions,'assets/sprites/lobo-reposo-patadas-v2.png'),imageLoad(wolfCombos,'assets/sprites/lobo-combos-v1.png'),imageLoad(wolfRam,'assets/sprites/lobo-cabezazo-v1.png'),imageLoad(specialistImages.ramHit,'assets/sprites/enemigos-embestida-v1.png'),imageLoad(wolfWalk,'assets/sprites/lobo-caminata-v2.png'),imageLoad(soldierCrouch,'assets/sprites/soldado-agachado-pasos-v1.png'),imageLoad(specialistImages.turret,'assets/sprites/enemigo-torreta-v1.png'),imageLoad(specialistImages.knife,'assets/sprites/enemigo-cuchillo-v1.png'),imageLoad(impactSheet,'assets/sprites/explosion-impacto-v1.png'),imageLoad(wolfSprint,'assets/sprites/lobo-carrera-cuatro-patas-v1.png'),imageLoad(transformationSheet,'assets/sprites/soldado-transformacion-v2.png'),imageLoad(meleeSoldier,'assets/sprites/soldado-cuchillo-hacha-v1.png'),imageLoad(soldierDismount,'assets/sprites/soldado-desembarco-v1.png'),imageLoad(jeepArrival,'assets/sprites/jeep-llegada-v1.png'),imageLoad(workerRun,'assets/sprites/trabajadores-carrera-v4.png'),imageLoad(whiteDeath,'assets/sprites/lobo-blanco-muerte-v1.png'),imageLoad(cityBackdrop,'assets/worlds/ciudad-fondo-v2.png'),imageLoad(workerSheet,'assets/sprites/trabajadores-descanso-huida-v3.png'),imageLoad(ambienceSheet,'assets/sprites/ambiente-animado-v1.png'),imageLoad(orbitalSheet,'assets/sprites/orbital-superrayo-v1.png'),imageLoad(helicopterDoor,'assets/sprites/helicoptero-puerta-cerrada-v1.png'),imageLoad(zombieWolf,'assets/sprites/lobo-zombie-jefe-v1.png'),imageLoad(powerSheet,'assets/sprites/poderes-v1.png'),imageLoad(wolfClimb,'assets/sprites/lobo-escalada-v1.png'),imageLoad(soldierWalk,'assets/sprites/soldado-pasos-v3.png'),imageLoad(helicopter,'assets/sprites/helicoptero-rescate-v3.png'),imageLoad(soldierClimb,'assets/sprites/soldado-escalada-v2.png'),imageLoad(blackWolf,'assets/sprites/lobo-negro-jefe-v1.png'),imageLoad(soldierSlide,'assets/sprites/soldado-deslizamiento-v1.png'),imageLoad(soldierV2,'assets/sprites/soldado-v2.png'),imageLoad(enemySoldier,'assets/sprites/soldado-enemigo-v1.png'),imageLoad(kicks,'assets/sprites/lobo-patadas-v1.png'),imageLoad(bows,'assets/sprites/soldado-escudo-arco-ballesta-v1.png'),imageLoad(soldier,'assets/sprites/soldado-v1.png'),imageLoad(building,'assets/worlds/mundo-01-edificio-v1.png'),imageLoad(mobility,'assets/sprites/soldado-movilidad-v1.png'),imageLoad(weapons,'assets/sprites/soldado-armas-v1.png'),imageLoad(wolf,'assets/sprites/soldado-lobo-v1.png')]).then(()=>{ArcadeJetpackRenderer.setSheet(prepareWhiteDeath(jetMk2));ArcadeZombieForm.setRunSheet(prepareWhiteDeath(zombieRun));ArcadeZombieForm.setShockSheet(prepareWhiteDeath(shockSheet));ArcadeZombieForm.setCastSheet(prepareWhiteDeath(zombieCast));ArcadeCheckpoints.setSheet(prepareWhiteDeath(checkpointPc));window.ArcadeFormTransition?.setSheet(prepareWhiteDeath(formTransition));specialistImages.turret=prepareWhiteDeath(specialistImages.turret);specialistImages.knife=prepareWhiteDeath(specialistImages.knife);ArcadeImpact.setSheet(impactSheet);ArcadeArrival.setSprites(jeepArrival,JEEP_ARRIVAL_FRAMES,soldierV2,SOLDIER_V2_FRAMES,SOLDIER_V2_SCALE);ArcadeArrival.setDismountSprites(soldierDismount,SOLDIER_DISMOUNT_FRAMES,SOLDIER_DISMOUNT_SCALE);if(!savedMission&&player.y===WORLD.ground){arrival=ArcadeArrival.create(player);opening={age:0};}wolfJump.texture=prepareWhiteDeath(wolfJump);wolfWalk.texture=prepareWhiteDeath(wolfWalk);wolfActions.texture=prepareWhiteDeath(wolfActions);soldierCrouch.texture=prepareWhiteDeath(soldierCrouch);meleeSoldier.texture=prepareWhiteDeath(meleeSoldier);whiteDeath.texture=prepareWhiteDeath(whiteDeath);ArcadeAmbience.setSpriteSheet(ambienceSheet);ArcadeAmbience.setWorkerSheet(workerSheet,WORKER_FRAMES);ArcadeAmbience.setWorkerRunSheet(workerRun,WORKER_RUN_FRAMES,WORKER_RUN_SCALE);ArcadePowerSprites.setSpriteSheet(powerSheet);ArcadePowerSprites.setOrbitalSheet(orbitalSheet);ArcadeExtraction.setSpriteSheet(helicopter,HELICOPTER_FRAMES);ArcadeExtraction.setDoorSprite(helicopterDoor);ArcadeExtraction.setPassengerSprites(soldierV2,SOLDIER_V2_FRAMES[0][0],wolf,ACTION_FRAMES.wolf[0][7]);ArcadeZombieForm.setSheet(prepareWhiteDeath(zombiePlayer));ArcadeZombieForm.setExtra(prepareWhiteDeath(zombieExtra));ArcadeZombieForm.setPlayerSheets(prepareWhiteDeath(zombieSoldier),prepareWhiteDeath(zombieSoldierExtra));ArcadeZombieForm.setIdleSheet(prepareWhiteDeath(zombieIdle));ArcadeExtraction.setPassengerSprite('zombie',ArcadeZombieForm.icon(),68);characterWheel.setSprites(soldierV2,SOLDIER_V2_FRAMES[0][0],wolf,ACTION_FRAMES.wolf[0][7]);window.ArcadeFormTransition?.setEndpoint('wolf',wolfActions.texture,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);cleanBuilding=ArcadeBuildingRenderer.cleanArtwork(building);loaded=true;window.ArcadeLoading?.finish();ui.overlay.hidden=true;resize(true);if(mainMenu)mainMenu.ready({autoPlay:new URLSearchParams(location.search).get('entry')==='select'});else{paused=false;canvas.focus({preventScroll:true});}}).catch(error=>{window.ArcadeLoading?.fail();if(mainMenu)mainMenu.fail();else overlay('No pudimos cargar la misión.','Recarga la página para volver a intentarlo.');console.error(error);loadPromise=null;return false;});return loadPromise;}
+  const useZombie=player.zombieUnlocked||player.form==='zombie';
+  const zombieArt=useZombie?[
+    [zombieCast,'assets/sprites/zombi-disparo-direcciones-v1.png'],
+    [zombieRun,'assets/sprites/zombi-carrera-v2.png'],
+    [zombieIdle,'assets/sprites/zombi-soldado-reposo-v1.png'],
+    [zombieSoldier,'assets/sprites/zombi-soldado-v1.png'],
+    [zombieSoldierExtra,'assets/sprites/zombi-soldado-extra-v1.png'],
+    [zombiePlayer,'assets/sprites/zombi-electrico-v1.png'],
+    [zombieExtra,'assets/sprites/zombi-electrico-extra-v1.png']
+  ]:[];
+  const levelArt=[
+    [jetMk2,'assets/sprites/jetpack-mk2-v1.png'],
+    [shockSheet,'assets/sprites/electrocucion-v1.png'],
+    [checkpointPc,'assets/sprites/checkpoint-pc-v1.png'],
+    [wolfJump,'assets/sprites/lobo-salto-carrera-v1.png'],
+    [formTransition,'assets/sprites/transformaciones-jugador-v3.png'],
+    [wolfActions,'assets/sprites/lobo-reposo-patadas-v2.png'],
+    [wolfCombos,'assets/sprites/lobo-combos-v1.png'],
+    [wolfRam,'assets/sprites/lobo-cabezazo-v1.png'],
+    [specialistImages.ramHit,'assets/sprites/enemigos-embestida-v1.png'],
+    [wolfWalk,'assets/sprites/lobo-caminata-v2.png'],
+    [soldierCrouch,'assets/sprites/soldado-agachado-pasos-v1.png'],
+    [specialistImages.turret,'assets/sprites/enemigo-torreta-v1.png'],
+    [specialistImages.knife,'assets/sprites/enemigo-cuchillo-v1.png'],
+    [impactSheet,'assets/sprites/explosion-impacto-v1.png'],
+    [wolfSprint,'assets/sprites/lobo-carrera-cuatro-patas-v1.png'],
+    [transformationSheet,'assets/sprites/soldado-transformacion-v2.png'],
+    [meleeSoldier,'assets/sprites/soldado-cuchillo-hacha-v1.png'],
+    [soldierDismount,'assets/sprites/soldado-desembarco-v1.png'],
+    [jeepArrival,'assets/sprites/jeep-llegada-v1.png'],
+    [workerRun,'assets/sprites/trabajadores-carrera-v4.png'],
+    [whiteDeath,'assets/sprites/lobo-blanco-muerte-v1.png'],
+    [cityBackdrop,'assets/worlds/ciudad-fondo-v2.png'],
+    [workerSheet,'assets/sprites/trabajadores-descanso-huida-v3.png'],
+    [ambienceSheet,'assets/sprites/ambiente-animado-v1.png'],
+    [orbitalSheet,'assets/sprites/orbital-superrayo-v1.png'],
+    [helicopterDoor,'assets/sprites/helicoptero-puerta-cerrada-v1.png'],
+    [zombieWolf,'assets/sprites/lobo-zombie-jefe-v1.png'],
+    [powerSheet,'assets/sprites/poderes-v1.png'],
+    [wolfClimb,'assets/sprites/lobo-escalada-v1.png'],
+    [soldierWalk,'assets/sprites/soldado-pasos-v3.png'],
+    [helicopter,'assets/sprites/helicoptero-rescate-v3.png'],
+    [soldierClimb,'assets/sprites/soldado-escalada-v2.png'],
+    [blackWolf,'assets/sprites/lobo-negro-jefe-v1.png'],
+    [soldierSlide,'assets/sprites/soldado-deslizamiento-v1.png'],
+    [soldierV2,'assets/sprites/soldado-v2.png'],
+    [enemySoldier,'assets/sprites/soldado-enemigo-v1.png'],
+    [kicks,'assets/sprites/lobo-patadas-v1.png'],
+    [bows,'assets/sprites/soldado-escudo-arco-ballesta-v1.png'],
+    [soldier,'assets/sprites/soldado-v1.png'],
+    [building,'assets/worlds/mundo-01-edificio-v1.png'],
+    [mobility,'assets/sprites/soldado-movilidad-v1.png'],
+    [weapons,'assets/sprites/soldado-armas-v1.png'],
+    [wolf,'assets/sprites/soldado-lobo-v1.png'],
+    ...zombieArt
+  ];
+  window.ArcadeLoading?.begin(levelArt.length,loadLevel);
+  loadPromise=Promise.all([window.ArcadeAdvancedForms?.load(player),(player.robotUnlocked||player.form==='robot')?window.ArcadeRobotForm?.load():null,...levelArt.map(([image,path])=>imageLoad(image,path))]).then(()=>{
+    ArcadeJetpackRenderer.setSheet(prepareWhiteDeath(jetMk2));
+    ArcadeZombieForm.setShockSheet(prepareWhiteDeath(shockSheet));
+    ArcadeCheckpoints.setSheet(prepareWhiteDeath(checkpointPc));
+    window.ArcadeFormTransition?.setSheet(prepareWhiteDeath(formTransition));
+    specialistImages.turret=prepareWhiteDeath(specialistImages.turret);
+    specialistImages.knife=prepareWhiteDeath(specialistImages.knife);
+    ArcadeImpact.setSheet(impactSheet);
+    ArcadeArrival.setSprites(jeepArrival,JEEP_ARRIVAL_FRAMES,soldierV2,SOLDIER_V2_FRAMES,SOLDIER_V2_SCALE);
+    ArcadeArrival.setDismountSprites(soldierDismount,SOLDIER_DISMOUNT_FRAMES,SOLDIER_DISMOUNT_SCALE);
+    if(!savedMission&&player.y===WORLD.ground){arrival=ArcadeArrival.create(player);
+    opening={age:0};}wolfJump.texture=prepareWhiteDeath(wolfJump);
+    wolfWalk.texture=prepareWhiteDeath(wolfWalk);
+    wolfActions.texture=prepareWhiteDeath(wolfActions);
+    soldierCrouch.texture=prepareWhiteDeath(soldierCrouch);
+    meleeSoldier.texture=prepareWhiteDeath(meleeSoldier);
+    whiteDeath.texture=prepareWhiteDeath(whiteDeath);
+    ArcadeAmbience.setSpriteSheet(ambienceSheet);
+    ArcadeAmbience.setWorkerSheet(workerSheet,WORKER_FRAMES);
+    ArcadeAmbience.setWorkerRunSheet(workerRun,WORKER_RUN_FRAMES,WORKER_RUN_SCALE);
+    ArcadePowerSprites.setSpriteSheet(powerSheet);
+    ArcadePowerSprites.setOrbitalSheet(orbitalSheet);
+    ArcadeExtraction.setSpriteSheet(helicopter,HELICOPTER_FRAMES);
+    ArcadeExtraction.setDoorSprite(helicopterDoor);
+    ArcadeExtraction.setPassengerSprites(soldierV2,SOLDIER_V2_FRAMES[0][0],wolf,ACTION_FRAMES.wolf[0][7]);
+    if(useZombie){
+      ArcadeZombieForm.setRunSheet(prepareWhiteDeath(zombieRun));
+      ArcadeZombieForm.setCastSheet(prepareWhiteDeath(zombieCast));
+      ArcadeZombieForm.setSheet(prepareWhiteDeath(zombiePlayer));
+      ArcadeZombieForm.setExtra(prepareWhiteDeath(zombieExtra));
+      ArcadeZombieForm.setPlayerSheets(prepareWhiteDeath(zombieSoldier),prepareWhiteDeath(zombieSoldierExtra));
+      ArcadeZombieForm.setIdleSheet(prepareWhiteDeath(zombieIdle));
+    }
+    ArcadeExtraction.setPassengerSprite('zombie',ArcadeZombieForm.icon(),68);
+    ArcadeExtraction.setPassengerSprite('robot',ArcadeRobotForm.icon(),54);
+    for(const [form,height] of [['fighter',57],['hero',54],['tank',42]])ArcadeExtraction.setPassengerSprite(form,ArcadeAdvancedForms.icon(form),height);
+    characterWheel.setSprites(soldierV2,SOLDIER_V2_FRAMES[0][0],wolf,ACTION_FRAMES.wolf[0][7]);
+    window.ArcadeFormTransition?.setEndpoint('wolf',wolfActions.texture,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);
+    cleanBuilding=ArcadeBuildingRenderer.cleanArtwork(building);
+    loaded=true;
+    window.ArcadeLoading?.finish();
+    ui.overlay.hidden=true;
+    resize(true);
+    if(mainMenu)mainMenu.ready({autoPlay:freshMission});
+    else{paused=false;
+    canvas.focus({preventScroll:true});}
+    if(freshMission){const query=new URLSearchParams(location.search);
+    query.delete('entry');
+    window.history?.replaceState(null,'','index.html'+(query.size?'?'+query:'')+(location.hash||''));}
+  }).catch(error=>{window.ArcadeLoading?.fail();if(mainMenu)mainMenu.fail();else overlay('No pudimos cargar la misión.','Recarga la página para volver a intentarlo.');console.error(error);loadPromise=null;return false;});return loadPromise;}
   if(mainMenu?.defer)mainMenu.defer(loadLevel);
   if(new URLSearchParams(location.search).has('entry')||!mainMenu?.defer)loadLevel();
-  if(new URLSearchParams(location.search).has('debug'))window.__game=ArcadeMissionKit.debug({ctx,images:{soldierV2,soldierWalk,soldierCrouch,soldierSlide,soldierClimb,meleeSoldier,wolf,wolfWalk,wolfSprint,wolfJump,wolfActions,wolfCombos,wolfRam,wolfClimb,enemySoldier,kicks,blackWolf,zombieWolf,whiteDeath,workerSheet,workerRun,helicopter,jeepArrival,soldierDismount,specialistImages},get player(){return player;},get encounter(){return encounter;},get mode(){return mode;},get arrival(){return arrival;},get paused(){return paused;},get powers(){return powers;},profile,camera,platforms,ladders,keys,canvas},{step(dt){presentation?.tick(dt);update(dt);},dead:()=>encounter.dead,redraw(){render(true);}});
+  if(new URLSearchParams(location.search).has('debug'))window.__game=ArcadeMissionKit.debug({ctx,images:{soldierV2,soldierWalk,soldierCrouch,soldierSlide,soldierClimb,meleeSoldier,wolf,wolfWalk,wolfSprint,wolfJump,wolfActions,wolfCombos,wolfRam,wolfClimb,enemySoldier,kicks,blackWolf,zombieWolf,whiteDeath,workerSheet,workerRun,helicopter,jeepArrival,soldierDismount,specialistImages},get score(){return score;},get player(){return player;},get encounter(){return encounter;},get mode(){return mode;},get arrival(){return arrival;},get paused(){return paused;},get powers(){return powers;},profile,camera,platforms,ladders,keys,canvas},{step(dt){presentation?.tick(dt);update(dt);},dead:()=>encounter.dead,redraw(){render(true);}});
   requestAnimationFrame(loop);
 })();
 

@@ -1,5 +1,6 @@
 (function(root){
   'use strict';
+  const Grenades=typeof module!=='undefined'&&module.exports?require('./grenades'):root.ArcadeGrenades;
   const P=typeof module!=='undefined'&&module.exports?require('./physics.js'):root.ArcadePhysics;
   const Z=typeof module!=='undefined'&&module.exports?require('./cemetery-zombies.js'):root.ArcadeCemeteryZombies;
   const Bat=typeof module!=='undefined'&&module.exports?require('./cemetery-bat.js'):root.ArcadeCemeteryBat;
@@ -16,15 +17,17 @@
       const deck=platforms.filter(s=>s.kind==='deck'&&s.floor===floor).sort((a,b)=>a.x-b.x)[0];
       spawns.push({x:Math.round(deck.x+deck.w*.4),y:deck.y,floor,facing:1});
     }
-    return spawns.map(createSoldier);
+    return spawns.map((spawn,i)=>createSoldier({...spawn,grenadier:[1,4,7].includes(i)},i));
   }
   function createSoldier(spawn,id){return Object.assign(P.createPlayer(),{facing:-1,kind:'rifle'},spawn,{id,memory:0,lastKnown:null,hp:3,maxHp:3,shot:1.4+id*.2,jumpWait:0,flash:0,hit:0,death:0,alert:false,attackAge:null,strikePending:false,burst:0,runCycle:0});}
   function contact(n,p,platforms,segmentHit){if(p.cloak>0)return false;
-    if(n.hp<=0||n.ramHit||n.dropRoute||n.dropRecovery>0)return false;
+    if(n.hp<=0||n.fighterStagger>0||n.ramHit||n.dropRoute||n.dropRecovery>0)return false;
     if(n.kind==='mallGiant'||n.kind==='alienBoss'||n.kind==='cityBoss')return false;
     if(n.kind==='mecha')return n.active&&(Math.abs(n.x-p.x)<64&&Math.abs(n.y-p.y)<145||n.waves.some(w=>Math.abs(w.x-p.x)<23&&p.y>n.y-24&&p.y<=n.y+8));
     if(n.kind==='bat')return Bat.contact(n,p);
     if(n.kind==='zombie')return n.phase==='active'&&Math.abs(n.x-p.x)<24&&Math.abs(n.y-p.y)<38&&!platforms.some(s=>segmentHit(n.x,n.y-25,p.x-n.x,p.y-n.y,{x:s.x,y:s.y,w:s.w,h:s.thickness||12,terrain:s.terrain})!==null);
+    // A fighter can step inside a gunner's guard. Its shots still hit normally.
+    if(p.form==='fighter'&&['rifle','turret','warden','jetSoldier','alien','alienElite','alienPilot','cityAssault','cityGrenadier'].includes(n.kind))return false;
     if(n.kind!=='knife')return Math.abs(n.x-p.x)<25&&Math.abs(n.y-p.y)<42;
     if(!n.strikePending)return false;n.strikePending=false;
     return Math.abs(p.x-n.x)<60&&Math.abs(p.y-n.y)<38&&(p.x-n.x)*n.facing>=-8&&!platforms.some(s=>segmentHit(n.x,n.y-25,p.x-n.x,p.y-n.y,{x:s.x,y:s.y,w:s.w,h:s.thickness||12,terrain:s.terrain})!==null);
@@ -133,10 +136,32 @@
     return best;
   }
   function update(list,p,elapsed,platforms,bullets,segmentHit,noises=[],view){
+    let preparing=list.find(n=>n.hp>0&&n.throwAge!=null);
     for(const n of list){
-      if(p.cloak>0&&n.hp>0&&!n.ramHit){if(n.kind==='mecha'||n.kind==='stormZombie')n.hit=Math.max(0,n.hit-elapsed);n.alert=false;n.memory=0;n.strikePending=false;n.flash=0;n.vx=0;n.shot=Math.max(n.shot||0,.3);continue;}
+      if(n.scriptedAI)continue;
+      if(n.fighterStagger>0&&n.hp>0){
+        const step=Math.min(n.fighterStagger,elapsed);
+        n.fighterStagger-=step;n.hit=Math.max(0,(n.hit||0)-elapsed);
+        // Keep ground support and walls authoritative during the brief recoil.
+        if(!['jetSoldier','alienPilot','bat'].includes(n.kind)&&n.grounded!==undefined){
+          n.vx=n.fighterPush;P.step(n,{},step,platforms);
+        }
+        continue;
+      }
+      if(p.cloak>0&&n.hp>0&&!n.ramHit){n.throwAge=null;if(n.kind==='mecha'||n.kind==='stormZombie')n.hit=Math.max(0,n.hit-elapsed);n.alert=false;n.memory=0;n.strikePending=false;n.flash=0;n.vx=0;n.shot=Math.max(n.shot||0,.3);continue;}
       const dt=elapsed*(n.sticky>0?.45:1);
       if(n.kind==='mallGiant'||n.kind==='alienBoss'||n.kind==='cityBoss')continue;
+      if(n.enteringFromRear&&Number.isFinite(view?.left)&&n.hp>0&&!n.ramHit&&!n.frozen&&!n.hit){
+        if(n.x<view.left+38){
+          const speed=Math.max(175,(p.vx||0)+95);
+          n.x+=speed*dt;n.vx=speed;n.facing=1;n.anim=(n.anim||0)+dt;n.runCycle=(n.runCycle||0)+speed*dt/58;
+          if(n.kind==='jetSoldier')n.y=n.homeY+Math.sin(n.anim*2.3)*15;
+          else{const floor=platforms.find(pl=>pl.kind==='ground'&&n.x>=pl.x&&n.x<=pl.x+pl.w);if(floor)n.y=P.surfaceY(floor,n.x);}
+          continue;
+        }
+        n.enteringFromRear=false;
+      }
+      if(n.grenadier&&(!preparing||preparing===n)&&Grenades.soldier(n,p,dt,bullets,view)){preparing=n;continue;}
       if((typeof module!=='undefined'&&module.exports?require('./expansion-enemies'):root.ArcadeExpansionEnemies)?.update(n,p,dt,platforms,bullets))continue;
         if(n.kind==='mecha'){if(n.frozen>0&&n.hp>0){n.hit=Math.max(0,n.hit-dt);n.frozen=Math.max(0,n.frozen-dt);continue;}(typeof module!=='undefined'&&module.exports?require('./air-mecha'):root.ArcadeAirMecha).update(n,p,dt,bullets,view);continue;}
       n.strikePending=false;

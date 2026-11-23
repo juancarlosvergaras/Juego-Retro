@@ -27,8 +27,8 @@
   }
   function landingMark(c,x,r,pulse){
    c.save();c.translate(Math.round(x),root.ArcadeSeaWar.FLOOR);
-   c.strokeStyle='#7eeaff';c.globalAlpha=.50+pulse*.35;c.setLineDash([5,4]);c.lineWidth=2;
-   c.beginPath();c.ellipse(0,-2,r,6,0,0,Math.PI*2);c.stroke();c.restore();
+   c.fillStyle='#e3343430';c.strokeStyle='#ff6256';c.globalAlpha=.65+pulse*.35;c.setLineDash([5,4]);c.lineWidth=2;
+   c.beginPath();c.ellipse(0,-2,r,8,0,0,Math.PI*2);c.fill();c.stroke();c.restore();
   }
   function grenade(c,h){
    const fx=root.ArcadeBossAttackSprites,deck=root.ArcadeSeaWar.FLOOR;
@@ -75,13 +75,30 @@
     for(const n of s.enemies)if(visible(n.x,n.y)&&n.deadAge<.7){c.save();if(n.hit>0)c.filter='brightness(1.7)';if(n.hp<=0)c.globalAlpha=Math.max(0,1-n.deadAge/.7);if(n.type==='shark'||n.type==='squid')sprites.predator(c,n);else sprites.enemy(c,n);c.restore();}
    }else boss(c,s);
    for(const pool of s.pools){c.globalAlpha=Math.min(.7,pool.life);c.fillStyle='#67dd8b';for(let i=0;i<10;i++)c.fillRect(pool.x-50+i*10,pool.y-6+Math.sin(i+s.time*4)*2,12,6);c.globalAlpha=1;}
+   for(const g of s.grenades||[])if(visible(g.tx,g.ty,700)){
+    const reef=root.ArcadeSeaWar.reef,left=reef.floorBelow(g.tx-3,g.ty-12),right=reef.floorBelow(g.tx+3,g.ty-12);
+    const slope=s.inside||Math.abs(right-left)>9?0:(right-left)/6;
+    root.ArcadeGrenades.draw(c,g,0,true,slope);
+   }
    for(const h of s.hazards)grenade(c,h);
-   if(s.ending<6){c.save();if(s.inside&&s.ending<0)root.ArcadePhysics.jumpTurn.apply(c,p);player(c,s,p);c.restore();}
+   const launching=s.intro<5&&!s.inside&&p.tankUnlocked&&p.form==='tank';
+   if(launching){
+    const u=Math.max(0,Math.min(1,(s.intro-2.65)/1.7)),ease=u*u*(3-2*u);
+    const x=p.x+(s.camera.x+480-p.x)*(1-ease),y=p.y-30+(s.camera.y+291-(p.y-30))*(1-ease);
+    if(u<1){
+     c.save();c.translate(x,y);c.scale(p.facing||1,1);
+     root.ArcadeAdvancedForms.morph(c,0,0,(s.intro-.35)/2.2,170+(96-170)*ease);c.restore();
+    }else player(c,s,p);
+   }else if(s.ending<6){c.save();if(p.respawnProtection>0)c.globalAlpha*=root.ArcadeProgression.respawnAlpha(p);if(s.inside&&s.ending<0)root.ArcadePhysics.jumpTurn.apply(c,p);player(c,s,p);c.restore();}
    for(const b of s.bullets){if(root.ArcadeBossAttackSprites?.projectile(c,b,s.time))continue;c.save();c.translate(Math.round(b.x),Math.round(b.y));c.rotate(Math.atan2(b.vy,b.vx));c.fillStyle=b.plasma?'#8bf396':b.enemy?'#ff705d':'#c4fcff';c.fillRect(-8,-2,b.slot===6||b.type==='missile'||b.type==='torpedo'?22:11,b.superCannon?7:4);c.fillStyle='#fff5d0';c.fillRect(5,-1,4,2);if(!s.inside){c.strokeStyle='#a4f4ff66';for(let j=1;j<5&&10+j*9<=(b.waterDistance??Infinity);j++)c.strokeRect(-10-j*9,-2+j%2,3,3);}c.restore();}
-   effects(c,s,p);if(powers&&s.ending<0)root.ArcadePowers.draw(c,powers,p,e,{top:s.camera.y,bottom:s.camera.y+540});c.restore();
-   if(s.intro<5){if(p.tankUnlocked)root.ArcadeAdvancedForms.morph(c,480,350,Math.min(1,(s.intro-1)/2),170);
+   if(p.fighterImpact&&s.ending<0)root.ArcadeAdvancedForms.drawFighterImpact(c,p);
+   effects(c,s,p);if(powers&&s.ending<0&&s.intro>=5){
+    const underwaterShield=s.inside?null:sprites.shield;
+    root.ArcadePowers.draw(c,powers,p,e,{top:s.camera.y,bottom:s.camera.y+540,drawShield:underwaterShield});
+   }c.restore();
+   if(s.intro<5){
     // Se llega aquí con o sin el mini tanque de la misión 04: el rótulo solo lo nombra si existe.
-    title(c,'MISIÓN 05','BAJO EL ABISMO',s.intro<2?(p.tankUnlocked?'El mini tanque sella su blindaje.':'Equipo de buceo sellado. Empieza el descenso.'):(p.tankUnlocked?'Mini submarino listo':'Equipo de buceo listo')+' · Flechas: nadar · J: atacar · Shift: impulso');}
+    title(c,'MISIÓN 05','BAJO EL ABISMO',s.intro<2?(launching?'El mini tanque sella su blindaje.':'Equipo de buceo sellado. Empieza el descenso.'):(launching?'Mini submarino listo':'Equipo de buceo listo')+' · Flechas: nadar · J: atacar · Shift: impulso');}
    if(s.airlock>=0){c.fillStyle='#081825';c.globalAlpha=Math.sin(s.airlock/4*Math.PI)*.8;c.fillRect(0,0,960,540);c.globalAlpha=1;title(c,'SUBMARINO EN LAS PROFUNDIDADES','CÁMARA DE DESCOMPRESIÓN','Sellando la esclusa · Recuperando la forma terrestre');}
    if(s.ending>=0){if(s.ending>=6){const t=(s.ending-6)/8;root.ArcadeAdvancedForms.draw(c,{...p,form:'fighter',x:480,y:root.ArcadeSeaWar.FLOOR,anim:s.time,vx:0,grounded:true,facing:1,idleTime:9,transform:0,hurt:0,fighterPose:0,swimming:false,onMotorcycle:false,victoryAge:s.ending-6});for(let i=0;i<20;i++){c.fillStyle=i%2?'#78efe3':'#f9d08f';c.fillRect(480+Math.sin(i*2.4+t)*80,300+Math.cos(i*2.4+t)*85,3,3);}}title(c,'MISIÓN 05 COMPLETADA',s.ending<6?'EL CAPITÁN HA CAÍDO':'LUCHADOR DESBLOQUEADO',s.ending<6?'Su carga ya no llegará al Consorcio.':'J: combo de puños · L: patadas · Disponible en todas las misiones');}
    c.restore();

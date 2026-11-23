@@ -8,7 +8,7 @@
     {text:'Cap baja primero. Siempre baja primero.'},
     {text:''}
   ];
-  // Tras la cinemática de cierre (mission-endings.js): la caída y los dos rastros.
+  // Tras la cinemática de cierre (mission-endings.js): la caída y el rumbo al puerto.
   const outro=[
     {text:'Sin su guardián, el portaaviones del Consorcio pierde el rumbo. Y la altura.'},
     {text:'En la bodega queda una carta náutica. Las coordenadas señalan un submarino frente al puerto.'}

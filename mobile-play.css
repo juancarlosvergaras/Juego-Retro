@@ -8,6 +8,7 @@
 .mobile-play .game-card{position:relative;height:100%;display:flex;flex-direction:column;border:0;border-radius:0;box-shadow:none;overflow:hidden}
 .mobile-play .game-toolbar{flex:0 0 44px;height:44px;padding:0 10px;gap:6px;letter-spacing:0;flex-wrap:nowrap}
 .mobile-play .game-toolbar>span:first-child,.mobile-play .profile-badge,.mobile-play .game-toolbar #sound-toggle,.mobile-play .game-toolbar kbd{display:none}
+.mobile-play .game-toolbar .arcade-lives{display:none}
 .mobile-play .game-toolbar .score-hud{margin:0 auto 0 0;font-size:9px}.mobile-play .score-hud strong{font-size:14px}
 .mobile-play .game-toolbar button{height:44px;min-width:48px;font-size:13px;border:1px solid #516473;border-radius:6px}
 .mobile-play .mobile-fullscreen{display:block;font-size:24px!important}
@@ -19,7 +20,7 @@
 .mobile-play .mobile-hud{display:grid;grid-template-columns:64px minmax(0,1fr) 76px;gap:9px;padding:5px 12px;flex:0 0 44px;height:44px;background:#16252e;border-block:1px solid #35454f;align-items:center}
 .mobile-hud strong,.mobile-hud small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mobile-hud strong{font-size:12px;color:#ffe0a0}.mobile-hud small{font-size:9px;color:#afc2c8;line-height:14px}
-.mobile-life{position:relative;padding-top:1px}.mobile-life small{display:none}.mobile-life strong{color:#a7e7b4}
+.mobile-life{display:grid;grid-template-columns:auto minmax(10px,1fr);align-items:center;column-gap:4px}.mobile-life .mobile-lives{grid-column:1/-1;line-height:11px}.mobile-life strong{color:#a7e7b4}
 .mobile-life progress{display:block;width:100%;height:6px;accent-color:#98d8a5;margin-top:3px}
 .mobile-resources{text-align:right}
 .mobile-play .mobile-controls{display:grid;grid-template-columns:122px 1fr;grid-template-rows:118px 48px;gap:6px 12px;align-items:center;flex:0 0 184px;padding:6px 12px;background:#111d26;border-top:1px solid #425660;touch-action:none;user-select:none;-webkit-user-select:none}

@@ -328,7 +328,45 @@
       layer:{voice:'arp',level:1.1,bars:[x4('F#3 C#4 F#3 C#4'),x4('D3 A3 D3 A3'),x4('A3 E4 A3 E4'),x4('E3 B3 E3 B3')]}}
   };
 
-  const themes=[obra,umbral,aire,carretera,abismo,centro,vacio,nuevaYork,quimera,fuga];
+  const marea={
+    id:'marea',mission:9,title:'Marea de hierro',character:'Bajo sincopado y arpegios de agua',key:'E',scale:'dorian',tempo:136,bars:8,
+    tracks:{
+      bass:{voice:'subBass',bars:['E2 . B2 D3 E3 - B2 .','A2 - E3 . C#3 . A2 B2','D3 . A2 D3 F#3 . E3 D3','B2 - F#3 B2 . D3 B2 .']},
+      lead:{voice:'pluck',bars:['B4 . D5 E5 - B4 A4 .','C#5 E5 - . B4 A4 - .','A4 D5 F#5 - E5 D5 . A4','F#4 - A4 B4 - - . .','B4 D5 E5 G5 - F#5 E5 .','A4 . C#5 E5 F#5 E5 - .','D5 F#5 A5 - F#5 E5 D5 .','B4 - F#4 A4 B4 D5 E5 -']},
+      arp:{voice:'arp',bars:[x4('E4 G4 B4 G4'),x4('A3 C#4 E4 C#4'),x4('D4 F#4 A4 F#4'),x4('B3 D4 F#4 D4')]}},
+    drums:{kick:['x.....x.x.....x.'],snare:['....X..o....X...'],hat:['x.o.x.o.x.o.x.o.']},
+    boss:{tempo:1.09,drums:{kick:['x..x..x.x..x..xx'],snare:['....X..o..o.X.oo'],hat:['xoxoxoxoxoxoxoXo']},layer:{voice:'stab',bars:['E4+B4 . . E4+B4 . . G4+B4 .','A3+E4 . . A3+E4 . . B3+F#4 .']}}
+  };
+  const cenit={
+    id:'cenit',mission:10,title:'Último vector',character:'Fanfarria aérea de dos voces',key:'A',scale:'minor',tempo:148,bars:8,
+    tracks:{
+      bass:{voice:'bass',bars:['A2 - E3 A2 . G3 E3 .','F2 - C3 F3 - C3 A2 .','C3 . G3 C3 E3 - G3 .','G2 - D3 G3 - B2 D3 .']},
+      lead:{voice:'lead',bars:['E5 - A5 - G5 E5 C5 -','F5 - C5 A4 - C5 D5 .','E5 G5 - E5 - D5 C5 .','B4 D5 G5 - D5 B4 - .','A4 C5 E5 A5 - G5 E5 -','F5 - A5 G5 F5 E5 C5 .','E5 - G5 C6 - B5 G5 E5','D5 B4 G4 B4 A4 - - -']},
+      arp:{voice:'arp',bars:[x4('A3 E4 C4 E4'),x4('F3 C4 A3 C4'),x4('C4 G4 E4 G4'),x4('G3 D4 B3 D4')]}},
+    drums:{kick:['x..x....x.x.....'],snare:['....X.......X.o.'],hat:['x.x.o.x.x.x.o.x.']},
+    boss:{tempo:1.08,drums:{kick:['x..x..x.x.xx..xx'],snare:['....X.oo....X.oo'],hat:['xoxoxoxoxoxoxoXo']},layer:{voice:'stab',bars:['A3+E4 . A3+E4 . . E4+A4 . .','F3+C4 . . F3+C4 . G3+D4 . .']}}
+  };
+  const themes=[obra,umbral,aire,carretera,abismo,centro,vacio,nuevaYork,quimera,fuga,marea,cenit];
+  // Compás de acción, respuesta instrumental y cadencia de llegada escrita para cada misión.
+  // Los espacios separan los cuatro tiempos del patrón de bombo.
+  const arrangements={
+    obra:{voice:'stab',pulse:'X... ..x. x..o ..x.',answer:[2,7,10],fill:[10,14,15],cadence:['A4 . D5 - C5 A4 F4 A4','D5 - - - A4 - D5 -']},
+    umbral:{voice:'pluck',pulse:'X..o .... x.x. ...o',answer:[0,6,12],fill:[9,11,14,15],cadence:['G3 C4 Eb4 - D4 - Bb3 G3','C4 - G4 - Eb4 - C4 -']},
+    aire:{voice:'stab',pulse:'X... x..o x.x. x...',answer:[0,7,12],fill:[10,13,15],cadence:['D5 G5 - F#5 E5 D5 B4 D5','G5 - - - D5 - G5 -']},
+    carretera:{voice:'lead',pulse:'X... x.x. x... x.ox',answer:[3,6,11,14],fill:[11,13,14,15],cadence:['B4 . E5 G5 F#5 E5 D5 B4','E5 - B4 E5 - - - .']},
+    abismo:{voice:'pluck',pulse:'x... .... ..o. x...',answer:[3,11],fill:[10,15],cadence:['F#4 - A4 - G4 F#4 D4 .','B3 - - F#4 B4 - - -']},
+    centro:{voice:'stab',pulse:'X... ..x. x..x ..o.',answer:[2,6,10,14],fill:[11,14,15],cadence:['D4 . G4 Bb4 . A4 G4 D4','G4 - Bb4 - D5 - G4 -']},
+    vacio:{voice:'pluck',pulse:'X..o ..x. ..x. .o..',answer:[1,7,13],fill:[8,11,15],cadence:['G4 Bb4 . A4 F#4 - Eb4 Db4','C4 - - G4 C5 - - -']},
+    'nueva-york':{voice:'stab',pulse:'X... x.x. x..o x.x.',answer:[0,6,10,14],fill:[9,11,14,15],cadence:['D5 F5 A5 - G5 A5 F5 E5','D5 - A4 D5 - - - -']},
+    marea:{voice:'pluck',pulse:'X... .ox. x... .ox.',answer:[1,6,11],fill:[10,13,15],cadence:['B4 D5 E5 G5 F#5 E5 D5 B4','E5 - B4 - E5 - - -']},
+    cenit:{voice:'stab',pulse:'X..x ..x. x.x. ..x.',answer:[0,5,10,14],fill:[9,12,14,15],cadence:['E5 A5 G5 E5 C5 D5 E5 G5','A5 - E5 - A4 - - -']},
+    quimera:{voice:'pluck',pulse:'X..x ..o. ..x. x..o',answer:[3,6,9,14],fill:[9,12,15],cadence:['E4 G4 . A4 C5 B4 . G4','A4 . E4 G4 A4 - - -']},
+    fuga:{voice:'arp',pulse:'X... x..x x... x.x.',answer:[2,7,11,14],fill:[10,13,14,15],cadence:['C#5 - F#5 A5 G#5 F#5 E5 C#5','F#5 - A5 - F#5 - - -']}
+  };
+  function arrangementFor(theme){
+    const root=theme.key+'4';
+    return arrangements[theme.id]||{voice:'pluck',pulse:'x... ..o. x... ..x.',answer:[2,10],fill:[14,15],cadence:[root+' - . '+root,root+' - - -']};
+  }
   // Acepta un tema, su id, el número de misión o el nombre de la página.
   function themeFor(value){
     if(value&&typeof value==='object')return value;
@@ -347,12 +385,14 @@
     };
     for(const name of Object.keys(theme.tracks||{}))add(name,theme.tracks[name]);
     if(theme.boss?.layer)add('capa',theme.boss.layer);
+    add('respuesta',{voice:arrangementFor(theme).voice,level:.65});
     for(const name of DRUMS)if(theme.drums?.[name]||theme.boss?.drums?.[name])add(name,{voice:name});
     return list;
   }
-  function build(theme,boss,instruments){
+  function build(theme,mode,instruments){
+    const boss=mode==='boss',combat=mode==='combat',victory=mode==='victory',score=arrangementFor(theme);
     const beats=theme.beats||4,div=theme.div||4,stepsPerBar=beats*div,totalSteps=stepsPerBar*theme.bars;
-    const tempo=theme.tempo*(boss?theme.boss?.tempo||1:1),steps=new Array(totalSteps).fill(null);let count=0;
+    const tempo=theme.tempo*(boss?theme.boss?.tempo||1:combat?1.045:victory?.92:1),steps=new Array(totalSteps).fill(null);let count=0;
     const bySlot=name=>instruments.find(i=>i.name===name);
     const put=event=>{(steps[event.step]||(steps[event.step]=[])).push(event);count++;};
     const melodic=(inst,bars)=>{
@@ -383,20 +423,68 @@
         }
       }
     };
-    for(const name of Object.keys(theme.tracks||{}))melodic(bySlot(name),theme.tracks[name].bars);
+    if(victory){
+      const root=theme.key;
+      const melody=score.cadence.slice(),bass=[root+'3 - . .',root+'3 - - -'];
+      // After the cadence, slow the original tune down to two notes per bar over its own harmony.
+      const pitches=(track,bar)=>track.bars[bar%track.bars.length].match(/[A-G][#b]?-?\d/g)||[];
+      for(let bar=2;bar<theme.bars;bar++){
+        const phrase=bar-2,notes=pitches(theme.tracks.lead,phrase);
+        melody.push(!notes.length||phrase%4===3?'.':notes[0]+' - '+notes[Math.floor(notes.length/2)]+' -');
+        bass.push((pitches(theme.tracks.bass,phrase)[0]||root+'3')+' - - -');
+      }
+      melodic(bySlot('lead'),melody);melodic(bySlot('bass'),bass);
+      const fifth=noteToMidi(root+'3')+7;
+      put({inst:bySlot('respuesta'),step:stepsPerBar+8,len:4,midi:fifth,frequency:midiToFrequency(fifth),level:.7});
+      if(bySlot('kick'))percussion(bySlot('kick'),Array.from({length:theme.bars},(_,bar)=>bar===0?'X... ..o. .... ..x.':bar===1?'X... .... .... ....':'....'));
+      for(const list of steps.slice(2*stepsPerBar))for(const note of list||[])note.level*=.68;
+    }else for(const name of Object.keys(theme.tracks||{}))melodic(bySlot(name),theme.tracks[name].bars);
     if(boss&&theme.boss?.layer)melodic(bySlot('capa'),theme.boss.layer.bars);
     const drums=boss?Object.assign({},theme.drums,theme.boss?.drums):theme.drums||{};
-    for(const name of DRUMS)if(drums[name])percussion(bySlot(name),drums[name]);
-    return{id:theme.id,theme,boss:!!boss,tempo,beats,div,bars:theme.bars,stepsPerBar,stepsPerBeat:div,totalSteps,stepSeconds:60/tempo/div,steps,count,instruments};
+    if(!victory){
+      for(const name of DRUMS)if(drums[name]){
+        percussion(bySlot(name),combat&&name==='kick'?[score.pulse]:drums[name]);
+      }
+      if(combat||boss){
+        for(let bar=0;bar<theme.bars;bar++){
+          const start=bar*stepsPerBar;
+          // Answer alternate phrases using pitches from the bass line at that exact beat.
+          // The upper line stays inside the local harmony, including the octatonic space theme.
+          if(combat&&bar%4!==0){
+            let bass;
+            for(let k=0;k<stepsPerBar;k++){
+              const line=steps[start+k]?.find(e=>e.inst.name==='bass');if(line)bass=line;
+              if(!bass||!score.answer.includes(k))continue;
+              const midi=bass.midi+12;
+              put({inst:bySlot('respuesta'),step:start+k,len:bar%4===3?1:2,midi,frequency:midiToFrequency(midi),level:k%4?.76:1});
+            }
+          }
+          if(bar%4===3){
+            const drum=bySlot('snare')||bySlot('hat');
+            for(const k of score.fill){
+              const step=start+k;
+              if(drum&&!steps[step]?.some(e=>e.inst===drum))put({inst:drum,step,len:1,midi:null,frequency:0,level:(boss?.62:.42)+k*.02});
+            }
+          }
+        }
+      }
+      // Let the melody breathe across four-bar phrases. Offbeats remain lighter than downbeats.
+      for(const list of steps)for(const note of list||[])if(note.midi!==null){
+        const phrase=Math.floor(note.step/stepsPerBar)%4;
+        note.level*=([.88,.95,1,.91][phrase])*(note.step%div?.88:1);
+      }
+    }
+    return{id:theme.id,theme,mode,boss,tempo,beats,div,bars:theme.bars,stepsPerBar,stepsPerBeat:div,totalSteps,loopStart:victory?stepsPerBar*2:0,stepSeconds:60/tempo/div,steps,count,instruments};
   }
   // Secuencia lista para el planificador: steps[n] = notas que empiezan en el paso n.
   // Se calcula una vez por tema y variación; el planificador no crea objetos.
-  function compile(theme,boss=false){
+  function compile(theme,variation=false){
     theme=themeFor(theme);if(!theme)return null;
     let entry=compiled.get(theme);
     if(!entry){entry={instruments:instrumentsOf(theme),calm:null,boss:null};compiled.set(theme,entry);}
-    const slot=boss?'boss':'calm';
-    return entry[slot]||(entry[slot]=build(theme,boss,entry.instruments));
+    const mode=variation===true?'boss':variation||'explore';
+    if(!['explore','combat','boss','victory'].includes(mode))throw new Error('Arreglo musical desconocido: '+mode);
+    return entry[mode]||(entry[mode]=build(theme,mode,entry.instruments));
   }
   // Patrón de un compás: [{step,track,voice,midi,frequency,len,level}] en orden.
   function barEvents(theme,bar,boss=false){
@@ -419,7 +507,7 @@
     if(!(Number.isInteger(theme.bars)&&theme.bars>=8&&theme.bars<=16))errors.push('el bucle debe tener 8–16 compases');
     const scale=scaleNotes(theme.key,theme.scale);if(!scale.length)errors.push('tonalidad o escala desconocida');
     if(!(theme.boss?.tempo>=1.08&&theme.boss?.tempo<=1.1))errors.push('la variación de jefe debe subir el tempo un 8–10 %');
-    try{calm=build(theme,false,instrumentsOf(theme));boss=build(theme,true,instrumentsOf(theme));}catch(error){errors.push(error.message);return errors;}
+    try{calm=build(theme,'explore',instrumentsOf(theme));boss=build(theme,'boss',instrumentsOf(theme));}catch(error){errors.push(error.message);return errors;}
     for(const seq of [calm,boss])for(const list of seq.steps)for(const e of list||[]){
       if(e.midi===null)continue;
       if(!scale.includes(((e.midi%12)+12)%12))errors.push(e.inst.name+': nota fuera de la escala (midi '+e.midi+', paso '+e.step+')');
@@ -440,21 +528,29 @@
   // sigue en la misma cuadrícula en vez de disparar el atraso.
   function createTransport({lookahead=LOOKAHEAD}={}){
     let seq=null,pending=null,step=0,time=0,started=false,skipped=0;
+    function advance(n){
+      const next=step+n,loop=seq.loopStart||0;
+      step=next<seq.totalSteps?next:loop+(next-seq.totalSteps)%(seq.totalSteps-loop);
+    }
+    function enter(sequence){
+      if(!seq||seq.id!==sequence.id||seq.mode!==sequence.mode&&(seq.mode==='victory'||sequence.mode==='victory'))step=0;
+      seq=sequence;pending=null;
+    }
     return{
-      start(sequence,at){if(!seq||seq.id!==sequence.id)step=0;seq=sequence;pending=null;time=at;started=true;},
+      start(sequence,at){enter(sequence);time=at;started=true;},
       // Cambia de variación (calma ↔ jefe) en el siguiente tiempo del compás.
-      use(sequence){if(!started||!seq||seq.id!==sequence.id||seq.totalSteps!==sequence.totalSteps){if(!seq||seq.id!==sequence.id)step=0;seq=sequence;pending=null;}else pending=sequence===seq?null:sequence;},
+      use(sequence){if(!started||!seq||seq.id!==sequence.id||seq.totalSteps!==sequence.totalSteps)enter(sequence);else pending=sequence===seq?null:sequence;},
       stop(){started=false;},
       reset(){started=false;seq=null;pending=null;step=0;},
       tick(now,emit){
         if(!started||!seq)return 0;
-        if(time<now){const missed=Math.ceil((now-time)/seq.stepSeconds);step=(step+missed)%seq.totalSteps;time+=missed*seq.stepSeconds;skipped+=missed;}
+        if(time<now){const missed=Math.ceil((now-time)/seq.stepSeconds);advance(missed);time+=missed*seq.stepSeconds;skipped+=missed;}
         const horizon=now+lookahead;let emitted=0;
         while(time<horizon){
-          if(pending&&step%seq.stepsPerBeat===0){seq=pending;pending=null;}
+          if(pending&&step%seq.stepsPerBeat===0)enter(pending);
           const list=seq.steps[step];
           if(list)for(let i=0;i<list.length;i++){emit(list[i],time,seq.stepSeconds);emitted++;}
-          time+=seq.stepSeconds;step=step+1===seq.totalSteps?0:step+1;
+          time+=seq.stepSeconds;advance(1);
         }
         return emitted;
       },
@@ -475,7 +571,7 @@
   // Misión de la página: #main-menu[data-mission] o, en los especiales, su nombre.
   function detectTheme(doc,location){
     let mission=0;try{mission=Number(doc?.getElementById('main-menu')?.dataset?.mission)||0;}catch{}
-    if(mission>=1&&mission<=8)return themeFor(mission);
+    if(mission>=1&&mission<=10)return themeFor(mission);
     const path=String(location?.pathname||'');
     return /quimera/i.test(path)?quimera:/fuga/i.test(path)?fuga:null;
   }
@@ -509,7 +605,8 @@
     const Observer=options.MutationObserver===undefined?root.MutationObserver:options.MutationObserver;
     let context=null,destination=null,noise=null,pulse=null,bus=null;
     let theme=options.theme===undefined?detectTheme(doc,options.location||root.location):themeFor(options.theme);
-    let volume=readVolume(storage),muted=false,running=false,hidden=false,boss=false,previewing=false;
+    let volume=readVolume(storage),muted=false,running=false,hidden=false,mode='explore',previewing=false;
+    let followsGame=false,scanIn=0,combatHold=0;
     let playing=false,timer=null,teardownTimer=null,previewTimer=null,hits=0;
     const transport=createTransport(),active=new Set();
 
@@ -535,6 +632,8 @@
         const input=make(c.createGain());let out=input;
         const shape=inst.drum==='snare'?['bandpass',2200,.5]:inst.drum==='hat'?['highpass',7500,.7]:inst.drum?null:['lowpass',inst.cutoff,.7];
         if(shape){const filter=make(c.createBiquadFilter());filter.type=shape[0];filter.frequency.value=shape[1];filter.Q.value=shape[2];input.connect(filter);out=filter;}
+        const pan={arp:-.22,pad:-.14,comp:-.18,hat:.18,respuesta:.28,capa:.16}[inst.name];
+        if(pan&&c.createStereoPanner){const stereo=make(c.createStereoPanner());stereo.pan.value=pan;out.connect(stereo);out=stereo;}
         out.connect(sum);
         if(inst.echo&&send){const amount=make(c.createGain());amount.gain.value=inst.echo;out.connect(amount);amount.connect(send);}
         return input;
@@ -562,6 +661,8 @@
     }
     function emit(event,time,stepSeconds){
       const inst=event.inst,input=bus.inputs[inst.slot],peak=inst.gain*event.level,envelope=context.createGain(),gain=envelope.gain;let node,end;
+      // Lay the Quimera backbeat slightly behind the grid and let the funk guitar answer it.
+      if(theme.id==='quimera'&&(inst.name==='snare'||inst.name==='comp')&&event.step%8!==0)time+=stepSeconds*.09;
       if(inst.drum==='kick'){
         node=context.createOscillator();node.type='sine';node.frequency.setValueAtTime(150,time);node.frequency.exponentialRampToValueAtTime(46,time+.1);end=time+.2;
         gain.setValueAtTime(0,time);gain.linearRampToValueAtTime(peak,time+.002);gain.exponentialRampToValueAtTime(.0001,end);
@@ -581,7 +682,7 @@
     }
     function tick(){if(!playing)return;try{transport.tick(context.currentTime,emit);}catch{}}
     function begin(){
-      const seq=compile(theme,boss);
+      const seq=compile(theme,mode);
       if(teardownTimer!==null){timers.clearTimeout(teardownTimer);teardownTimer=null;}
       if(!bus)bus=buildBus(seq);
       ramp(bus.fade.gain,1,FADE_IN);ramp(bus.level.gain,volume*MIX,.08);
@@ -615,11 +716,37 @@
       if(bus&&volume>0)try{ramp(bus.level.gain,volume*MIX,.08);}catch{}
       sync();
     }
-    function setBoss(value){
-      value=!!value;if(boss===value)return;boss=value;
+    function setMode(next){
+      if(mode===next)return;
+      mode=next;
       if(!playing)return;
-      const seq=compile(theme,boss);transport.use(seq);
+      const seq=compile(theme,mode);transport.use(seq);
       if(bus.delay)try{bus.delay.delayTime.setTargetAtTime(theme.echo.steps*seq.stepSeconds,context.currentTime,.3);}catch{}
+    }
+    function setBoss(value){setMode(value?'boss':'explore');}
+    function follow(dt,p,field,{victory=false,boss=false,quiet=false,pressure=false}={}){
+      followsGame=true;
+      if(victory||quiet||boss){
+        combatHold=boss?2:0;scanIn=0;
+        setMode(victory?'victory':quiet?'explore':'boss');return;
+      }
+      combatHold=Math.max(0,combatHold-dt);scanIn-=dt;
+      if(pressure)combatHold=3;
+      if(scanIn<=0){
+        scanIn=.18;
+        if(p&&field){
+          const near=(actor,w,h)=>Math.abs(actor.x-p.x)<w&&Math.abs(actor.y-p.y)<h;
+          const hostile=field.bullets?.some(b=>b.enemy&&b.life>0&&!b.visualOnly&&near(b,420,165));
+          let nearby=0;
+          for(const n of field.enemies||[]){
+            if(n.hp<=0||n.entry||n.phase==='dormant'||!near(n,430,140))continue;
+            nearby++;
+            if(near(n,200,90)||n.alert||n.flash>0||nearby>=2){combatHold=3;break;}
+          }
+          if(hostile||p.hurt>0)combatHold=3;
+        }
+      }
+      setMode(combatHold>0?'combat':'explore');
     }
     function setTheme(value){
       const next=themeFor(value);if(next===theme)return;
@@ -634,8 +761,8 @@
       previewing=true;previewTimer=timers.setTimeout(()=>{previewTimer=null;previewing=false;sync();},ms);sync();
     }
     function setHidden(value){value=!!value;if(hidden===value)return;hidden=value;sync();}
-    function status(){return{theme:theme?theme.id:null,playing,running,muted,volume,boss,attached:!!context,voices:active.size,tempo:theme?compile(theme,boss).tempo:0};}
-    const player={attach,setRunning,setMuted,setVolume,setBoss,setTheme,setHidden,preview,status,slider:null};
+    function status(){return{theme:theme?theme.id:null,playing,running,muted,volume,boss:mode==='boss',mode,attached:!!context,voices:active.size,tempo:theme?compile(theme,mode).tempo:0};}
+    const player={attach,setRunning,setMuted,setVolume,setBoss,setMode,follow,setTheme,setHidden,preview,status,slider:null};
 
     if(doc){
       try{
@@ -643,7 +770,7 @@
         doc.addEventListener?.('visibilitychange',()=>setHidden(doc.hidden));
         // Variación de jefe: la barra de jefe pierde o recupera el atributo hidden.
         const bar=doc.getElementById('boss-hud')||doc.getElementById('boss-strip');
-        if(bar){boss=!bar.hidden;if(Observer)new Observer(()=>setBoss(!bar.hidden)).observe(bar,{attributes:true,attributeFilter:['hidden']});}
+        if(bar){setBoss(!bar.hidden);if(Observer)new Observer(()=>{if(!followsGame)setBoss(!bar.hidden);}).observe(bar,{attributes:true,attributeFilter:['hidden']});}
         const host=doc.getElementById('menu-sound');
         if(host)player.slider=mountSlider(doc,host,player,Observer);
       }catch{}

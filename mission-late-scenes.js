@@ -104,8 +104,8 @@
       {id:'inmersion',dur:7,draw(c,t,v){
         fill(c,v,'#06304a','#020812');plate(c,images.m5trench,v,{vy:.95,zoom:1.3,u:.4});shade(c,v,'rgba(2,8,20,.55)');
         const x=v.cx-60+Math.sin(t*.6)*30,y=lerp(200,300,drift(t,v.dur))+Math.sin(t*1.4)*6;
-        beam(c,x+90,y-40,Math.PI/2+.25,560,120,'200,240,255',.28);
-        put(c,atlas('m5divers',4,4),Math.floor(t*6)%4,x,y,96);
+        beam(c,x+85,y-56,Math.PI/2+.09,535,78,'180,235,250',.28);
+        if(!root.ArcadeStorySprites?.draw(c,'buzo',t,x,y,112))put(c,atlas('m5divers',4,4),Math.floor(t*6)%4,x,y,96);
         for(let i=0;i<6;i++){const u=(t*.5+i/6)%1;c.fillStyle='rgba(200,240,255,'+(.6*(1-u)).toFixed(3)+')';c.fillRect(Math.round(x+30+Math.sin(u*9+i)*6),Math.round(y-90-u*170),3,3);}
         bubbles(c,v,t,22);vignette(c,v,.85);
       }}
@@ -123,24 +123,41 @@
   });
 
   // ═════════════════════ MISIÓN 06 · EL ÚLTIMO CENTRO ═════════════════════
-  // Compradores: filas 0 y 3 caminan, ocho cuadros cada una (hoja de 8 × 6).
-  function shoppers(c,v,t,floor,count,size){
-    const crowd=atlas('m6shoppers',8,6);if(!crowd)return;
-    for(let i=0;i<count;i++){const dir=i%2?1:-1,span=v.w+200,x=((hash(i)*span+dir*t*(40+hash(i+4)*30))%span+span)%span-100,row=(i%3===0?0:3)*8;
-      put(c,crowd,row+Math.floor(t*8+i)%8,x,floor+(i%3)*6,size*(.9+hash(i+2)*.2),{flip:dir<0});}
+  function shoppers(c,v,t,count,size,panorama){
+    const span=v.w+200,pan=panorama?.px(0)||0;
+    // Back to front. People on the same path move in the same direction.
+    for(let lane=0;lane<3;lane++)for(let i=lane;i<count;i+=3){
+      const slot=Math.floor(i/3),look=(lane+slot)%2,dir=lane===1?-1:1;
+      const browsing=i===0,scale=size*(.85+.085*lane)/64;
+      const walk=t*(35+hash(i+4)*9); // Distance in native sprite pixels.
+      const start=(slot+[.68,.15,.92][lane])*span/Math.ceil((count-lane)/3);
+      const pos=start+pan+(browsing?0:dir*walk*scale);
+      const x=((pos%span+span)%span)-100,y=FLOOR-14+lane*9;
+      const image=browsing?images.m6shoppers:images.m6walk;
+      if(!image||x< -65||x>v.w+65)continue;
+      // Each half-stride carries the body 20 pixels over the supporting shoe.
+      const cell=browsing?Math.floor(t*5)%8:Math.floor((walk/40+hash(i+18))*24)%24;
+      const row=browsing?look*3:look;
+      c.save();c.translate(Math.round(x),y);c.scale(dir*scale,scale);
+      c.drawImage(image,cell*80,row*80,80,80,-40,-74,80,80);c.restore();
+    }
   }
-  Scenes.register('six',{m6atrium:'assets/worlds/mission-06/atrio.webp',m6gallery:'assets/worlds/mission-06/galeria.webp',m6city:'assets/worlds/mission-06/ciudad.webp',m6giant:'assets/sprites/coloso-exterior.webp',m6shoppers:'assets/sprites/compradores-centro.webp',m6roof:'assets/worlds/mission-06/centro-comercial-v1.png'},{
+  Scenes.register('six',{m6atrium:'assets/worlds/mission-06/atrio.webp',m6gallery:'assets/worlds/mission-06/galeria.webp',m6city:'assets/worlds/mission-06/ciudad.webp',m6giant:'assets/sprites/coloso-exterior.webp',m6shoppers:'assets/sprites/compradores-centro.webp',m6walk:'assets/sprites/pasos-compradores-centro.webp',m6roof:'assets/worlds/mission-06/centro-comercial-v1.png'},{
     intro:[
       // 1 · El atrio: compradores bajo la cúpula, como si nada hubiera pasado.
       {id:'atrio',dur:8,draw(c,t,v){
-        fill(c,v,'#2a3350','#141a26');plate(c,images.m6atrium,v,{ground:[700,FLOOR+20],u:lerp(.3,.7,drift(t,v.dur))});
-        shoppers(c,v,t,FLOOR-4,9,92);vignette(c,v,.6);
+        fill(c,v,'#2a3350','#141a26');const bg=plate(c,images.m6atrium,v,{ground:[700,FLOOR+20],u:lerp(.3,.7,drift(t,v.dur))});
+        shoppers(c,v,t,9,92,bg);
+        // A foreground support carries the camera; the next shot cuts to its security feed.
+        const post=v.cx-v.w*.32;
+        c.fillStyle='#41454e';c.fillRect(post-5,0,9,135);
+        root.ArcadeStorySprites?.draw(c,'camara',t,post+35,141,65);vignette(c,v,.6);
       }},
       // 2 · Las cámaras: las galerías, vistas por la seguridad del Consorcio.
       {id:'camaras',dur:8,draw(c,t,v){
         fill(c,v,'#3a2f52','#15131f');const cam=Math.floor(t/2.7)%3;
-        if(cam===1)plate(c,images.m6atrium,v,{ground:[700,FLOOR+20],u:.15,zoom:1.3});else plate(c,images.m6gallery,v,{u:cam?.85:.3,vy:.8,zoom:1.35});
-        shoppers(c,v,t+cam*5,FLOOR-4,6,104);
+        const bg=cam===1?plate(c,images.m6atrium,v,{ground:[700,FLOOR+20],u:.15,zoom:1.3}):plate(c,images.m6gallery,v,{ground:[708,FLOOR],u:cam?.85:.3,zoom:1.35});
+        shoppers(c,v,t+cam*5,6,104,bg);
         camera(c,v,t,['CAM 07 · GALERÍAS','CAM 01 · ATRIO','CAM 12 · RESTAURANTES'][cam]);vignette(c,v,.6);
       }},
       // 3 · La azotea: la antena al anochecer, y algo enorme que trepa por la fachada.
@@ -159,13 +176,11 @@
       // 1 · La señal: el haz de la antena sube y la cámara lo sigue hasta las estrellas.
       {id:'senal',dur:8,draw(c,t,v){
         const up=ease(ramp(t,1,7.2));
+        fill(c,v,'#03040d','#141a3e');stars(c,v,t,70,v.h);
         c.save();c.translate(0,up*v.h*1.1);
         fill(c,v,'#241a52','#e0603a');const bg=plate(c,images.m6roof,v,{band:ROOF,ground:[1090,FLOOR],u:.45});
         shade(c,v,'rgba(26,16,46,.3)');const x=v.cx-40;mast(c,x,FLOOR-20,TOP+60,t);
         c.restore();
-        // Encima, el cielo de la noche que se abre a medida que sube la cámara.
-        const sky=c.createLinearGradient(0,0,0,v.h);sky.addColorStop(0,'#03040d');sky.addColorStop(1,'#141a3e');c.save();c.globalAlpha=up;c.fillStyle=sky;c.fillRect(0,0,v.w,up*v.h*1.1);c.globalAlpha=1;c.restore();
-        c.save();c.globalAlpha=up;stars(c,v,t,70,up*v.h*1.1);c.restore();
         shaft(c,v.cx-40,0,FLOOR-80+up*v.h*1.1,22,t,'120,230,255',.55);
         vignette(c,v,.7);
       }},
@@ -175,6 +190,7 @@
         planet(c,v,t,FLOOR-30);
         const push=drift(t,v.dur),x=v.cx+160,y=lerp(180,200,push);
         shaft(c,v.cx-120,y,FLOOR-30,10,t,'120,230,255',.4);
+        root.ArcadeStorySprites?.draw(c,'orbita',t,v.cx-120,y+8,67);
         // La nave: una silueta oscura con sus luces, recortada del casco de la misión 07.
         c.save();c.globalAlpha=ease(ramp(t,1,3));
         const w=lerp(360,460,push),h=w*.36;c.fillStyle='#0b0a16';c.beginPath();c.ellipse(x,y,w/2,h/2,-.08,0,TAU);c.fill();
@@ -194,8 +210,10 @@
         const climb=drift(t,v.dur);fill(c,v,'#05071a','#3a2a6a');
         plate(c,images.m7city,v,{band:[0,0,1152,560],u:.5,vy:1-climb*.9});
         shade(c,v,'rgba(4,6,22,'+(.25+.45*climb).toFixed(3)+')');c.save();c.globalAlpha=climb;stars(c,v,t,60,v.h*.6);c.restore();
-        shaft(c,v.cx,0,v.h,24,t,'120,230,255');
-        const pulse=(t*.6)%1;c.strokeStyle='rgba(150,240,255,'+(.8*(1-pulse)).toFixed(3)+')';c.lineWidth=3;c.beginPath();c.ellipse(v.cx,TOP+30,40+pulse*280,10+pulse*60,0,0,TAU);c.stroke();
+        const receiverY=147+Math.sin(t*.8)*5;
+        shaft(c,v.cx,receiverY-42,v.h,24,t,'120,230,255');
+        root.ArcadeStorySprites?.draw(c,'orbita',t,v.cx,receiverY,96);
+        const pulse=(t*.6)%1;c.strokeStyle='rgba(150,240,255,'+(.8*(1-pulse)).toFixed(3)+')';c.lineWidth=3;c.beginPath();c.ellipse(v.cx,receiverY-42,40+pulse*280,10+pulse*60,0,0,TAU);c.stroke();
         vignette(c,v,.7);
       }},
       // 2 · Lo que bajó de ahí arriba: tanques con cosas dentro, en el vientre de la nave.
@@ -259,7 +277,7 @@
         shade(c,v,'rgba(8,12,30,.42)');
         const troops=atlas('m8troops',4,4);
         for(const [dx,f] of [[-250,8],[-150,9],[170,8],[260,9]]){shadow(c,v.cx+dx,FLOOR,70);put(c,troops,f,v.cx+dx,FLOOR,112,{flip:dx>0});}
-        const x=v.cx+10;shadow(c,x,FLOOR,110,.6);put(c,atlas('m8boss',4,4),Math.floor(t*1.2)%4===3?3:0,x,FLOOR,lerp(132,142,drift(t,v.dur)),{flip:true});
+        const x=v.cx+10;shadow(c,x,FLOOR,110,.6);if(!root.ArcadeStorySprites?.draw(c,'commander',t,x,FLOOR,143,true))put(c,atlas('m8boss',4,4),Math.floor(t*1.2)%4===3?3:0,x,FLOOR,lerp(132,142,drift(t,v.dur)),{flip:true});
         glow(c,x-6,FLOOR-140,30,'255,60,50',.4+.2*Math.sin(t*3));
         vignette(c,v,.7);
       }},

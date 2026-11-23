@@ -3,8 +3,8 @@
   // Menú único: la misma capa sirve de portada y de pausa. El marcado lo genera
   // menu-shell.js; aquí viven la navegación y el enlace con cada misión.
   const PAUSED='Partida en pausa';
-  const pages={2:'level-two.html',3:'level-three.html',4:'level-four.html',5:'level-five.html',6:'level-six.html',7:'level-seven.html',8:'level-eight.html'};
-  function create({onPlay,onPause,onNewGame,soundControls,onSound,difficulty='normal',onDifficulty,tutorial,mission=1,resumeAvailable=false,onSelectMission}){
+  const pages={2:'level-two.html',3:'level-three.html',4:'level-four.html',5:'level-five.html',6:'level-six.html',7:'level-seven.html',8:'level-eight.html',9:'level-nine.html',10:'level-ten.html'};
+  function create({onPlay,onPause,onNewGame,soundControls,onSound,difficulty='normal',onDifficulty,tutorial,hasShop=true,mission=1,resumeAvailable=false,onSelectMission}){
     const layer=document.getElementById('main-menu');
     if(!layer)return null;
     const byId=id=>document.getElementById(id);
@@ -57,7 +57,7 @@
       menuPages.forEach(el=>el.hidden=el.dataset.menuPage!==next);
       const campaign=readCampaign();
       back.hidden=next==='home';play.textContent=started||resumeAvailable||campaign?.level>=2?'Continuar':'Jugar';play.disabled=!ready;
-      if(shopButton)shopButton.hidden=!started;
+      if(shopButton)shopButton.hidden=!started||!(typeof hasShop==='function'?hasShop():hasShop);
       if(restartButton)restartButton.hidden=!started;
       resetRestart();
       layer.classList?.toggle('in-game',started);

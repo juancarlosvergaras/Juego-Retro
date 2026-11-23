@@ -32,18 +32,18 @@ test('mission 2 restores elapsed time only when resuming the same run',async()=>
 });
 
 async function game(query='?entry=select',initial={}){
- const data=new Map(Object.entries(initial)),listeners={},elements=new Map();let frame,view,wheelState,menuCallbacks,resizeCallback,navigation;
+ const requestedImages=[],data=new Map(Object.entries(initial)),listeners={},elements=new Map();let frame,view,wheelState,menuCallbacks,resizeCallback,navigation;
  // Stable loot prevents an unrelated random ammunition pickup during input tests.
  if(data.has('cap-dollar.mission-two.v1')){const saved=JSON.parse(data.get('cap-dollar.mission-two.v1'));saved.lootSeed??=77;data.set('cap-dollar.mission-two.v1',JSON.stringify(saved));}
  const element=id=>{if(!elements.has(id))elements.set(id,{hidden:false,textContent:'',style:{},parentElement:{setAttribute(){}},setAttribute(){},focus(){},events:{},addEventListener(name,fn){this.events[name]=fn;},setPointerCapture(id){this.captured=id;},dispatch(name,event={}){this.events[name]?.({pointerId:1,button:0,preventDefault(){},...event});},querySelector(){return element('back');},getBoundingClientRect(){return{width:1296,height:729};},getContext(){return{};},width:960,height:540,click(){this.onclick?.();}});return elements.get(id);};
  const window={ArcadeSkyExpedition:require('../sky-expedition'),addEventListener:(name,fn)=>listeners[name]=fn,ArcadeMainMenu:{create(options){menuCallbacks=options;return{isOpen:()=>false,ready({autoPlay}){if(autoPlay)options.onPlay();},show(){options.onPause();}};}}};
- const context={ArcadeJetpackRenderer:require('../jetpack-renderer'),ArcadeCheckpoints:require('../checkpoints'),ArcadeWreckedCars:require('../wrecked-cars'),ArcadeZombieForm:{...require('../zombie-form'),setSheet(){},setExtra(){},setPlayerSheets(){},setIdleSheet(){},setRunSheet(){},setShockSheet(){}},ArcadeStormZombie:require('../storm-zombie'),ArcadeMausoleumKing:{...require('../mausoleum-king'),prepareAtlas:()=>({}),prepareZombieStrips:()=>({}),setRockSheet(){}},ArcadeCemeteryBat:require('../cemetery-bat'),ArcadeCemeteryZombies:require('../cemetery-zombies'),ArcadeWaterCrater:{...require("../water-crater.js"),prepareSprite:image=>image},window,console,Math,Set,Map,Number,JSON,URLSearchParams,ArcadeImpact:require('../impact-effects.js'),location:{search:query,assign:url=>navigation=url},localStorage:{getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)},document:{getElementById:element,querySelector:element,querySelectorAll:()=>[],addEventListener(){}},ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Image:class{set src(v){queueMicrotask(()=>this.onload());}},requestAnimationFrame:fn=>frame=fn,
+ const context={ArcadeJetpackRenderer:require('../jetpack-renderer'),ArcadeCheckpoints:require('../checkpoints'),ArcadeWreckedCars:require('../wrecked-cars'),ArcadeZombieForm:{...require('../zombie-form'),setSheet(){},setExtra(){},setPlayerSheets(){},setIdleSheet(){},setRunSheet(){},setShockSheet(){}},ArcadeStormZombie:require('../storm-zombie'),ArcadeMausoleumKing:{...require('../mausoleum-king'),prepareAtlas:()=>({}),prepareZombieStrips:()=>({}),setRockSheet(){}},ArcadeCemeteryBat:require('../cemetery-bat'),ArcadeCemeteryZombies:require('../cemetery-zombies'),ArcadeWaterCrater:{...require("../water-crater.js"),prepareSprite:image=>image},window,console,Math,Set,Map,Number,JSON,URLSearchParams,ArcadeImpact:require('../impact-effects.js'),location:{search:query,assign:url=>navigation=url},localStorage:{getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)},document:{getElementById:element,querySelector:element,querySelectorAll:()=>[],addEventListener(){}},ResizeObserver:class{constructor(callback){resizeCallback=callback;}observe(){}},Image:class{set src(v){requestedImages.push(v);queueMicrotask(()=>this.onload());}},requestAnimationFrame:fn=>frame=fn,
  ArcadeMissionCombat:require('../mission-combat.js'),ArcadeCityTank:require('../city-tank.js'),ArcadeMissionTwoLoot:require('../mission-two-loot.js'),ArcadeScore:require('../score.js'),ArcadeDifficulty:require('../difficulty.js'),ArcadeArsenal:require('../arsenal.js'),ArcadePowers:require('../powers.js'),ArcadeSoundEvents:require('../sound-events.js'),ArcadeMissionHud:{create:()=>({update(){}})},ArcadePowerSprites:{setSpriteSheet(){},setOrbitalSheet(){}},prepareWhiteDeath:image=>image,ArcadePhysics:require('../physics.js'),ArcadeLevelTwo:require('../level-two.js'),ArcadeParachute:parachute,ArcadeCampaign:campaign,ArcadeProgression:require('../progression.js'),ArcadeSoldierAnimation:require('../soldier-animation.js'),
  ArcadeAudio:{create:()=>({play(){},loop(){},setRunning(){},unlock(){}})},ArcadeCharacterWheel:{create:()=>({setSprites(){},update(...args){wheelState=args;}})},ArcadeLevelTwoRenderer:{create:()=>({draw(_ctx,state,camera){view={state,camera};}})},SOLDIER_V2_FRAMES:[[[0,0,10,10]]],ACTION_FRAMES:{wolf:[[0,0,0,0,0,0,0,[0,0,10,10]]]}};
  vm.runInNewContext(fs.readFileSync(require.resolve('../level-two-game.js'),'utf8'),context);await new Promise(resolve=>setImmediate(resolve));
  let now=0;function tick(seconds){for(let i=0;i<Math.ceil(seconds*120);i++){now+=1000/120;frame(now);}}
  function key(code,down=true,event={}){listeners[down?'keydown':'keyup']({code,repeat:false,preventDefault(){},...event});}
- tick(.05);return{tick,key,element,data,resize:()=>resizeCallback(),get state(){return view.state;},get camera(){return view.camera;},get wheel(){return wheelState;},get menu(){return menuCallbacks;},get navigation(){return navigation;},pagehide:()=>listeners.pagehide?.()};
+ tick(.05);return{tick,key,element,data,requestedImages,resize:()=>resizeCallback(),get state(){return view.state;},get camera(){return view.camera;},get wheel(){return wheelState;},get menu(){return menuCallbacks;},get navigation(){return navigation;},pagehide:()=>listeners.pagehide?.()};
 }
 test('dirigible reward is collected by the actual mission runtime and survives resume and retry',async()=>{
  const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:9000,landed:true,hp:8,tank:{hp:0}})}),p=g.state.player,deck=g.state.geometry.platforms.find(s=>s.airship);
@@ -291,8 +291,63 @@ test('mission two alternates zombie idle gestures, freezes them on pause and int
 test('down key speeds up parachute while attacks stay blocked, then leaves a safe landing',async()=>{const g=await game();g.key('ArrowDown');g.key('KeyJ');g.tick(1.6);assert.equal(g.state.player.y,620);assert.equal(g.state.combat.inventory.ammo[3],36);g.tick(1.9);g.key('ArrowDown',false);assert.equal(g.state.player.grounded,true);assert.equal(g.state.player.fallDamage||0,0);assert.equal(g.state.combat.hp,g.state.combat.maxHp);});
 test('car damage survives runtime save/reload',async()=>{const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:1100,landed:true,cars:[0,3,10,7]})});assert.deepEqual(g.state.geometry.cars.map(c=>c.hp),[0,3,10,7]);assert.ok(!g.state.geometry.platforms.some(p=>p.kind==='wreck'&&p.car===0));g.state.combat.damageCar(1);g.element('pause-two').click();const resumed=await game('?entry=resume',Object.fromEntries(g.data));assert.equal(resumed.state.geometry.cars[1].hp,2);});
 
-test('PC activates on contact, persists immediately, and death retries there with inventory intact',async()=>{const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:8040,landed:true,hp:8,inventory:{owned:[1,3],selected:3,ammo:{3:19}}})});assert.equal(g.state.checkpoints.active,'two-out-5');assert.equal(JSON.parse(g.data.get('cap-dollar.mission-two.v1')).checkpoints.active,'two-out-5');g.state.player.x=8500;g.state.combat.hp=0;g.state.combat.dead=true;g.tick(.03);g.element('play-two').click();g.tick(.01);assert.equal(g.state.player.x,8050);assert.equal(g.state.combat.hp,g.state.combat.maxHp);assert.equal(g.state.combat.inventory.ammo[3],19);assert.ok(g.state.combat.invincible>2);});
+test('PC activates on contact, persists immediately, and death retries there with inventory intact',async()=>{const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:8040,landed:true,hp:8,inventory:{owned:[1,3],selected:3,ammo:{3:19}}})});assert.equal(g.state.checkpoints.active,'two-out-5');assert.equal(JSON.parse(g.data.get('cap-dollar.mission-two.v1')).checkpoints.active,'two-out-5');g.state.player.x=8500;g.state.combat.hp=0;g.state.combat.dead=true;g.tick(.03);g.element('play-two').click();g.tick(.01);assert.equal(g.state.player.x,8050);assert.equal(g.state.combat.hp,g.state.combat.maxHp);assert.equal(g.state.combat.inventory.ammo[3],19);assert.ok(g.state.player.respawnProtection>4.9);assert.equal(JSON.parse(g.data.get('obra10.progress.v1')).lives,2);
+  g.element('pause-two').click();
+  const remaining=g.state.player.respawnProtection;
+  g.tick(.5);assert.equal(g.state.player.respawnProtection,remaining);
+  g.pagehide();
+  const restored=await game('?entry=resume',Object.fromEntries(g.data));
+  assert.equal(JSON.parse(restored.data.get('obra10.progress.v1')).lives,2);
+  assert.ok(restored.state.player.respawnProtection<=remaining&&restored.state.player.respawnProtection>4.7);});
 test('cemetery and mausoleum checkpoints restore their own scene from a dead save',async()=>{for(const [id,x,inside]of [['two-out-5',8050,false],['two-out-9',15960,false]]){const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:100,inside:false,landed:true,dead:true,hp:0,checkpoints:{active:id,visited:[id]},king:{defeated:true}})});assert.equal(g.state.inside,inside);assert.equal(g.state.player.x,x);assert.equal(g.state.combat.hp,g.state.combat.maxHp);assert.equal(g.state.checkpoints.active,id);}});
 test('fresh missions reset prior checkpoints while legacy saves still use the entrance on death',async()=>{const initial={'cap-dollar.mission-two.v1':JSON.stringify({x:13850,landed:true,dead:true,checkpoints:{active:'two-out-8',visited:['two-out-8']}})};const fresh=await game('?entry=select',initial);assert.equal(fresh.state.checkpoints.active,null);const legacy=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:13850,landed:true,dead:true})});assert.equal(legacy.state.player.x,240);assert.equal(legacy.state.inside,false);});
 
 test('leaving the defeated mausoleum transfers to mission three and pagehide cannot overwrite it',async()=>{const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({inside:true,x:70,landed:true,hp:8,king:{defeated:true},inventory:{owned:[1,3,5],selected:5,ammo:{3:18,5:80}}})});g.key('ArrowUp');g.tick(.03);assert.equal(g.navigation,'level-three.html?entry=campaign');g.pagehide();g.menu.onPause();const carry=JSON.parse(g.data.get('cap-dollar.campaign.v1'));assert.equal(carry.level,3);assert.equal(carry.inventory.ammo[5],80);});
+
+test('the last life restarts the mission with three lives and keeps permanent unlocks',async()=>{
+  const g=await game('?entry=resume',{
+    'obra10.progress.v1':JSON.stringify({lives:1,wallet:250,earned:250,fighterUnlocked:true}),
+    'cap-dollar.mission-two.v1':JSON.stringify({x:8040,hp:8,landed:true})
+  });
+  g.state.combat.hp=0;g.state.combat.dead=true;g.tick(.04);
+  const profile=()=>JSON.parse(g.data.get('obra10.progress.v1'));
+  assert.equal(profile().lives,0);
+  assert.equal(g.element('level-two-title').textContent,'Fin de la partida');
+  g.pagehide();assert.equal(profile().lives,0);
+  g.element('play-two').click();assert.equal(g.navigation,'level-two.html?entry=select');
+  assert.equal(profile().lives,3);assert.equal(profile().fighterUnlocked,true);
+  const restarted=await game('?entry=select',Object.fromEntries(g.data));
+  assert.equal(restarted.state.checkpoints.active,null);
+  assert.equal(JSON.parse(restarted.data.get('obra10.progress.v1')).lives,3);
+});
+
+test('the street starts without the king and preloads the mausoleum once at the cemetery',async()=>{
+ const key='cap-dollar.mission-two.v1';
+ const street=await game('?entry=resume',{[key]:JSON.stringify({x:450,landed:true})});
+ const bossFiles=g=>g.requestedImages.filter(path=>path.includes('rey-zombi-')&&path.endsWith('-v4.png'));
+ assert.equal(bossFiles(street).length,0);
+ street.state.player.x=9900;street.tick(.08);await new Promise(resolve=>setImmediate(resolve));
+ street.tick(.08);assert.equal(new Set(bossFiles(street)).size,5);assert.equal(bossFiles(street).length,5);
+ const inside=await game('?entry=resume',{[key]:JSON.stringify({x:750,inside:true,landed:true})});
+ assert.equal(inside.state.inside,true);assert.equal(bossFiles(inside).length,5);
+});
+
+test('el soldado puede disparar agachado desde ambas manos y levantarse al soltar abajo',async()=>{
+ const A=require('../arsenal'),S=require('../soldier-animation'),E=require('../encounter');
+ for(const facing of [-1,1])for(let slot=1;slot<=9;slot++){
+  const g=await game('?entry=resume',{'cap-dollar.mission-two.v1':JSON.stringify({x:300,landed:true,inventory:{owned:[slot],selected:slot,ammo:{[slot]:20}}})});
+  const p=g.state.player,e=g.state.combat;p.facing=facing;g.key('ArrowDown');g.tick(.1);g.key('KeyJ');g.tick(1/120);
+  assert.ok(p.crouching);assert.equal(p.aim.x,facing);assert.equal(p.aim.y,0);
+  assert.equal(S.pose(p,{crouching:true},e).armed,true);assert.equal(E.bodyBox(p).h,35);
+  assert.equal(e.weaponAction.slot,slot);
+  if(slot>=3){const origin=A.muzzle(p,slot);assert.ok(origin.y>=p.y-24&&origin.y<=p.y-15);}
+  g.key('KeyJ',false);g.key('ArrowDown',false);g.tick(.1);assert.equal(p.crouching,false);assert.equal(E.bodyBox(p).h,46);
+ }
+});
+test('el Heraldo paga su recompensa en una nueva partida con el traje ya ganado y no vuelve a pagar al cargar',async()=>{
+ const key='cap-dollar.mission-two.v1',g=await game('?entry=resume',{[key]:JSON.stringify({x:16840,landed:true,shield:99,zombieUnlocked:true})});
+ require('../enemies').damage(g.state.storm,999);g.tick(1.7);g.pagehide();
+ const saved=JSON.parse(g.data.get(key));assert.ok(saved.storm.rewarded);assert.ok(saved.score>=1500);
+ const resume=await game('?entry=resume',Object.fromEntries(g.data));resume.tick(.1);resume.pagehide();
+ assert.equal(JSON.parse(resume.data.get(key)).score,saved.score);
+});

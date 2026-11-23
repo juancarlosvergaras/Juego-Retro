@@ -1,5 +1,50 @@
 (function(root){
   'use strict';
+  const basePaths={
+    soldier:'assets/sprites/base-soldado-12.webp',wolf:'assets/sprites/base-lobo-12.webp',
+    zombie:'assets/sprites/base-zombi-12.webp',robot:'assets/sprites/base-robot-12.webp',
+    fighter:'assets/sprites/base-luchador-12.webp',tank:'assets/sprites/base-tanque-12.webp'
+  };
+  const baseSheets=new Map(),pendingSheets=new Map();
+  function loadBase(form){
+    if(!basePaths[form]||!root.Image)return;
+    if(!pendingSheets.has(form)){
+      const ready=new Promise((resolve,reject)=>{
+        const image=new root.Image();
+        image.onload=()=>{baseSheets.set(form,image);resolve();};
+        image.onerror=()=>reject(Error(basePaths[form]));
+        image.src=basePaths[form];
+      });
+      pendingSheets.set(form,ready);
+      ready.catch(()=>pendingSheets.delete(form));
+    }
+    return pendingSheets.get(form);
+  }
+  function baseSprite(c,p,row,phase,options={}){
+    const form=p.form||'soldier',sheet=baseSheets.get(form);
+    if(!sheet)return false;
+    const u=options.once?Math.max(0,Math.min(.99999,phase)):phase-Math.floor(phase);
+    const frame=Math.min(11,Math.floor(u*12));
+    c.save();c.imageSmoothingEnabled=false;
+    c.translate(Math.round(p.x),Math.round(p.y+(options.bob||0)));
+    c.scale(options.facing??(p.facing||1),1);
+    c.drawImage(sheet,frame*256,row*192,256,192,-64,-84,128,96);c.restore();
+    return true;
+  }
+  function basePose(c,p,mode={},encounter={}){
+    if(p.transform||p.jetpack||p.rescueGrip||p.victoryAge!==undefined)return false;
+    if(p.form==='wolf')return !!(p.ladder||p.rope?.mantle)&&baseSprite(c,p,0,-p.y/32,{facing:1});
+    if(p.form&&p.form!=='soldier')return false;
+    if(p.ladder||p.rope?.mantle)return baseSprite(c,p,6,-p.y/32,{facing:1});
+    if(p.rope)return baseSprite(c,p,7,p.rope.surface?(p.hangCycle||0)/4:(p.anim||0)*.9);
+    const poseNow=pose(p,mode,encounter);
+    if(poseNow.sheet==='slide')return baseSprite(c,p,3,1-p.slide/.44,{once:true});
+    if(poseNow.sheet==='crouch')return baseSprite(c,p,2,p.walkCycle||0);
+    if(!p.grounded&&!poseNow.armed&&!poseNow.sheet)return baseSprite(c,p,5,(p.vy+400)/970,{once:true});
+    if(poseNow.row===5&&!poseNow.sheet&&(!encounter.weaponAction||encounter.weaponAction.age>=encounter.weaponAction.duration)&&Math.abs(p.vx||0)<8)
+      return baseSprite(c,p,4,(p.anim||0)*.68);
+    return false;
+  }
   // Interior morph poses use the current soldier's costume and pixel detail.
   // The two endpoints are the actual gameplay sprites, not redrawn stand-ins.
   const transformationFrames=[[[127,85,195,353],[532,122,239,316],[982,118,252,320],[1395,89,265,353],[73,558,318,274],[484,500,328,333],[901,467,356,370],[1367,467,335,370]]];
@@ -105,7 +150,7 @@
     if(p.rope)return{sheet:'mobility',row:1,frame:p.rope.surface?Math.floor(p.hangCycle||0)%4:Math.floor((p.anim||0)*4)%4,armed:false};
     const slot=encounter.inventory?.selected,action=encounter.weaponAction;
     const melee=slot===1||slot===2,attacking=!!action&&action.slot===slot&&action.age<action.duration;
-    if(melee&&!mode.sliding&&!mode.crouching&&!(p.landing>0)&&(p.grounded||p.jetpack||attacking))return{sheet:'melee',row:slot-1,frame:meleeFrame(action,slot),armed:false};
+    if(melee&&!mode.sliding&&!mode.crouching&&!p.crouching&&!(p.landing>0)&&(p.grounded||p.jetpack||attacking))return{sheet:'melee',row:slot-1,frame:meleeFrame(action,slot),armed:false};
     if(p.jetpack){const a=p.aim||{x:p.facing,y:0};return{row:a.y?(a.y<0?6:7):5,frame:a.y?(Math.abs(a.x)>.2?3:0):attacking&&action.age<.1?1:0,armed:true};}
     const moving=Math.abs(p.vx)>15,cycle=Math.floor((p.walkCycle||0)*6)%6;
     if(mode.sliding&&p.grounded)return{sheet:'slide',row:0,frame:Math.min(5,Math.floor((1-p.slide/.44)*6)),armed:false};
@@ -121,7 +166,7 @@
       return p.vy>0?{row:4,frame:p.vy<220?0:p.vy<450?1:2,armed:false}:{row:3,frame:p.vy< -200?1:2,armed:false};
     }
     // Rest on the current low step: changing atlases here changes body proportions.
-    if(mode.crouching)return{sheet:'crouch',row:0,frame:cycle,armed:false};
+    if(mode.crouching||p.crouching)return{sheet:'crouch',row:0,frame:cycle,armed:true};
     if(mode.sliding)return{row:3,frame:0,armed:false};
     if(p.idleGesture)return{row:0,frame:Math.floor((p.idleTime||0)*2)%6,armed:false};
     const a=p.aim||{x:p.facing,y:0};
@@ -132,6 +177,7 @@
   }
   function grip(p,mode={},encounter={}){
     const f=pose(p,mode,encounter);
+    if(f.sheet==='crouch')return{x:10,y:-17};
     const points={1:[[10,-24],[11,-24],[12,-24],[11,-24],[12,-24],[12,-24]],2:[[16,-25],[18,-24],[16,-25],[16,-27],[19,-24],[16,-25]],5:[[13,-30],[13,-33],[13,-30],[13,-30],[13,-33],[13,-30]],6:[[6,-45],[6,-44],[6,-44],[13,-39],[13,-39],[14,-39]],7:[[7,-19],[7,-19],[7,-19],[10,-21],[10,-21],[10,-21]]};
     points[3]=[[12,-24],[13,-32],[13,-26],[13,-26],[12,-24],[12,-24]];
     const [x,y]=(points[f.row]||points[5])[f.frame]||points[5][0];
@@ -159,10 +205,12 @@
   // In particular, a melee sheet must not bypass locomotion with its idle legs.
   function drawGait(ctx,p,steps,drawLegs,drawTorso,melee=null){
     if(!steps)return drawTorso(0);
-    if(steps.full)return drawTorso(steps.bob);
+    const base=baseSheets.has('soldier')&&!steps.flight&&(!p.form||p.form==='soldier');
+    if(steps.full&&!base)return drawTorso(steps.bob);
     ctx.save();ctx.beginPath();ctx.rect(p.x-80,p.y-steps.split,160,steps.split+3);ctx.clip();
     if(steps.flight){const sway=Math.max(-.08,Math.min(.08,(p.vx||0)/3500))+Math.sin((p.anim||0)*4)*.025;ctx.translate(p.x,p.y-steps.split);ctx.rotate(sway);ctx.translate(-p.x,-(p.y-steps.split));}
-    drawLegs(steps.frame);ctx.restore();
+    if(base)baseSprite(ctx,p,steps.row===2?1:0,p.walkCycle||0,{bob:steps.full?steps.bob:0});
+    else drawLegs(steps.frame);ctx.restore();
     ctx.save();ctx.beginPath();ctx.rect(p.x-80,p.y-100,160,100-steps.split+1);
     // Low-held blades and a downward axe swing extend below the belt, in front
     // of the legs. Keep that part of the original art instead of cutting it off.
@@ -178,6 +226,6 @@
     ctx.clip();
     const height=drawTorso(steps.bob);ctx.restore();return height;
   }
-  const api={RUN_LIFT,wolfMotion,applyWolfMotion,wolfJumpFrames,pose,grip,weaponGrip,gait,advanceWalk,drawGait,meleeFrame,wolfIdlePose,wolfActionFrames,wolfActionScale,wolfAirPose,wolfComboPose,wolfComboFrames,wolfComboScale,wolfRamPose,wolfRamFrames,wolfRamScale,wolfSprintPose,wolfWalkPose,transformation,transformationFrames};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSoldierAnimation=api;
+  const api={loadBase,baseSprite,basePose,RUN_LIFT,wolfMotion,applyWolfMotion,wolfJumpFrames,pose,grip,weaponGrip,gait,advanceWalk,drawGait,meleeFrame,wolfIdlePose,wolfActionFrames,wolfActionScale,wolfAirPose,wolfComboPose,wolfComboFrames,wolfComboScale,wolfRamPose,wolfRamFrames,wolfRamScale,wolfSprintPose,wolfWalkPose,transformation,transformationFrames};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSoldierAnimation=api;
 })(typeof window!=='undefined'?window:globalThis);
 

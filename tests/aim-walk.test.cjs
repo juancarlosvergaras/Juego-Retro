@@ -37,7 +37,7 @@ test('crouch walking cycles six low poses in both directions with every loadout 
  for(const facing of [-1,1])for(const slot of [1,2,3,7]){
   const p={grounded:true,vx:65*facing,facing,walkCycle:.01},seen=new Set(),mode={crouching:true},e={inventory:{selected:slot}};
   for(let i=0;i<6;i++){
-   const pose=A.pose(p,mode,e);assert.equal(pose.sheet,'crouch');assert.equal(pose.armed,false);seen.add(pose.frame);
+   const pose=A.pose(p,mode,e);assert.equal(pose.sheet,'crouch');assert.equal(pose.armed,true);seen.add(pose.frame);
    assert.equal(A.gait(p,mode),null);A.advanceWalk(p,52/65/6);
   }
   assert.equal(seen.size,6);

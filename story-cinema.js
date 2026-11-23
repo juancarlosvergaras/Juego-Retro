@@ -37,7 +37,7 @@
   // Las viñetas antiguas (c, w, h, t), compuestas para 960×540, se encajan cubriendo el escenario.
   function normalize(shot,index=0){
     if(typeof shot!=='function')return shot;
-    return{id:'plano-'+(index+1),dur:8,legacy:true,draw(c,t,v){const k=Math.max(v.w/960,1);c.translate((v.w-960*k)/2,(STAGE_H-540*k)/2);c.scale(k,k);shot(c,960,540,t);}};
+    return{id:'plano-'+(index+1),dur:8,legacy:true,draw(c,t,v){const k=Math.min(v.w/960,1);c.translate((v.w-960*k)/2,(STAGE_H-540*k)/2);c.scale(k,k);shot(c,960,540,t);}};
   }
   const blank={id:'negro',dur:4,draw(){}};
   // Une el guion (páginas con `text`) con los planos, por orden. Cada subtítulo es un «cue»;
@@ -131,6 +131,14 @@
       const size=pixels(layer.clientWidth||root.innerWidth||960,layer.clientHeight||root.innerHeight||540,root.devicePixelRatio);
       if(canvas.width!==size.width||canvas.height!==size.height){canvas.width=size.width;canvas.height=size.height;dirty=true;}
       view=stage(canvas.width,canvas.height);
+      // In portrait keep the whole action between the two actors visible.
+      if(canvas.width/canvas.height<1){
+        const scale=canvas.width/MIN_W;
+        view={w:MIN_W,h:STAGE_H,scale,ox:0,oy:(canvas.height-STAGE_H*scale)/2};
+      }else if(canvas.width/canvas.height>MAX_W/STAGE_H){
+        const scale=canvas.height/STAGE_H;
+        view={w:MAX_W,h:STAGE_H,scale,ox:(canvas.width-MAX_W*scale)/2,oy:0};
+      }
     }
     function showCue(cue){
       dirty=true;shownText=null;live.textContent=cue.text||(cue.title?[cue.title.kicker,cue.title.title,cue.title.sub].filter(Boolean).join('. '):'');
@@ -140,6 +148,16 @@
       if(cue.credits){roll.replaceChildren(...cue.credits.map(line=>{const row=doc.createElement(line.kind==='stat'?'div':'p');row.className='story-credit story-credit-'+(line.kind||'line');
         if(line.kind==='stat'){const a=doc.createElement('span'),b=doc.createElement('strong');a.textContent=line.label;b.textContent=line.value;row.append(a,b);}else row.textContent=line.text||'';return row;}));}
     }
+    function shotAudio(){
+      const shot=timeline.cue()?.shot;
+      if(!shot?.sounds||!session.data?.audio)return;
+      if(session.audioShot!==shot){session.audioShot=shot;session.soundIndex=0;}
+      const time=timeline.shotTime();
+      while(session.soundIndex<shot.sounds.length&&shot.sounds[session.soundIndex][0]<=time){
+        const [,name,gain]=shot.sounds[session.soundIndex++];
+        if(!doc.hidden)session.data.audio.play(name,{gain});
+      }
+    }
     function paint(now){
       resize();lastPaint=now;dirty=false;
       const cue=timeline.cue();if(!cue)return;
@@ -148,7 +166,7 @@
         const shot=cue.shot,length=shot.dur||6,t=still?(shot.still??length*.6):timeline.shotTime();
         c.setTransform(1,0,0,1,0,0);c.globalAlpha=1;c.globalCompositeOperation='source-over';c.fillStyle='#05080d';c.fillRect(0,0,canvas.width,canvas.height);
         c.setTransform(view.scale,0,0,view.scale,view.ox,view.oy);c.imageSmoothingEnabled=false;
-        c.save();try{shot.draw(c,t,{w:view.w,h:STAGE_H,cx:view.w/2,dur:length,u:clamp(t/length),still,data:session.data||{}});}catch(error){if(!session.warned){session.warned=true;root.console?.warn?.('Plano «'+shot.id+'»:',error);}}c.restore();
+        c.save();c.beginPath();c.rect(0,0,view.w,STAGE_H);c.clip();try{shot.draw(c,t,{w:view.w,h:STAGE_H,cx:view.w/2,dur:length,u:clamp(t/length),still,data:session.data||{}});}catch(error){if(!session.warned){session.warned=true;root.console?.warn?.('Plano «'+shot.id+'»:',error);}}c.restore();
         // Cada plano entra desde negro.
         const fade=still?0:1-clamp(timeline.shotTime()/FADE);
         if(fade>0){c.setTransform(1,0,0,1,0,0);c.globalAlpha=fade;c.fillStyle='#05080d';c.fillRect(0,0,canvas.width,canvas.height);c.globalAlpha=1;}
@@ -158,8 +176,10 @@
       layer.classList?.toggle('story-ready',!cue.text||text.length>=cue.text.length);
       if(cue.credits){
         // Los créditos suben por tiempo y se detienen con el último bloque a la vista.
-        const height=layer.clientHeight||540,travel=(roll.offsetHeight||height)+height*.2,u=still?1:ease(timeline.cueTime()/Math.max(1,(cue.min||8)-1.5));
-        roll.style.transform='translateY('+Math.round(height*.9-u*travel)+'px)';
+        const height=credits.clientHeight||layer.clientHeight||540,content=roll.offsetHeight||height;
+        const start=height,end=Math.min(height*.15,height*.92-content);
+        const u=still?1:ease(timeline.cueTime()/Math.max(1,(cue.min||8)-1.5));
+        roll.style.transform='translateY('+Math.round(start+(end-start)*u)+'px)';
       }
     }
     function pollPad(act=true){
@@ -173,6 +193,7 @@
       const dt=clamp((now-last)/1000,0,MAX_DT);last=now;
       pollPad();if(!session)return;
       timeline.update(dt);if(!session)return;
+      shotAudio();
       // Con planos fijos basta repintar al cambiar algo (o cada medio segundo, por si llega una imagen).
       if(!still||dirty||now-lastPaint>500)paint(now);
       raf=root.requestAnimationFrame(frame);
@@ -202,13 +223,13 @@
     skipButton.onclick=()=>skip();
 
     // La música de la misión acompaña la historia y vuelve al estado en que estaba.
-    function musicOn(theme){
+    function musicOn(theme,mode){
       const music=root.ArcadeMusic?.current;if(!music?.status)return null;
-      try{const status=music.status(),was={running:!!status.running,theme:status.theme};if(theme&&theme!==status.theme)music.setTheme(theme);music.setRunning(true);return was;}catch{return null;}
+      try{const status=music.status(),was={running:!!status.running,theme:status.theme,mode:status.mode};if(mode)music.setMode?.(mode);if(theme&&theme!==status.theme)music.setTheme(theme);music.setRunning(true);return was;}catch{return null;}
     }
     function musicOff(was,theme){
       const music=root.ArcadeMusic?.current;if(!music||!was)return;
-      try{music.setRunning(was.running);if(theme&&was.theme!==theme)music.setTheme(was.theme);}catch{}
+      try{music.setRunning(was.running);if(was.mode)music.setMode?.(was.mode);if(theme&&was.theme!==theme)music.setTheme(was.theme);}catch{}
     }
     function finish(){
       const ended=session;if(!ended)return;session=null;
@@ -219,9 +240,9 @@
       ended.onDone?.();
     }
     // cues: lista de buildCues · theme: tema musical opcional · data: datos para los planos.
-    function play({cues=[],label,theme,data,onDone}={}){
+    function play({cues=[],label,theme,musicMode,data,onDone}={}){
       if(session){session.onDone=onDone;session.data=data;}
-      else{session={onDone,data,theme,music:musicOn(theme),focus:doc.activeElement,warned:false};listen(true);}
+      else{session={onDone,data,theme,music:musicOn(theme,musicMode),focus:doc.activeElement,warned:false};listen(true);}
       still=!!root.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
       layer.setAttribute('aria-label',label||'Historia');layer.classList?.toggle('story-still',still);layer.hidden=false;
       timeline=createTimeline(cues,{still,onCue:showCue,onDone:finish});

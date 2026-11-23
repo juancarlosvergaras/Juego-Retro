@@ -45,8 +45,8 @@
   for(const d of k.chips){d.life-=dt;d.vy+=650*dt;d.x+=d.vx*dt;d.y+=d.vy*dt;d.angle+=d.spin*dt;if(d.y>FLOOR-d.size/2){d.y=FLOOR-d.size/2;d.vy=0;d.vx*=.9;d.spin=0;}}k.chips=k.chips.filter(d=>d.life>0);
  }
  function update(k,p,dt,hurt=()=>{},enemies=[],platforms=[]){
-  if(!k)return;k.hit=Math.max(0,k.hit-dt);if(p.cloak>0&&k.hp>0)return;
-  k.anim+=dt;k.shake=Math.max(0,k.shake-dt*2);k.events.length=0;
+  if(!k)return;k.events.length=0;k.hit=Math.max(0,k.hit-dt);if(p.cloak>0&&k.hp>0)return;
+  k.anim+=dt;k.shake=Math.max(0,k.shake-dt*2);
   if(k.defeated)return;
   // Recover interrupted/old zero-health states before freeze or attack logic can stall them.
   if(k.hp<=0&&!['crack','death','defeated'].includes(k.phase)){enter(k,k.stage===1?'crack':'death');k.frozen=0;clearHazards(k);}
@@ -108,6 +108,13 @@
    [208,548,875,1220,1510,1870]
   ];
   const frames=images.map((image,row)=>{
+   const packed=root.ArcadeKingStrips?.[(image.src||'').split('/').pop()];
+   if(packed){
+     const baseline=Math.max(...packed.frames.map(([, ,top, ,height])=>top+height));
+     const ratio=packed.width/2172;
+     return packed.frames.map(([x,left,top,w,h],i)=>({image,x,y:0,left,top,w,h,
+       pivot:pivots[row][i]*ratio-left,base:row===4?h:baseline-top,bodyHeight:bodyHeights[row]*ratio}));
+   }
    const source=document.createElement('canvas');source.width=image.width;source.height=image.height;
    const sc=source.getContext('2d');sc.drawImage(image,0,0);
    const w=source.width,h=source.height,data=sc.getImageData(0,0,w,h).data;

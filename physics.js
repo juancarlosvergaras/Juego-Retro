@@ -55,7 +55,7 @@
     const [a,b,c,d,x,y]=matrix;return {x:a*point.x+c*point.y+x,y:b*point.x+d*point.y+y};
   }
   const jumpTurn={reset:resetJumpTurn,press:registerJump,advance:advanceJumpTurn,apply:applyJumpTurn,point:jumpTurnPoint};
-  function createPlayer(){return{fuel:EXTENSION.tileHeight*4,x:145,y:WORLD.ground,w:23,h:46,vx:0,vy:0,facing:1,grounded:true,jumps:0,coyote:.1,buffer:0,slide:0,slideLatch:false,anim:0,ground:null,ladder:null,ladderCooldown:0,rope:null};}
+  function createPlayer(){return{form:'soldier',fuel:EXTENSION.tileHeight*4,x:145,y:WORLD.ground,w:24,h:46,vx:0,vy:0,facing:1,grounded:true,jumps:0,coyote:.1,buffer:0,slide:0,slideLatch:false,anim:0,ground:null,ladder:null,ladderCooldown:0,rope:null};}
   function findAnchor(p,anchors,platforms=[]){
     if((p.form||'soldier')!=='soldier')return null;
     const direct=!anchors.length,handY=p.y-(direct?hangReach(p):30);
@@ -174,7 +174,7 @@
       }
     }
     if(input.hookPressed&&!(wasHookHeld&&input.hookHeld)){if(p.rope)p.rope=null;else attachHook(p,findAnchor(p,environment.anchors||[],platforms));}
-    if(!p.dropping&&!p.rope&&!p.ladder&&!p.ladderCooldown&&(input.up||input.down))p.ladder=(environment.ladders||[]).find(l=>Math.abs(p.x-l.x)<24&&p.y>=l.top-3&&p.y<=l.bottom+8&&(input.up?p.y>l.top+1:p.y<l.bottom-1))||null;
+    if(!p.dropping&&!p.rope&&!p.ladder&&!p.ladderCooldown&&!input.blockLadder&&(input.up||input.down))p.ladder=(environment.ladders||[]).find(l=>Math.abs(p.x-l.x)<24&&p.y>=l.top-3&&p.y<=l.bottom+8&&(input.up?p.y>l.top+1:p.y<l.bottom-1))||null;
     if(p.ladder){
       if(input.jumpPressed||dir){p.ladder=null;p.ladderCooldown=.25;p.grounded=false;p.jumps=0;}
       else{const l=p.ladder;p.x=l.x;p.vx=0;p.vy=((input.down?1:0)-(input.up?1:0))*95;p.y+=p.vy*dt;p.grounded=false;p.ground=null;p.slide=0;

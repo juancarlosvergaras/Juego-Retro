@@ -10,37 +10,38 @@
  if(carry.tankUnlocked)profile.tankUnlocked=true;if(carry.fighterUnlocked)profile.fighterUnlocked=true;if(carry.robotUnlocked)profile.robotUnlocked=true;if(carry.zombieUnlocked)profile.zombieUnlocked=true;if(fresh)ArcadeProgression.beginWorld(profile);ArcadeProgression.apply(profile,p,e,true);
  Object.assign(p,{x:200,y:414,lane:414,form:carry.form||'soldier',facing:1,grounded:false,jumps:0,jetpack:false,roadBoost:false,onMotorcycle:false,inSeaMission:false});
  if(!fresh&&saved.space&&!saved.dead&&Number.isFinite(carry.hp))e.hp=Math.max(1,Math.min(e.maxHp,carry.hp));
- if(['wolf','zombie','robot','tank','fighter','hero'].includes(saved.form)&&(saved.form==='hero'&&p.heroUnlocked||saved.form==='tank'&&p.tankUnlocked||saved.form==='fighter'&&p.fighterUnlocked||saved.form==='wolf'||saved.form==='zombie'&&p.zombieUnlocked||saved.form==='robot'&&p.robotUnlocked))p.form=saved.form;
+ ArcadeZombieForm.restoreBody(p,saved.form||p.form,true);
  if(!fresh&&!saved.dead&&Number.isFinite(saved.fuel))p.fuel=Math.min(p.fuelMax,Math.max(0,saved.fuel));
  p.formCooldown=Math.min(5,Math.max(0,Number(carry.formCooldown)||0));for(const [id,v]of Object.entries(carry.cooldowns||{}))if(Number.isFinite(v)&&v>0)powers.cooldowns[id]=v;
  let difficulty=ArcadeDifficulty.get(ArcadeDifficulty.load(store)),s=ArcadeSpaceWorld.create(saved.space||{},difficulty.health);if(saved.dead)s=ArcadeSpaceWorld.retry(s);
  ArcadeSpaceWorld.configure(s,p,e);
- e.combatDamage=difficulty.damage;e.hitProtection=difficulty.grace;let score={total:carry.score||0},paused=true,started=false,loaded=false,loading=null,renderer,last=0,acc=0,age=0,noticeAge=0,notice='',mainMenu=null,leaving=false;const images={},keys=new Set(),queue=new Set(),pointers=new Set();
+ ArcadeDifficulty.applyPlayerDamage(e,difficulty.id);let score={total:carry.score||0},paused=true,started=false,loaded=false,loading=null,renderer,last=0,acc=0,age=0,noticeAge=0,notice='',mainMenu=null,leaving=false;const images={},keys=new Set(),queue=new Set(),pointers=new Set();
+ ArcadeProgression.protect(p,saved.dead?ArcadeProgression.RESPAWN_SECONDS:(saved.respawnProtection||0));
  ArcadeDeveloperMode.prepare(profile,p,e,powers);
- function save(){if(leaving||!started)return;try{profile.shield=p.shield;ArcadeProgression.save(profile,store);const shared=ArcadeCampaign.snapshot(p,e,score,powers);store.setItem(key,JSON.stringify({...shared,dead:e.dead,space:ArcadeSpaceWorld.snapshot(s,p)}));ArcadeCampaign.write(store,{...shared,level:7,arrival:false,complete:s.complete});}catch{}}
+ function save(){if(leaving||!started)return;if(e.dead)ArcadeProgression.loseLife(profile,e);try{profile.shield=p.shield;ArcadeProgression.save(profile,store);const shared=ArcadeCampaign.snapshot(p,e,score,powers);store.setItem(key,JSON.stringify({...shared,respawnProtection:p.respawnProtection,dead:e.dead,space:ArcadeSpaceWorld.snapshot(s,p)}));ArcadeCampaign.write(store,{...shared,level:7,arrival:false,complete:s.complete});}catch{}}
  function notify(text){notice=text;noticeAge=3;}
  function locked(){return paused||s.intro<4||s.travel>=0||s.ending>=0||p.transform>0;}
  function switchForm(target){if(locked())return;p.previousForm=p.form;if(ArcadeZombieForm.change(e,p,target)){notify(ArcadeZombieForm.label(p.form)+' · Nave alienígena'+' · T en 5 s');save();}else if(p.formCooldown>0)notify('Transformación en '+Math.ceil(p.formCooldown)+' s');}
  const wheel=ArcadeCharacterWheel.create($('characters-two'),switchForm);
- function chooseWeapon(slot){if(locked()||p.form==='wolf'||p.form==='zombie'||p.form==='tank'||p.form==='fighter')return;if(p.form==='robot'&&slot<3)return;if(ArcadeArsenal.selectWeapon(e.inventory,slot))save();}
+ function chooseWeapon(slot){if(locked())return;if(ArcadeArsenal.selectWeapon(e.inventory,slot,p.form))save();}
  function cyclePower(){if(locked())return;const list=profile.owned;profile.equipped=list[(list.indexOf(profile.equipped)+1)%list.length]||null;save();}
  const hud=ArcadeMissionHud.create({player:p,encounter:e,profile,powers,canvas,audio,score:()=>score.total,onSelect:chooseWeapon,onPower:()=>{if(!locked())queue.add('power');},onCycle:cyclePower,onPersist:save});
  const dock=ArcadeRobotForm.installDock(p,e,save);
  function clear(){keys.clear();queue.clear();pointers.clear();}
- function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Has caído en la nave':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';play.focus();}
+ function pause(){if(!loaded)return;paused=true;clear();audio.setRunning(false);save();menu.hidden=false;canvas.inert=true;$('pause-options').hidden=false;$('level-two-title').textContent=e.dead?'Has caído en la nave':'Partida en pausa';$('level-two-message').textContent=e.dead?'Vuelve al último checkpoint con tus armas y mejoras.':'La misión queda detenida mientras consultas el menú.';play.textContent=e.dead?'Volver al CHECK POINT':'Continuar';if(e.dead)ArcadeProgression.showGameOver(document,profile);play.focus();}
  // La misión cierra con el mismo parte que las misiones 1 a 4; el panel antiguo queda de respaldo.
  function finish(){ArcadeCampaign.markCompleted(store,7);paused=true;clear();audio.setRunning(false);save();canvas.inert=true;
   if(window.ArcadeMissionResults?.show){const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 07 COMPLETADA',title:'EL SOBERANO DEL VACÍO',epilogue:story?.epilogue||'',stats:[['Puntos',(score.total||0).toLocaleString('es-CO')],['Estrellas',s.stars.size+' / 3'],['Pulso del Vacío','Conseguido']],next:{label:'Continuar · Misión 08',run:()=>$('victory-next').click()},retry:{label:'Repetir misión',run:()=>$('victory-replay').click()}});
   // Epílogo a pantalla completa antes del parte.
   if(story?.outro)story.outro(debrief);else debrief();return;}
   $('victory-screen').hidden=false;$('victory-menu').focus();}
- play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(s.complete){finish();return;}
+ play.onclick=()=>{if(!loaded||story?.briefingOpen())return;if(ArcadeProgression.restartLives(profile,store,key)){leaving=true;location.assign('level-seven.html?entry=select');return;}if(s.complete){finish();return;}
   // Una partida nueva abre con el informe animado; reanudar o volver de la pausa va directo a la nave.
   if(story&&!briefed&&!e.dead&&s.intro===0){briefed=true;menu.hidden=true;story.briefing(()=>play.click());return;}
-  if(e.dead){s=ArcadeSpaceWorld.retry(s);e.dead=false;e.hp=e.maxHp;ArcadeSpaceWorld.configure(s,p,e);e.invincible=3;p.transform=0;p.hurt=0;e.robotWait=null;powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];}
+  if(e.dead){s=ArcadeSpaceWorld.retry(s);e.dead=false;e.hp=e.maxHp;ArcadeSpaceWorld.configure(s,p,e);e.lifeLost=false;ArcadeProgression.protect(p);p.transform=0;p.hurt=0;e.robotWait=null;powers.beams=[];powers.drones=[];powers.turrets=[];powers.effects=[];}
   started=true;paused=false;clear();menu.hidden=true;canvas.inert=false;audio.unlock();audio.setRunning(true);canvas.focus();save();};
  $('pause-two').onclick=()=>paused?play.click():pause();$('show-shortcuts').onclick=()=>{$('shortcuts').hidden=!$('shortcuts').hidden;};$('restart').onclick=()=>{save();leaving=true;location.assign('level-seven.html?entry=select');};
- mainMenu=ArcadeMainMenu.create({mission:7,resumeAvailable:!!saved.space,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission(){save();leaving=true;},onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;e.combatDamage=next.damage;e.hitProtection=next.grace;return ArcadeDifficulty.save(id,store);}});
+ mainMenu=ArcadeMainMenu.create({mission:7,resumeAvailable:!!saved.space,soundControls:document.querySelector('.sound-controls'),tutorial:ArcadeTutorial.create(store),difficulty:ArcadeDifficulty.load(store),onPlay(){play.click();},onPause(){pause();menu.hidden=true;},onSound(){audio.setRunning(false);},onSelectMission(){save();leaving=true;},onDifficulty(id){const next=ArcadeDifficulty.get(id),ratio=next.health/s.difficulty;for(const n of [...s.enemies,s.boss]){n.hp*=ratio;n.maxHp*=ratio;}s.difficulty=next.health;difficulty=next;ArcadeDifficulty.applyPlayerDamage(e,next.id);return ArcadeDifficulty.save(id,store);}});
  $('open-main-menu').onclick=()=>mainMenu.show();$('victory-menu').onclick=()=>{save();leaving=true;location.assign('index.html');};$('victory-next').onclick=()=>{save();leaving=true;ArcadeCampaign.transferEight(store,p,e,score,powers);location.assign('level-eight.html?entry=campaign');};$('victory-replay').onclick=()=>{save();leaving=true;location.assign('level-seven.html?entry=select');};
  let queuedAim=null;
  function press(code){if(paused||story?.briefingOpen())return;if(code==='Space'||code==='Enter'){if(s.intro<4){s.intro=4;return;}if(s.ending>=0&&!s.complete){s.ending=Math.max(s.ending,13.99);return;}}keys.add(code);if(locked())return;if(code==='Space')queue.add('jump');if(code==='ArrowUp'||code==='KeyW')queue.add('interact');if(code==='KeyE')queue.add('hook');if(code==='KeyF')queue.add('jet');if(code==='KeyT')switchForm();if(code==='KeyG')queue.add('power');if(code==='KeyH')cyclePower();if(code==='KeyL'&&p.form==='robot'){ArcadeRobotForm.cycle(e.inventory);save();}if(code==='KeyL')queue.add('kick');if(ArcadeArsenal.fireKeys.includes(code)){queue.add('fire');queuedAim=ArcadeArsenal.aimDirection(ArcadeArsenal.aimInput(controls()),p.facing);}if(/^Digit[1-9]$/.test(code))chooseWeapon(Number(code.slice(-1)));if(code==='BracketLeft'||code==='BracketRight'){const a=e.inventory.owned;chooseWeapon(a[(a.indexOf(e.inventory.selected)+(code==='BracketRight'?1:-1)+a.length)%a.length]);}}
@@ -59,7 +60,8 @@
    pilots:playing&&!core?s.enemies.filter(n=>n.kind==='alienPilot'&&near(n)).length:0,
    airlockNear:playing&&!core&&p.x>ArcadeSpaceWorld.widths[s.floor]-620,
    bossActive:core&&b.active&&b.phase!=='arrival'&&s.ending<0,bossHalf:core&&s.ending<0&&b.hp>0&&b.hp<=b.maxHp/2,bossDown:s.ending>=1,wrap:s.ending>=7},dt);}
- function update(dt){ArcadeDeveloperMode.tick(p,e);const input=controls();narrate(dt);ArcadeZombieForm.tick(p,dt);for(const k of ['transform','claw','kick','healGlow'])p[k]=Math.max(0,(p[k]||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
+ function update(dt){ArcadeProgression.tickProtection(p,dt);ArcadeDeveloperMode.tick(p,e);const input=controls();narrate(dt);ArcadeZombieForm.tick(p,dt);for(const k of ['transform','claw','kick','healGlow'])p[k]=Math.max(0,(p[k]||0)-dt);noticeAge=Math.max(0,noticeAge-dt);
+  audio.music?.follow?.(dt,p,e,{quiet:s.intro<4||s.travel>=0,boss:s.boss.active,victory:s.ending>=0});
   if(queue.has('interact')){interact();queue.delete('interact');}
   if(s.intro>=4&&s.travel<0&&s.ending<0){const actual=p.transform>0?{}:input;ArcadeArsenal.playerAim(p,actual,{queuedAim,turn:false});s.mode=ArcadePhysics.step(p,ArcadeArsenal.movementInput(p,actual),dt,s.geometry.platforms,{anchors:[],ladders:[]});p.crouching=!!s.mode.crouching;p.aimHeight=p.crouching?20:28;if(p.aim.x&&p.form!=='wolf'&&!p.rope)p.facing=Math.sign(p.aim.x);ArcadeSoldierAnimation.advanceWalk(p,dt);
    ArcadeSpaceWorld.updateCamera(s,p);
@@ -72,7 +74,38 @@
   $('stars-two').textContent='★ '+s.stars.size+' / 3';$('region-two').textContent=ArcadeSpaceWorld.names[s.floor];$('route-two').max=3;$('route-two').value=s.ending>=0?3:s.floor===2?2+(1-s.boss.hp/s.boss.maxHp):s.floor+p.x/ArcadeSpaceWorld.widths[s.floor];$('distance-two').textContent=s.floor===2?'NÚCLEO':'SECTOR '+(s.floor+1)+' / 3';const stairs=ArcadeSpaceWorld.atAirlock(s,p);const button=$('mall-interact');button.hidden=locked()||!stairs;button.textContent=s.floor===0?'↑ Entrar a la nave':'↑ Acceder al núcleo';$('context-two').textContent=noticeAge>0?notice:stairs?'↑ Cruza la esclusa':s.floor===2?'Soberano: evita las marcas y salta las ondas. Ataca cuando se repliega.':'Avanza hasta la esclusa de la nave →';$('state').textContent=ArcadeZombieForm.label(p.form);$('hook-status').textContent=p.form==='soldier'?'E · GANCHO / F · JETPACK':'T · CAMBIAR FORMA';$('boss-hud').hidden=!s.boss.active||s.ending>=0;$('boss-title').textContent='JEFE · EL SOBERANO DEL VACÍO';$('boss-value').textContent=Math.ceil(s.boss.hp)+' / '+Math.ceil(s.boss.maxHp);$('boss-fill').style.width=100*s.boss.hp/s.boss.maxHp+'%';const bar=$('boss-fill').parentElement;bar.setAttribute('aria-label','Vida del Soberano');bar.setAttribute('aria-valuemax',s.boss.maxHp);bar.setAttribute('aria-valuenow',s.boss.hp);
  }
  const paths=ArcadeSpaceRenderer.paths;
- function loadLevel(){if(loaded)return Promise.resolve(true);if(loading)return loading;ArcadeLoading.begin(Object.keys(paths).length,loadLevel);loading=Promise.all([ArcadeAdvancedForms.load(),ArcadeRobotForm.load(),...Object.entries(paths).map(([id,path])=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{images[id]=id==='space'?img:prepareWhiteDeath(img);ArcadeLoading.step();resolve();};img.onerror=()=>reject(Error(path));img.src=path;}))]).then(()=>{renderer=ArcadeSpaceRenderer.create(images);ArcadeJetpackRenderer.setSheet(images.jetMk2);ArcadeZombieForm.setRunSheet(images.zombieRun);ArcadeZombieForm.setShockSheet(images.shock);ArcadeCheckpoints.setSheet(images.checkpointPc);ArcadeFormTransition.setSheet(images.formTransition);ArcadeImpact.setSheet(images.impact);ArcadePowerSprites.setSpriteSheet(images.powerSheet);ArcadePowerSprites.setOrbitalSheet(images.orbitalSheet);ArcadeZombieForm.setSheet(images.zombiePlayer);ArcadeZombieForm.setExtra(images.zombieExtra);ArcadeZombieForm.setCastSheet(images.zombieCast);ArcadeZombieForm.setPlayerSheets(images.zombieSoldier,images.zombieSoldierExtra);ArcadeZombieForm.setIdleSheet(images.zombieIdle);wheel.setSprites(images.soldier,SOLDIER_V2_FRAMES[0][0],images.wolf,ACTION_FRAMES.wolf[0][7]);ArcadeFormTransition.setEndpoint('wolf',images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);loaded=true;play.disabled=false;play.textContent='Entrar en la nave';canvas.width=960;canvas.height=540;ArcadeLoading.finish();mainMenu.ready({autoPlay:!!entry});if(entry)history.replaceState(null,'','level-seven.html');ui();return true;}).catch(error=>{console.error(error);loading=null;ArcadeLoading.fail();mainMenu.fail();return false;});return loading;}
+ function loadLevel(){if(loaded)return Promise.resolve(true);if(loading)return loading;const useZombie=p.zombieUnlocked||p.form==='zombie';
+    const levelArt=Object.entries(paths).filter(([key])=>useZombie||!/^zombie[A-Z]/.test(key));
+    ArcadeLoading.begin(levelArt.length,loadLevel);loading=Promise.all([ArcadeAdvancedForms.load(p),(p.robotUnlocked||p.form==='robot')?ArcadeRobotForm.load():null,...levelArt.map(([id,path])=>new Promise((resolve,reject)=>{const img=new Image();img.onload=()=>{images[id]=id==='space'?img:prepareWhiteDeath(img);ArcadeLoading.step();resolve();};img.onerror=()=>reject(Error(path));img.src=path;}))]).then(()=>{
+    renderer=ArcadeSpaceRenderer.create(images);
+    ArcadeJetpackRenderer.setSheet(images.jetMk2);
+    ArcadeZombieForm.setShockSheet(images.shock);
+    ArcadeCheckpoints.setSheet(images.checkpointPc);
+    ArcadeFormTransition.setSheet(images.formTransition);
+    ArcadeImpact.setSheet(images.impact);
+    ArcadePowerSprites.setSpriteSheet(images.powerSheet);
+    ArcadePowerSprites.setOrbitalSheet(images.orbitalSheet);
+    if(useZombie){
+      ArcadeZombieForm.setRunSheet(images.zombieRun);
+      ArcadeZombieForm.setCastSheet(images.zombieCast);
+      ArcadeZombieForm.setSheet(images.zombiePlayer);
+      ArcadeZombieForm.setExtra(images.zombieExtra);
+      ArcadeZombieForm.setPlayerSheets(images.zombieSoldier,images.zombieSoldierExtra);
+      ArcadeZombieForm.setIdleSheet(images.zombieIdle);
+    }
+    wheel.setSprites(images.soldier,SOLDIER_V2_FRAMES[0][0],images.wolf,ACTION_FRAMES.wolf[0][7]);
+    ArcadeFormTransition.setEndpoint('wolf',images.wolfActions,ArcadeSoldierAnimation.wolfActionFrames[0][0],ArcadeSoldierAnimation.wolfActionFrames[0][0][3]*ArcadeSoldierAnimation.wolfActionScale);
+    loaded=true;
+    play.disabled=false;
+    play.textContent='Entrar en la nave';
+    canvas.width=960;
+    canvas.height=540;
+    ArcadeLoading.finish();
+    mainMenu.ready({autoPlay:!!entry});
+    if(entry)history.replaceState(null,'','level-seven.html');
+    ui();
+    return true;
+  }).catch(error=>{console.error(error);loading=null;ArcadeLoading.fail();mainMenu.fail();return false;});return loading;}
  mainMenu.defer(loadLevel);if(entry)loadLevel();const budget=ArcadeFrameBudget.create();
  // Cámara cercana: personajes más grandes fuera de cinemáticas y jefes.
  const view=ArcadeFrameBudget.createView?.(1.4)||{limit:1,update(){},draw(c,w,h,x,y,f,d,paint){paint();}},stage=document.querySelector('.viewport'),closeUp=()=>!stage?.classList?.contains?.('road-cinematic')&&!!$('boss-hud')?.hidden;

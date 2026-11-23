@@ -19,6 +19,41 @@ test('mission 3 restores elapsed time only when resuming the same run',async()=>
  const legacy=await game('?entry=resume',{[key]:JSON.stringify({x:400,landed:true})});assert.ok(legacy.state.time<1);
 });
 
+test('las siete formas reaparecen con su cuerpo y el Centinela mantiene la dificultad vigente',async()=>{
+ for(const [form,height,width] of [['soldier',46,24],['wolf',64,24],['zombie',68,24],['robot',54,24],['tank',53,64],['fighter',57,24],['hero',46,24]]){
+  const unlocks={heroUnlocked:true,zombieUnlocked:true,robotUnlocked:true,tankUnlocked:true,fighterUnlocked:true};
+  const g=await game('?entry=resume',{...seed(5960,{form}),'obra10.progress.v1':JSON.stringify(unlocks)});
+  for(const [level,armor] of [['novato',65],['normal',100],['fuerte',135],['extrema',175]]){
+   g.menu.onDifficulty(level);g.state.combat.dead=true;g.element('play-two').click();
+   const p=g.state.player;
+   assert.deepEqual([p.form,p.h,p.w,g.state.mecha.maxHp,g.state.combat.difficulty],[form,height,width,armor,level]);
+  }
+ }
+});
+
+test('en cubierta el disparo agachado conserva la puntería horizontal a ambos lados',async()=>{
+ const g=await game('?entry=resume',seed(500)),p=g.state.player;
+ for(const facing of [-1,1]){
+  p.facing=facing;g.key('ArrowDown');g.tick(.2);g.key('KeyJ');g.tick(.05);
+  assert.equal(p.crouching,true);assert.deepEqual([p.aim.x,p.aim.y],[facing,0]);
+  g.key('KeyJ',false);g.key('ArrowDown',false);g.tick(.5);
+ }
+});
+
+test('reanudar conserva el daño del Centinela y termina una destrucción interrumpida una sola vez',async()=>{
+ const g=await game('?entry=resume',seed(6600));g.tick(.25);
+ const m=g.state.mecha;assert.equal(m.active,true);
+ require('../enemies').damage(m,35);g.pagehide();
+ const back=await game('?entry=resume',Object.fromEntries(g.data));
+ assert.equal(back.state.mecha.hp,65);assert.equal(back.state.mecha.active,true);
+ require('../enemies').damage(back.state.mecha,1000);back.tick(1.25);back.pagehide();
+ const end=await game('?entry=resume',Object.fromEntries(back.data));
+ assert.ok(end.state.mecha.deathAge>1);end.tick(3);
+ assert.equal(end.state.mecha.defeated,true);assert.ok(end.state.player.robotUnlocked);
+ const wallet=JSON.parse(end.data.get('obra10.progress.v1')).wallet;
+ end.pagehide();const paid=await game('?entry=resume',Object.fromEntries(end.data));paid.tick(.5);
+ assert.equal(JSON.parse(paid.data.get('obra10.progress.v1')).wallet,wallet);
+});
 async function game(query='?entry=select',initial={}){
  const data=new Map(Object.entries(initial)),listeners={},elements=new Map();let frame,view,wheelState,menuCallbacks,resizeCallback,navigation;
  // Stable loot prevents an unrelated random ammunition pickup during input tests.

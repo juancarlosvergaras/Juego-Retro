@@ -10,6 +10,6 @@
  function projectile(c,b,time=0){
   if(b.eyeRay||b.reflected){c.save();c.translate(b.x,b.y);c.rotate(Math.atan2(b.vy,b.vx));const len=Math.min(b.eyeRay?34:13,b.waterDistance??Infinity);
    c.fillStyle='#2575e7';c.fillRect(-len,-3,len,6);c.fillStyle='#80edff';c.fillRect(-len,-2,len,1);c.fillRect(-len,1,len,1);c.restore();return true;}
-  let kind=b.stormRay?'lightning':b.tankGrenade?'grenade':b.tankMissile||b.tankShell||b.type==='missile'||b.type==='torpedo'?'missile':b.enemy&&b.zombiePlasma?'plasma':b.enemy?'tracer':null;if(!kind)return false;const angle=Math.atan2(b.vy||0,b.vx||0)+(kind==='plasma'?Math.PI:0);return draw(c,kind,b.age??time,b.x,b.y,kind==='lightning'?35:kind==='plasma'?28:kind==='grenade'?17:kind==='tracer'?18:32,kind==='lightning'?14:kind==='plasma'?18:kind==='grenade'?17:kind==='tracer'?6:13,{angle});}
+  let kind=b.stormRay?'lightning':(b.tankGrenade||b.enemy&&b.slot===9)?'grenade':b.tankMissile||b.tankShell||b.type==='missile'||b.type==='torpedo'?'missile':b.enemy&&b.zombiePlasma?'plasma':b.enemy?'tracer':null;if(!kind)return false;const angle=Math.atan2(b.vy||0,b.vx||0)+(kind==='plasma'?Math.PI:0);return draw(c,kind,b.age??time,b.x,b.y,kind==='lightning'?35:kind==='plasma'?28:kind==='grenade'?17:kind==='tracer'?18:32,kind==='lightning'?14:kind==='plasma'?18:kind==='grenade'?17:kind==='tracer'?6:13,{angle});}
  const api={load,draw,beam,projectile,frameAt,paths,rows};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeBossAttackSprites=api;
 })(typeof window!=='undefined'?window:globalThis);

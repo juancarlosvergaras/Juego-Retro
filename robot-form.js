@@ -37,7 +37,7 @@
   return{stretch:1+Math.sin((p.anim||0)*2.2)*.012,bob:0,kick:fired};
  }
  function setSheet(image){
-  sheet=image;frames=[];const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const g=c.getContext('2d');g.drawImage(image,0,0);const data=g.getImageData(0,0,c.width,c.height).data;
+  sheet=image;frames=[];const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(image,0,0);const data=g.getImageData(0,0,c.width,c.height).data;
   const cw=c.width/COLS,ch=c.height/ROWS,opaque=(x,y)=>data[(y*c.width+x)*4+3]>=200;
   for(let row=0;row<ROWS;row++){const list=[];for(let col=0;col<COLS;col++){
    const x0=Math.round(col*cw),x1=Math.round((col+1)*cw),floor=Math.round(row*ch+FLOORS[row]*ch/CELL),ceiling=row?Math.round((row-1)*ch+FLOORS[row-1]*ch/CELL)+1:0;
@@ -57,6 +57,11 @@
   const q=pose(p,encounter),m=motion(p,encounter),f=frames[q.row][q.col];
   c.save();c.imageSmoothingEnabled=false;
   if(p.grounded!==false){c.fillStyle='#10161a55';c.fillRect(Math.round(p.x)-15,Math.round(p.y),30,2);c.fillRect(Math.round(p.x)-10,Math.round(p.y)+2,20,1);}
+  if(q.name==='walk'){
+    c.save();c.beginPath();c.rect(p.x-48,p.y-22,96,28);c.clip();
+    const legs=root.ArcadeSoldierAnimation?.baseSprite?.(c,p,0,p.walkCycle||0);c.restore();
+    if(legs){c.beginPath();c.rect(p.x-56,p.y-100,112,79);c.clip();}
+  }
   c.translate(Math.round(p.x)-Math.round(m.kick*1.5)*(p.facing||1),Math.round(p.y+m.bob));c.scale(p.facing||1,1);blit(c,f,q.col,m.stretch);
   // The optic burns steadily and flares when the guns fire.
   const e=eye(p,encounter),pulse=Math.floor((p.anim||0)*6)%5===0;c.fillStyle='#ff3b2a';c.fillRect(Math.round(e.x)-1,Math.round(e.y*m.stretch)-1,3,2);c.fillStyle=m.kick>0||pulse?'#ffd9c9':'#ff8a6a';c.fillRect(Math.round(e.x),Math.round(e.y*m.stretch)-1,1,1);

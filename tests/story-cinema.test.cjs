@@ -145,6 +145,82 @@ test('cada plano usa arte que existe y dibuja sin errores, con o sin imágenes, 
  draw('con imágenes');
 });
 
+test('el epílogo del mausoleo usa la forma y las armas con las que volvió el jugador',()=>{
+ const {win}=scenes(),S=win.ArcadeStoryScenes,shot=S.sequence('two','outro')[0],c=fakeContext(),drawn=[];
+ S.images.soldier={width:1536,height:1024};
+ win.ArcadeSoldierAnimation={drawGait(){},pose:()=>({armed:true}),gait:()=>null};
+ win.ArcadeZombieForm={drawPlayer(ctx,p){drawn.push(p.form);}};
+ win.ArcadeRobotForm={draw(ctx,p){drawn.push(p.form);}};
+ win.ArcadeWeaponRenderer={draw(ctx,p,e){drawn.push([p.form,e.inventory.selected]);}};
+ for(const form of ['soldier','zombie','tank','fighter','hero','robot']){
+  shot.draw(c,1,{w:960,h:540,cx:480,dur:8,data:{form,inventory:{selected:5}}});
+ }
+ assert.deepEqual(drawn,[['soldier',5],'zombie','tank','fighter','hero','robot',['robot',5]]);
+});
+
+test('en el atrio y sus cámaras los paseantes recorren los dos ciclos de marcha y quien mira la vitrina queda plantado',()=>{
+ const S=scenes().win.ArcadeStoryScenes;
+ const walking=S.images.m6walk={width:1920,height:160},browsing=S.images.m6shoppers={width:640,height:480};
+ const view={w:1320,h:540,cx:660,dur:8};
+ for(const shot of S.sequence('six','intro').slice(0,2)){
+  const frames=[new Set(),new Set()],idleX=new Set(),walkingX=new Set();
+  const c=fakeContext();let x;
+  c.translate=tx=>{x=tx;};
+  c.drawImage=(img,sx,sy,w,h,dx,dy)=>{
+   if(img!==walking&&img!==browsing)return;
+   assert.deepEqual([w,h,dx,dy],[80,80,-40,-74]);
+   if(img===walking){frames[sy/80].add(sx/80);walkingX.add(x);}
+   else idleX.add(x);
+  };
+  for(let i=0;i<120;i++)shot.draw(c,i/60,view);
+  assert.deepEqual(frames.map(f=>f.size),[24,24],shot.id);
+  assert.equal(idleX.size,1,'mismo lugar con la cámara fija');
+  assert.ok(walkingX.size>60,'las dos marchas avanzan por el pasillo');
+ }
+});
+
+test('el pie de las llamas de La Obra sigue el mismo recorte que su tejado o losa',()=>{
+ const {win}=scenes(),S=win.ArcadeStoryScenes;
+ Object.assign(S.images,{city:{width:1536,height:1024},tower:{width:729,height:2158},fx:{width:400,height:800}});
+ for(const [id,image,sites] of [
+  ['ciudad',S.images.city,[[633,554],[865,653],[1187,604],[1328,654]]],
+  ['obra',S.images.tower,[[152,1600],[485,1054],[222,707],[475,531]]]
+ ]){
+  const shot=S.sequence('one','intro').find(s=>s.id===id);
+  for(const w of [720,960,1320])for(const t of [.25,3.45,7.2]){
+   const c=fakeContext(),contacts=[];let projection,point;
+   c.translate=(x,y)=>{point=[x,y];};
+   c.drawImage=(img,sx,sy,sw,sh,dx,dy,dw,dh)=>{
+    if(img===image)projection={sx,sy,k:dw/sw};
+    if(img===S.images.fx&&sy===300)contacts.push([point[0],point[1]+dy+dh]);
+   };
+   shot.draw(c,t,{w,h:540,cx:w/2,dur:shot.dur});
+   assert.equal(contacts.length,2*sites.length);
+   sites.forEach(([x,y],i)=>{
+    const px=(x-projection.sx)*projection.k,py=(y-projection.sy)*projection.k;
+    for(const [cx,cy] of contacts.slice(2*i,2*i+2)){
+     assert.ok(Math.abs(cy-py)<=1,id+' base');assert.ok(Math.abs(cx-px)<10*projection.k+1,id+' foco');
+    }
+   });
+  }
+ }
+});
+
+test('el protagonista de la cornisa y de la mordida usa los sprites y la transformación de la partida',()=>{
+ const {win}=scenes(),S=win.ArcadeStoryScenes,draws=[];
+ win.ArcadeSoldierAnimation={baseSprite(c,p,row,phase){draws.push([p.form,row,Math.floor((phase%1)*12)]);return true;}};
+ win.ArcadeFormTransition={draw(c,p){draws.push([p.transformFrom,p.form]);return true;}};
+ win.ArcadeStorySprites={draw(){assert.fail('El retrato alternativo sustituyó al soldado');}};
+ const v={w:960,h:540,cx:480,dur:8},roof=S.sequence('one','intro')[1],bite=S.sequence('one','outro')[0];
+ const salute=S.images.capSalute={width:1728,height:160},poses=new Set(),c=fakeContext();
+ c.drawImage=(img,sx)=>{if(img===salute)poses.add(sx/144);};
+ for(let i=0;i<8*60;i++)roof.draw(c,i/60,v);
+ assert.equal(new Set(draws.filter(d=>d[0]==='soldier'&&d[1]===0).map(d=>d[2])).size,12);
+ assert.equal(poses.size,12);
+ poses.clear();draws.length=0;bite.draw(c,1,v);bite.draw(c,2,v);
+ assert.deepEqual([...poses],[0]);assert.deepEqual(draws,[['soldier','wolf']]);
+});
+
 test('cada misión tiene una intro de 3 a 5 planos y un epílogo de 2 o 3, uno por subtítulo',()=>{
  const S=scenes().win.ArcadeStoryScenes;
  stories.forEach((story,i)=>{
@@ -191,33 +267,18 @@ test('mount conserva la API de los motores y llama una sola vez al callback',()=
  assert.match(read('quimera-story.js'),/ArcadeMissionOneStory\.mount\(host,\{briefing,beats,scenes:'quimera'/);assert.match(read('quimera-game.js'),/\.briefing-next'\)\.click\(\)/);
 });
 
-test('el final de la campaña: ocho planos, de 45 a 70 s, con título, créditos y datos del jugador',()=>{
- const S=scenes().win.ArcadeStoryScenes,Eight=stories[7],shots=S.sequence('eight','finale');
- assert.deepEqual([...shots.map(s=>s.id)],['desplome','esposas','amanecer','aterrizaje','lobo','caceria','fuegos','creditos']);
- const data={store:null,stats:[['Estrellas en Nueva York','3 / 4']]},script=Eight.finaleScript(data);assert.equal(script.length,shots.length,'una página por plano');
- const cues=C.buildCues(script,shots),seconds=C.duration(cues);assert.ok(seconds>=45&&seconds<=70,'dura '+seconds.toFixed(1)+' s');
- const others=stories.flatMap(s=>['intro','outro'].map(kind=>C.duration(C.buildCues(kind==='intro'?s.briefing:s.config.outro||[],S.sequence(s.config.scenes,kind)))));
- assert.ok(others.every(d=>d<seconds/1.5),'más ambicioso que cualquier otra escena');
- const title=cues.find(c=>c.title);assert.equal(title.title.title,'CAP DOLLAR, THE HUNTER');assert.ok(title.title.big);assert.equal(title.shot.id,'fuegos');
- const credits=cues.at(-1).credits.map(l=>l.text||l.label+' '+l.value);assert.equal(credits[0],'GRACIAS POR JUGAR');assert.ok(credits.includes('Estrellas en Nueva York 3 / 4'));assert.equal(credits.at(-1),'Fin de la campaña');
- const text=script.map(p=>p.text).join('\n');
- for(const beat of [/Titán|prototipo/,/Comandante.*esposas/,/Amanece sobre Nueva York/,/Vega aterriza.*maletín/,/Quedármelo/])assert.match(text,beat);
- // Con el almacenamiento del perfil: puntos ganados, misiones completadas y dificultad.
- const keys={'obra10.progress.v1':JSON.stringify({earned:123456,wallet:2,zombieUnlocked:true,robotUnlocked:false}),'cap-dollar.completed.v1:1':'1','cap-dollar.completed.v1:2':'1','cap-dollar.completed.v1:8':'1','cap-dollar.difficulty.v1':'fuerte'};
- Object.assign(globalThis,{ArcadeCampaign:require('../campaign.js'),ArcadeProgression:require('../progression.js'),ArcadeDifficulty:require('../difficulty.js')});
- try{
-  const full=Eight.credits({store:{getItem:k=>keys[k]??null}}).filter(l=>l.kind==='stat').map(l=>l.label+': '+l.value);
-  assert.deepEqual(full.slice(0,3),['Misiones completadas: 3 de 8','Puntos ganados: '+(123456).toLocaleString('es-CO'),'Dificultad: Difícil']);
-  const camp=Eight.campaign({store:{getItem:k=>keys[k]??null}});assert.deepEqual(camp.completed,[1,2,8]);assert.equal(camp.forms.zombie,true);assert.equal(camp.forms.robot,false);
- }finally{for(const k of ['ArcadeCampaign','ArcadeProgression','ArcadeDifficulty'])delete globalThis[k];}
- // Música: el tema de la misión 1 existe y es válido; el final lo pide por su id.
- const Music=require('../music.js');assert.equal(Eight.config.finale.theme,'obra');assert.deepEqual(Music.validate(Music.themeFor('obra')),[]);
+test('Manhattan enlaza con el delta en dos planos sin créditos ni transformaciones',()=>{
+ const shots=scenes().win.ArcadeStoryScenes.sequence('eight','finale'),story=stories[7];
+ assert.deepEqual([...shots.map(s=>s.id)],['esposas','senal']);
+ const cues=C.buildCues(story.finaleScript({}),shots);
+ assert.ok(C.duration(cues)<12);assert.ok(cues.every(c=>!c.credits));
+ assert.match(cues.at(-1).text,/presa|muelle/);
 });
 
 test('los motores enganchan la historia sin tocar el juego: intro al empezar, epílogo antes del parte',()=>{
  for(const file of ['game.js','level-two-game.js','level-three-game.js','level-four-game.js','level-five-game.js','level-six-game.js','level-seven-game.js']){
   const source=read(file);assert.match(source,/story\.briefing\(/,file);
-  assert.match(source,/debrief=\(\)=>ArcadeMissionResults\.show\(/,file+': el parte espera');assert.match(source,/if\(story\?\.outro\)story\.outro\(debrief\);else debrief\(\);/,file+': epílogo y después parte');
+  assert.match(source,/debrief=\(\)=>ArcadeMissionResults\.show\(/,file+': el parte espera');assert.match(source,/if\(story\?\.outro\)story\.outro\(debrief(?:,\{[^\n;]*\})?\);else debrief\(\);/,file+': epílogo y después parte');
  }
  const eight=read('level-eight-game.js');assert.match(eight,/if\(story\?\.finale\)\{story\.finale\(\{store,player:p,stats:/);assert.doesNotMatch(eight,/Ver el final/,'el final ya no espera a un botón');
  for(const page of ['index.html','level-two.html','level-three.html','level-four.html','level-five.html','level-six.html','level-seven.html','level-eight.html','quimera.html']){
@@ -226,4 +287,33 @@ test('los motores enganchan la historia sin tocar el juego: intro al empezar, ep
  const css=read('mission-one-polish.css');assert.match(css,/\n#briefing\{position:fixed;inset:0;z-index:500/,'la capa cubre la ventana, por encima del marco del juego');
  assert.match(css,/#briefing \.story-canvas\{[^}]*image-rendering:pixelated/);assert.match(css,/prefers-reduced-motion/);
  assert.doesNotMatch(css,/briefing-objectives|briefing-card/,'sin tarjeta ni lista de objetivos');
+});
+
+test('los planos ilustrados conservan sus ocho poses y la obra conserva sus actores independientes',()=>{
+  const box=sandbox(),loaded=[];
+  box.win.Image=class{
+    constructor(){this.complete=true;this.naturalWidth=2048;this.naturalHeight=432;}
+    set src(value){this.path=value;loaded.push(value);}
+  };
+  box.run('story-cinema.js');box.run('story-illustrations.js');box.run('mission-one-scenes.js');
+  box.run('mission-four-scenes.js');box.run('mission-late-scenes.js');box.run('mission-finale-scenes.js');
+  const art=box.win.ArcadeStoryIllustrations,scenes=box.win.ArcadeStoryScenes;
+  assert.equal(loaded.length,0);
+  for(const set of names)for(const kind of ['intro',set==='eight'?'finale':'outro']){
+    const base=scenes.sequence(set,kind),film=art.decorate(set,base),i=film.findIndex((s,j)=>s!==base[j]);
+    if(['one','two','three'].includes(set)){assert.deepEqual(film,base);assert.equal(loaded.length,0);continue;}
+    assert.ok(i>=0,set+' '+kind);assert.equal(film[i].id,base[i].id);
+    const calls=[],ctx=fakeContext(calls),view={w:960,h:540};
+    const start=film[i].id==='esposas'?1.65:0;
+    for(let j=0;j<8;j++)film[i].draw(ctx,start+(j+.35)*2.5/8,view);
+    const pose=calls.map(([img,x,y])=>[img.path,Math.floor(x/512)+Math.floor(y/216)*4]);
+    assert.deepEqual(pose.map(row=>row[1]),[0,1,2,3,4,5,6,7]);
+    assert.ok(pose.every(([path])=>path.includes('historia-'+set+'-')));
+  }
+  const [lever]=art.decorate('nine',[{id:'control',draw(){throw Error('postura antigua');}}]);
+  const calls=[],ctx=fakeContext(calls);
+  for(const t of [.1,2.55,2.85,5.2,8])lever.draw(ctx,t,{w:720,h:540});
+  assert.ok(calls.slice(2).every(([img])=>img.path.includes('interlock')));
+  calls.length=0;lever.draw(ctx,8,{w:720,h:540,still:true});
+  assert.ok(calls[0][0].path.includes('nine-outro'));
 });

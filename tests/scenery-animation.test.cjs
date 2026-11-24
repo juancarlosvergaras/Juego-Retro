@@ -101,20 +101,22 @@ test('los peces del delta completan el salto y se sumergen al terminar la octava
 });
 
 test('el correcaminos y el helicóptero entran y salen completos, sin fundirse dentro del encuadre',()=>{
- const {api,requests,ctx,calls}=fixture(),owner={},observed=new Map();
- for(let i=0;i<60*60;i++){
-  const e=api.next(owner,'carretera',i/60),request=requests.at(-1);
-  if(request&&!request.loaded){request.image.onload();request.loaded=true;}
-  if(!e)continue;
-  const width=e.id==='rueda'?68:108;
-  api.cross(ctx,e,316,960,width,.8);
-  const left=calls.at(-1)[5];
-  if(!observed.has(e.id))observed.set(e.id,{start:left,end:left,previous:left,width,done:false});
-  const row=observed.get(e.id);if(row.done)continue;
-  assert.ok(left>=row.previous&&left-row.previous<=4);
-  assert.equal(e.alpha,1);row.previous=left;row.end=left;
-  if(left>=960)row.done=true;
+ for(const hz of [60,30,15,2]){
+  const {api,requests,ctx,calls}=fixture(),owner={},observed=new Map();
+  for(let i=0;i<hz*80;i++){
+   const e=api.next(owner,'carretera',i/hz),request=requests.at(-1);
+   if(request&&!request.loaded){request.image.onload();request.loaded=true;}
+   if(!e)continue;
+   const width=e.id==='rueda'?68:108;
+   api.cross(ctx,e,316,960,width,.8);
+   const left=calls.at(-1)[5];
+   if(!observed.has(e.id))observed.set(e.id,{start:left,end:left,previous:left,width,done:false});
+   const row=observed.get(e.id);if(row.done)continue;
+   assert.ok(left>=row.previous&&left-row.previous<=Math.ceil(220/hz));
+   assert.equal(e.alpha,1);row.previous=left;row.end=left;
+   if(left>=960)row.done=true;
+  }
+  assert.deepEqual([...observed.keys()],['helicoptero','rueda']);
+  for(const row of observed.values()){assert.ok(row.start+row.width<=0);assert.ok(row.done&&row.end>=960);}
  }
- assert.deepEqual([...observed.keys()],['helicoptero','rueda']);
- for(const row of observed.values()){assert.ok(row.start+row.width<=0);assert.ok(row.done&&row.end>=960);}
 });

@@ -44,6 +44,7 @@
   };
   const oneShot=new Set(['derrumbe','calavera','cangrejo','voladores','pelicano']);
   const schedules=new WeakMap();
+  const maxSceneStep=.5;
 
   // Loading decoration never holds the mission's loading bar. Failed requests back off.
   function sheet(id){
@@ -88,7 +89,7 @@
     }
     const elapsed=time-s.last;s.last=time;
     // Pausing, loading a save, or visiting another floor does not advance a gag offscreen.
-    const dt=elapsed<=.5?elapsed:0;
+    const dt=elapsed<=maxSceneStep?elapsed:0;
     if(!s.active){
       if(!s.bag.length){
         s.bag=scenes[scene].slice();
@@ -123,7 +124,10 @@
   // so the scheduler can retire them without a visible cut, even during turbo.
   function cross(c,e,floor,span,width,opacity=1){
     const margin=width/2+4;
-    paint(c,e.id,e.frame,-margin+e.u*(span+2*margin),floor,width,opacity);
+    // Leave one scheduler step offscreen at both ends, also on a slow phone.
+    const duration=motion[e.id][1];
+    const u=Math.max(0,Math.min(1,(e.age-maxSceneStep)/(duration-2*maxSceneStep)));
+    paint(c,e.id,e.frame,-margin+u*(span+2*margin),floor,width,opacity);
   }
 
   // The wrap happens beyond the edge, including room for a whole flock to exit.

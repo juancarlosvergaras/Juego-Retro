@@ -25,7 +25,7 @@ function update(s,e,p,profile,pressed,dt,platforms=[],view={left:0,right:729,top
  p.cloak=Math.max(0,(p.cloak||0)-dt);
  animate(s,p,dt);
  for(const k in s.cooldowns)s.cooldowns[k]=Math.max(0,s.cooldowns[k]-dt);
- s.quiet=p.hurt>0?0:s.quiet+dt;if(p.regenLevel&&s.quiet>=30-p.regenLevel*3){e.hp=Math.min(e.maxHp,e.hp+1);s.quiet=0;p.healGlow=.7;s.effects.push({kind:'heal',x:p.x,y:p.y-28,r:45,life:.8,duration:.8});}
+ s.quiet=p.hurt>0?0:s.quiet+dt;if(p.regenLevel&&e.hp<e.maxHp&&s.quiet>=30-p.regenLevel*3){e.hp=Math.min(e.maxHp,e.hp+1);s.quiet=0;p.healGlow=.7;s.effects.push({kind:'heal',x:p.x,y:p.y-28,r:45,life:.8,duration:.8});}
  const id=profile.equipped,c=C.catalog.find(c=>c.id===id);let message=null;
  if(pressed&&!p.burrow&&c&&profile.owned.includes(id)&&!s.cooldowns[id]&&!p.transform){
   const target=nearest(e,p.x,p.y-30);let used=true;

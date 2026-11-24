@@ -95,15 +95,21 @@
       const panel=live?layer.querySelector('.developer-settings'):null;
       panel?.scrollIntoView?.({block:'center'});byId('developer-toggle')?.focus?.({preventScroll:true});
     };
-    layer.addEventListener('keydown',e=>{
+    function onKey(e){
       e.stopPropagation();
       if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(page!=='home')show('home');else if(started&&!e.repeat)play.onclick();return;}
       if(e.key!=='Tab')return;
-      const buttons=Array.from(layer.querySelectorAll('button,input,a[href]')).filter(b=>!b.disabled&&!b.closest('[hidden]'));
+      // Solo cuentan los controles que se ven: en partida el selector de perfil está oculto por CSS.
+      const buttons=Array.from(layer.querySelectorAll('button,input,a[href]')).filter(b=>!b.disabled&&!b.closest('[hidden]')&&(typeof b.getClientRects!=='function'||b.getClientRects().length>0));
       const first=buttons[0],last=buttons[buttons.length-1];
-      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+      if(live&&!layer.contains(document.activeElement)){e.preventDefault();(e.shiftKey?last:first)?.focus();}
+      else if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
       else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
-    });
+    }
+    layer.addEventListener('keydown',onKey);
+    // El foco puede quedar fuera del menú (clic en un hueco, botón de la tienda
+    // redibujado tras comprar): Esc y Tab siguen respondiendo mientras esté abierto.
+    if(live)document.addEventListener?.('keydown',e=>{if(layer.hidden||e.defaultPrevented||layer.contains(e.target)||e.target?.closest?.('[role="dialog"]'))return;onKey(e);},true);
     if(overlay&&root.MutationObserver){
       overlay.classList.add('menu-unified');
       const open=byId('open-main-menu'),toggle=byId('show-shop');

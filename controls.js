@@ -21,7 +21,7 @@
  function clean(value){const result=fresh();if(!value||typeof value!=='object')return result;
   if(['auto','keyboard','gamepad'].includes(value.mode))result.mode=value.mode;
   if(Number.isFinite(value.deadzone))result.deadzone=Math.max(.1,Math.min(.6,value.deadzone));
-  for(const a of actions){const k=value.keyboard?.[a.id],b=value.gamepad?.[a.id];if(typeof k==='string'&&/^(Key[A-Z]|Digit[0-9]|Numpad[0-9]|Arrow(Up|Down|Left|Right)|Space|Shift(Left|Right)|Control(Left|Right)|Alt(Left|Right)|Bracket(Left|Right)|Comma|Period|Semicolon|Quote|Slash|Backslash|Minus|Equal|Enter|Backspace)$/.test(k))result.keyboard[a.id]=k;if(b===null||Number.isInteger(b)&&b>=0&&b<16)result.gamepad[a.id]=b;}
+  for(const a of actions){const k=value.keyboard?.[a.id],b=value.gamepad?.[a.id];if(typeof k==='string'&&/^(Key[A-Z]|Digit[0-9]|Numpad[0-9]|Arrow(Up|Down|Left|Right)|Space|Shift(Left|Right)|Bracket(Left|Right)|Comma|Period|Semicolon|Quote|Slash|Backslash|Minus|Equal|Enter|Backspace)$/.test(k))result.keyboard[a.id]=k;if(b===null||Number.isInteger(b)&&b>=0&&b<16)result.gamepad[a.id]=b;}
   return result;
  }
  function load(store){try{return clean(JSON.parse(store.getItem(STORE)));}catch{return fresh();}}
@@ -65,12 +65,14 @@
  }
  function install(){
   const doc=root.document;let store;try{store=root.localStorage;}catch{}let settings=load(store),capture=null,aim=null,padIndex=null,wasPad=false,previous=new Set(),neutral=true,lastMenu=null,lastStatus='',statusNode,rows=[],notice,dialog,returnFocus,menuRepeat=0,lastDirection='',focused=true;
+  // Teclas cuya pulsación consumió este módulo: solo a ellas se les consume también la suelta.
+  const routed=new Set();
   const emit=(id,down)=>{const a=actions.find(a=>a.id===id);if(!a)return;const e=new KeyboardEvent(down?'keydown':'keyup',{code:a.code,key:a.code==='Escape'?'Escape':a.code,bubbles:true,cancelable:true});Object.defineProperty(e,'arcadeControl',{value:true});doc.dispatchEvent(e);};
   const router=createRouter(emit);
   const visible=el=>el&&!el.hidden&&!el.closest('[hidden]')&&!el.closest('[inert]');
   const menuFocus=createMenuFocus(doc,visible);
   function menu(){const loading=doc.getElementById('level-loading');if(visible(loading))return loading;if(dialog&&!dialog.hidden)return dialog;for(const id of ['briefing','mission-results','main-menu','overlay','level-two-menu','victory-screen']){const el=doc.getElementById(id);if(visible(el))return el;}return doc.querySelector('.overlay:not([hidden])');}
-  function reset(){root.ArcadeMobile?.release();router.clear();aim=null;neutral=true;previous.clear();}
+  function reset(){root.ArcadeMobile?.release();routed.clear();router.clear();aim=null;neutral=true;previous.clear();}
   function save(){try{store.setItem(STORE,JSON.stringify(settings));notice.textContent='Configuración guardada para todas las misiones.';}catch{notice.textContent='Configuración aplicada durante esta sesión; el navegador no permite guardarla.';}reset();refresh();}
   function refresh(){for(const {a,key,pad}of rows){key.textContent=settings.keyboard[a.id]?keyName(settings.keyboard[a.id]):a.keys.map(keyName).join(' / ');const b=Object.hasOwn(settings.gamepad,a.id)?settings.gamepad[a.id]:a.button;pad.textContent=b===null?'Sin asignar':buttonNames[b];}}
   function close(){capture=null;dialog.hidden=true;reset();returnFocus?.focus();}
@@ -90,13 +92,17 @@
    if(e.arcadeControl)return;
    if(capture){e.preventDefault();e.stopImmediatePropagation();if(e.code==='Escape'){capture=null;notice.textContent='Asignación cancelada.';return;}if(capture.kind==='pad'){if(e.code==='Delete')assign('pad',capture.id,null);return;}if(e.repeat)return;const candidate=clean({keyboard:{[capture.id]:e.code}});if(candidate.keyboard[capture.id])assign('key',capture.id,e.code);else notice.textContent='Esta tecla está reservada. Elige otra.';return;}
    if(dialog&&!dialog.hidden){if(e.code==='Escape'){e.preventDefault();close();}else if(e.key==='Tab'){const list=focusable(dialog),i=list.indexOf(doc.activeElement);e.preventDefault();list[(i+(e.shiftKey?-1:1)+list.length)%list.length]?.focus();}e.stopImmediatePropagation();return;}
-   const surface=menu();if(surface||e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName))return;
+   const surface=menu();if(surface||/^(INPUT|SELECT|TEXTAREA)$/.test(e.target?.tagName))return;
+   // Atajo del navegador (Ctrl+R, Alt+D…): no es una orden del juego. No se cancela, pero tampoco llega a la misión,
+   // que dejaría la tecla pulsada para siempre si su suelta no llega (macOS con Cmd).
+   if(e.ctrlKey||e.metaKey||e.altKey){if(keyboardAction(settings,e.code,e.key)||actions.some(a=>a.keys.includes(e.code)))e.stopImmediatePropagation();return;}
    // A key may arrive after Continue but before the next animation frame.
    // Acknowledge that transition before recording it, so poll cannot erase it.
    if(surface!==lastMenu){reset();lastMenu=surface;}
-   const a=keyboardAction(settings,e.code,e.key);if(a){e.preventDefault();e.stopImmediatePropagation();const continuous=['left','right','up','down','aimUp','aimDown','run','fire','diagonalUp','diagonalDown','diagonalRightUp','diagonalRightDown'].includes(a.id);if(!e.repeat||continuous)router.set('key:'+e.code,[a.id]);}else if(actions.some(a=>a.keys.includes(e.code))){e.preventDefault();e.stopImmediatePropagation();}
+   const a=keyboardAction(settings,e.code,e.key);if(a){e.preventDefault();e.stopImmediatePropagation();routed.add(e.code);const continuous=['left','right','up','down','aimUp','aimDown','run','fire','diagonalUp','diagonalDown','diagonalRightUp','diagonalRightDown'].includes(a.id);if(!e.repeat||continuous)router.set('key:'+e.code,[a.id]);}else if(actions.some(a=>a.keys.includes(e.code))){e.preventDefault();e.stopImmediatePropagation();routed.add(e.code);}
   },true);
-  root.addEventListener('keyup',e=>{if(e.arcadeControl)return;const a=keyboardAction(settings,e.code,e.key);if(a||actions.some(a=>a.keys.includes(e.code))){e.preventDefault();e.stopImmediatePropagation();router.set('key:'+e.code,[]);}},true);
+  // En un menú la suelta pertenece al navegador: Espacio activa botones y casillas al soltarse.
+  root.addEventListener('keyup',e=>{if(e.arcadeControl||!routed.delete(e.code))return;e.preventDefault();e.stopImmediatePropagation();router.set('key:'+e.code,[]);},true);
   root.addEventListener('blur',()=>{focused=false;reset();});root.addEventListener('focus',()=>{focused=true;reset();});doc.addEventListener('visibilitychange',()=>{if(doc.hidden)reset();});
   function focusable(surface){return menuFocus.list(surface);}
   function menuInput(surface,pad,t){const buttons=pad.buttons,pressed=i=>buttons[i]?.pressed||buttons[i]?.value>.5;

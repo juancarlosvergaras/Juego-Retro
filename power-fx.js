@@ -109,6 +109,8 @@
     if(e)for(const n of e.enemies||[])if(n.hp>0&&n.frozen>0)for(let i=0;i<5;i++){const k=((s.age||0)*.8+hash(i+n.x))%1;dot(c,n.x+(hash(i+n.x*.1)-.5)*30,n.y-44+k*40,i%2?INK.cryo[1]:INK.cryo[2]);}
     c.restore();
   }
-  const api={COLORS,INK,LAUNCH,lights,launches,draw};
+  // Recargas que ya venían en curso (partida reanudada): no son un lanzamiento nuevo.
+  function prime(s){if(s)memory.set(s,{cooldowns:{...(s.cooldowns||{})},list:[]});}
+  const api={COLORS,INK,LAUNCH,lights,launches,draw,prime};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadePowerFx=api;
 })(typeof window!=='undefined'?window:globalThis);

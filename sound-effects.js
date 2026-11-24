@@ -54,9 +54,11 @@
     }
     function target(param,value,time=.02){param.cancelScheduledValues(context.currentTime);param.setTargetAtTime(value,context.currentTime,time);}
     async function unlock(){
-      try{if(!context){const Audio=root.AudioContext||root.webkitAudioContext;if(!Audio)return false;context=new Audio();}setup();if(context.state==='suspended')await context.resume();unlocked=context.state==='running';if(unlocked){music?.attach(context,noiseBuffer);loadSamples();}return unlocked;}catch{return false;}
+      try{if(!context){const Audio=root.AudioContext||root.webkitAudioContext;if(!Audio)return false;context=new Audio();}setup();
+        // iOS deja el contexto en «interrupted» tras una llamada o al volver del segundo plano: también hay que reanudarlo.
+        if(context.state!=='running')await context.resume?.();unlocked=context.state==='running';if(unlocked){music?.attach(context,noiseBuffer);loadSamples();}return unlocked;}catch{return false;}
     }
-    function output(gain,pan,room=0){const g=context.createGain(),p=context.createStereoPanner();g.gain.value=gain;p.pan.value=clamp(pan,-1,1);g.connect(p);p.connect(gate);let s=null;if(room>0&&send){s=context.createGain();s.gain.value=room;p.connect(s);s.connect(send);}return{g,p,s};}
+    function output(gain,pan,room=0,direct=false){const g=context.createGain(),p=context.createStereoPanner();g.gain.value=gain;p.pan.value=clamp(pan,-1,1);g.connect(p);p.connect(direct?compressor:gate);let s=null;if(room>0&&send){s=context.createGain();s.gain.value=room;p.connect(s);s.connect(send);}return{g,p,s};}
     // No two shots are identical: a little pitch and level drift keeps bursts alive.
     const drift=(value,amount=.06)=>value*(1+(Math.random()*2-1)*amount);
     function voice(out,{type='noise',freq=180,end=freq,cut=2000,q=.7,filter='lowpass',gain=.2,duration=.2,delay=0,attack=.003,vibrato=0,flutter=0}){
@@ -75,12 +77,13 @@
       if(type==='noise')node.start(t,Math.random()*1.9);else node.start(t);
       node.stop(t+duration+.01);return duration+delay+.03;
     }
-    function play(name,{gain=1,pan=0,variant=0}={}){
-      if(!context||!unlocked||!running||muted||!volume||gain<.015||!names.includes(name))return false;
+    // ui: sonido de interfaz (comprar en la tienda). Suena también con la partida en pausa, sin pasar por la compuerta del juego.
+    function play(name,{gain=1,pan=0,variant=0,ui=false}={}){
+      if(!context||!unlocked||(!running&&!ui)||muted||!volume||gain<.015||!names.includes(name))return false;
       setup();const now=context.currentTime,minGap=name==='debris'?.07:name==='step'?.065:.018;
       const priority=name==='steelTear'||name==='titanBlast';
       if(now-(limits.get(name)??-Infinity)<minGap||voices.size>(priority?144:90))return false;limits.set(name,now);
-      const {g,p,s:roomSend}=output(clamp(gain,0,1),pan,space[name]||0);let length=0;
+      const {g,p,s:roomSend}=output(clamp(gain,0,1),pan,ui&&!running?0:space[name]||0,ui&&!running);let length=0;
       const walking=name==='step'||name==='land'||name==='jump';
       const key=walking?(foot++%2?'otherStep':'step'):name==='turret'?'rifle':name==='distant'||name==='titanBlast'?'explosion':name;
       const buffer=samples.get(key);

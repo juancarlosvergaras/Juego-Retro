@@ -41,6 +41,8 @@
   return{crouching:true,underground:!!p.burrow};
  }
  function targets(e){return [...(e.enemies||[]),...[e.boss,e.finalBoss,e.tank,e.king].filter(n=>n&&n.hp>0&&(n.active||n===e.tank))].filter(n=>n.hp>0&&!(n.kind==='king'&&['descend','crack','roar','death'].includes(n.phase)));}
+ // Los jefes de la misión 1 no declaran ancho ni alto: su caja es la misma que usan las balas.
+ function boxOf(e,n){if(n===e.finalBoss&&!n.w)return apiOf('ArcadeFinalBoss','./final-boss').box(n);if(n===e.boss&&!n.w)return{x:n.x-30,y:n.y-75,w:60,h:75};return{x:n.x-(n.w||28)/2,y:n.y-(n.h||64),w:n.w||28,h:n.h||64};}
  function damage(e,n,amount){
   if(n===e.tank)return apiOf('ArcadeCityTank','./city-tank').damage(n,amount);
   if(n===e.finalBoss)return apiOf('ArcadeFinalBoss','./final-boss').damage(n,amount);
@@ -63,7 +65,7 @@
   const blobs=e.playerPlasma||(e.playerPlasma=[]);
   for(const b of blobs){b.trail=b.trail||[];b.trail.push({x:b.x,y:b.y});if(b.trail.length>9)b.trail.shift();b.life-=dt;b.vy+=220*dt;const dx=b.vx*dt,dy=b.vy*dt;let first=1,target=null,blocked=false,hitSurface=null;
    for(const s of platforms){const t=E.segmentHit(b.x,b.y,dx,dy,{x:s.x,y:s.y,w:s.w,h:s.thickness||12,terrain:s.terrain});if(t!==null&&t<=first){first=t;blocked=true;hitSurface=s;}}
-   for(const n of targets(e)){const t=E.segmentHit(b.x,b.y,dx,dy,{x:n.x-(n.w||28)/2,y:n.y-(n.h||64),w:n.w||28,h:n.h||64});if(t!==null&&t<first){first=t;target=n;hitSurface=null;blocked=true;}}
+   for(const n of targets(e)){const t=E.segmentHit(b.x,b.y,dx,dy,boxOf(e,n));if(t!==null&&t<first){first=t;target=n;hitSurface=null;blocked=true;}}
    b.x+=dx*first;b.y+=dy*first;
    if(blocked){if(hitSurface){const P=apiOf('ArcadePhysics','./physics'),surfaceY=P.surfaceY(hitSurface,b.x);if(dy>=0&&Math.abs(b.y-surfaceY)<10)pool(e,b.x,hitSurface);else{const ground=platforms.filter(s=>s!==hitSurface&&b.x>=s.x&&b.x<=s.x+s.w&&P.surfaceY(s,b.x)>=b.y).sort((a,c)=>P.surfaceY(a,b.x)-P.surfaceY(c,b.x))[0];if(ground)e.plasmaDrips=(e.plasmaDrips||[]).concat({x:b.x,y:b.y,vy:10,surface:ground,life:2}).slice(-24);}}b.life=0;e.zombieEffects.push({kind:'splash',x:b.x,y:b.y,life:.4});if(target){damage(e,target,1*(p.damageBonus||1));if(target.hp>0)target.sticky=4;}}
   }e.playerPlasma=blobs.filter(b=>b.life>0);
@@ -79,7 +81,7 @@
   if(input.kick&&p.plasmaWait<=0){const {x,y}=beginCast('plasma');p.plasmaWait=.85;e.playerPlasma.push({x,y,vx:aim.x*360,vy:aim.y*360-20,life:2.4,trail:[]});e.zombieEffects.push({kind:'cast',x,y,life:.16});e.flash=.08;}
   else if(input.fire&&p.rayWait<=0){const {x,y}=beginCast('ray');p.rayWait=Math.max(.5,.7/(p.rateBonus||1));let distance=440,carSurface=null;
    for(const s of platforms){const t=E.segmentHit(x,y,aim.x*distance,aim.y*distance,{x:s.x,y:s.y,w:s.w,h:s.thickness||12,terrain:s.terrain});if(t!==null){distance*=t;carSurface=s.kind==='wreck'?s.car:null;}}
-   const hits=targets(e).map(n=>({n,t:E.segmentHit(x,y,aim.x*distance,aim.y*distance,{x:n.x-(n.w||28)/2,y:n.y-(n.h||64),w:n.w||28,h:n.h||64})})).filter(a=>a.t!==null).sort((a,b)=>a.t-b.t);
+   const hits=targets(e).map(n=>({n,t:E.segmentHit(x,y,aim.x*distance,aim.y*distance,boxOf(e,n))})).filter(a=>a.t!==null).sort((a,b)=>a.t-b.t);
    if(hits.length){damage(e,hits[0].n,1.2*(p.damageBonus||1));distance*=hits[0].t;carSurface=null;e.zombieEffects.push({kind:'electrocute',target:hits[0].n,life:.48});}
    if(carSurface!==null)e.damageCar?.(carSurface);
    e.zombieEffects.push({kind:'ray',x,y,tx:x+aim.x*distance,ty:y+aim.y*distance,life:.16,caster:p});e.flash=.08;

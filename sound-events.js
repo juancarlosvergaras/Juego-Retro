@@ -76,7 +76,9 @@
       audio.loop('jetpack',p.jetpack?(p.jetBoost?.75:.6):0,0,p.jetBoost?1.45:p.vx||p.vy?1.2:.85);
       audio.loop('flame',s?.flame>0?.65:0);
     }
-    return{update};
+    // Recargas que ya venían en curso (partida reanudada): no son un lanzamiento nuevo.
+    function prime(powers){if(!powers)return;const h=state(powers);for(const [id,wait] of Object.entries(powers.cooldowns||{}))h[id]=wait;}
+    return{update,prime};
   }
   const api={create,spatial,weapons};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ArcadeSoundEvents=api;
 })(typeof window!=='undefined'?window:globalThis);

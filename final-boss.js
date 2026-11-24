@@ -66,7 +66,7 @@
     const dx=p.x-b.x;
     if(b.phase==='chase'){
       b.facing=dx<0?-1:1;
-      if(Math.abs(dx)>82)b.x=Math.max(115,Math.min(615,b.x+b.facing*95*dt));
+      if(Math.abs(dx)>82)b.x=Math.max(ARENA.x+35,Math.min(ARENA.x+ARENA.w-35,b.x+b.facing*95*dt));
       else if(Math.abs(p.y-b.y)<65){b.phase='windup';b.age=0;b.kind=b.cycle++%2?'kick':'claw';b.landed=false;}
     }else if(b.phase==='windup'&&b.age>=.48){b.phase='attack';b.age=0;}
     else if(b.phase==='attack'){

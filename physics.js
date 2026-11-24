@@ -183,7 +183,7 @@
         return{climbing:!!p.ladder,crouching:false,sliding:false};
       }
     }
-    if(p.rope&&input.jumpPressed){registerJump(p);p.rope=null;p.vy=Math.min(p.vy,-340);p.jumps=1;input={...input,jumpPressed:false};}
+    if(p.rope&&input.jumpPressed){registerJump(p);p.rope=null;p.jumpRising=false;p.vy=Math.min(p.vy,-340);p.jumps=1;input={...input,jumpPressed:false};}
     if(p.rope?.surface){
       const r=p.rope;let s=r.surface;
       if(!platforms.includes(s)){p.rope=null;p.vy=40;}

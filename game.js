@@ -38,7 +38,9 @@
   let cleanBuilding,queuedAim=null,arrival=null,opening=null;
   const fireBuffer=ArcadeArsenal.createFireBuffer();
   let score=ArcadeScore.create(),challenges=ArcadeChallenges.create(platforms);
-  const victory=window.ArcadeVictory?.create({drawHelicopter:ArcadeExtraction.drawFlyby,onFinish(){ArcadeCampaign.markCompleted(saveStore,1);sound.setRunning(false);
+  const victory=window.ArcadeVictory?.create({drawHelicopter:ArcadeExtraction.drawFlyby,onFinish(){ArcadeCampaign.markCompleted(saveStore,1);
+    // Misión cerrada: sin partida a medias que «Continuar» pueda reabrir en pleno rescate.
+    missionClosed=true;try{saveStore.removeItem(window.ArcadeMissionOneSave?.KEY);}catch{}sound.setRunning(false);
     // All three missions close on the same debrief card.
     if(window.ArcadeMissionResults?.show){ui.overlay.hidden=true;const debrief=()=>ArcadeMissionResults.show({kicker:'MISIÓN 01 COMPLETADA',title:'LA OBRA',epilogue:story?.epilogue||'',
       stats:ArcadeMissionResults.rows(score,{enemies:encounter.enemies,seconds:challenges.elapsed,extra:[['Estrellas',challenges.stars.filter(s=>s.taken).length+' / '+challenges.stars.length],['Sin recibir daño',challenges.damaged?'No':'Sí']]}),
@@ -58,11 +60,13 @@
 
   const profile=ArcadeProgression.load(saveStore);if(!savedMission&&window.ArcadeCampaign?.read(saveStore)?.level!==2){ArcadeProgression.beginWorld(profile);ArcadeProgression.save(profile,saveStore);}let powers=ArcadePowers.create(),powerQueued=false;
   ArcadeProgression.apply(profile,player,encounter,true);fuelMax=player.fuelMax;player.formCooldown=Math.min(5,ArcadeCampaign.first(saveStore)?.formCooldown||0);
-  if(savedMission){const resumed=window.ArcadeMissionOneSave.restore(savedMission,{player,encounter,score,profile,platforms,challenges,fuelTanks,progression:ArcadeProgression,campaign:ArcadeCampaign});if(resumed){checkpoint=resumed.checkpoint;maxFloor=resumed.maxFloor;}for(const [id,time] of Object.entries(ArcadeCampaign.first(saveStore)?.cooldowns||{})){const power=ArcadeProgression.catalog.find(c=>c.id===id&&c.kind==='power');if(power&&Number.isFinite(time))powers.cooldowns[id]=Math.max(0,Math.min(power.cooldown,time));}}
+  if(savedMission){const resumed=window.ArcadeMissionOneSave.restore(savedMission,{player,encounter,score,profile,platforms,challenges,fuelTanks,progression:ArcadeProgression,campaign:ArcadeCampaign});if(resumed){checkpoint=resumed.checkpoint;maxFloor=resumed.maxFloor;}for(const [id,time] of Object.entries(ArcadeCampaign.first(saveStore)?.cooldowns||{})){const power=ArcadeProgression.catalog.find(c=>c.id===id&&c.kind==='power');if(power&&Number.isFinite(time))powers.cooldowns[id]=Math.max(0,Math.min(power.cooldown,time));}soundEvents.prime?.(powers);window.ArcadePowerFx?.prime?.(powers);}
   window.ArcadeDeveloperMode?.prepare(profile,player,encounter,powers);fuelMax=player.fuelMax;
-  let loadoutAge=0;
-  function rememberLoadout(){if(loaded&&(mainMenu?.started||!paused)){window.ArcadeCampaign?.remember(saveStore,player,encounter,score,powers);if(!arrival?.active)window.ArcadeMissionOneSave?.write(saveStore,{player,encounter,score,checkpoint,maxFloor,challenges,fuelTanks,checkpoints:ArcadeCheckpoints.snapshot(checkpoints)});}}
+  let loadoutAge=0,missionClosed=false;
+  function rememberLoadout(){if(loaded&&(mainMenu?.started||!paused)){window.ArcadeCampaign?.remember(saveStore,player,encounter,score,powers);if(!arrival?.active&&!missionClosed)window.ArcadeMissionOneSave?.write(saveStore,{player,encounter,score,checkpoint,maxFloor,challenges,fuelTanks,checkpoints:ArcadeCheckpoints.snapshot(checkpoints)});}}
   window.addEventListener('pagehide',rememberLoadout);
+  // Volver con «Atrás» tras continuar a la misión 02 restaura esta página congelada, sin parte ni menú: se recarga.
+  window.addEventListener('pageshow',e=>{if(e.persisted&&missionClosed)location.reload();});
   function persist(){if(!ArcadeProgression.save(profile,saveStore))document.getElementById('shop-message').textContent='El navegador no permite guardar: las compras durarán solo esta sesión.';}
   const characterWheel=ArcadeCharacterWheel.create(document.getElementById('character-selector'),target=>{if(!loaded||paused||encounter.dead||encounter.extraction||arrival?.active)return;changeForm(target);canvas.focus({preventScroll:true});});
   let wheelKey='';
@@ -89,15 +93,17 @@
     const say=text=>{document.getElementById('shop-message').textContent=text;};
     ArcadeShopUI.render(document.getElementById('shop-list'),{profile,inventory:encounter.inventory,catalog:ArcadeProgression.catalog,flash:shopFlash,
       onEquip(id){profile.equipped=id;persist();shopFlash=null;drawShop();},
-      onBuy(id){const result=ArcadeProgression.buy(profile,id);say(result.message);if(result.ok){ArcadeProgression.apply(profile,player,encounter);fuelMax=player.fuelMax;persist();sound.play('pickup',{gain:.5});shopFlash=id;}drawShop();},
-      onBuyWeapon(slot){const result=ArcadeArmory.buy(profile,encounter.inventory,slot);say(result.message);if(result.ok){persist();rememberLoadout();sound.play('pickup',{gain:.5});shopFlash='w'+slot;}drawShop();}});
+      onBuy(id){const result=ArcadeProgression.buy(profile,id);say(result.message);if(result.ok){ArcadeProgression.apply(profile,player,encounter);fuelMax=player.fuelMax;persist();sound.play('pickup',{gain:.5,ui:true});shopFlash=id;}drawShop();},
+      onBuyWeapon(slot){const result=ArcadeArmory.buy(profile,encounter.inventory,slot);say(result.message);if(result.ok){persist();rememberLoadout();sound.play('pickup',{gain:.5,ui:true});shopFlash='w'+slot;}drawShop();}});
     shopFlash=null;
   }
   document.getElementById('show-shop').onclick=()=>{const shop=document.getElementById('shop');shop.hidden=!shop.hidden;if(!shop.hidden)drawShop();};
   const specialistImages={ramHit:new Image(),turret:new Image(),knife:new Image()};
   const zombieCast=new Image(),formTransition=new Image(),zombieIdle=new Image(),zombieSoldier=new Image(),zombieSoldierExtra=new Image(),zombiePlayer=new Image(),zombieExtra=new Image(),soldierCrouch=new Image(),transformationSheet=new Image(),meleeSoldier=new Image(),soldierDismount=new Image(),jeepArrival=new Image(),workerRun=new Image(),whiteDeath=new Image(),cityBackdrop=new Image(),workerSheet=new Image(),ambienceSheet=new Image(),orbitalSheet=new Image(),helicopterDoor=new Image(),zombieWolf=new Image(),powerSheet=new Image(),wolfClimb=new Image(),soldierWalk=new Image(),helicopter=new Image(),soldierClimb=new Image(),enemySoldier=new Image(),soldierV2=new Image(),soldierSlide=new Image(),blackWolf=new Image();
   const zombieRun=new Image(),shockSheet=new Image(),jetMk2=new Image(),checkpointPc=new Image(),impactSheet=new Image(),wolfWalk=new Image(),wolfSprint=new Image(),wolfJump=new Image(),wolfRam=new Image(),wolfCombos=new Image(),wolfActions=new Image(),kicks=new Image(),bows=new Image(),soldier=new Image(),building=new Image(),mobility=new Image(),weapons=new Image(),wolf=new Image();
-  function resize(snap=false){const bounds=canvas.getBoundingClientRect(),zoom=Math.max(1,Math.min(1.9,bounds.height/450)),width=Math.min(729,Math.max(430,Math.round(bounds.width/zoom))),height=Math.round(bounds.height/bounds.width*width),oldWidth=canvas.width,oldHeight=canvas.height;
+  function resize(snap=false){const bounds=canvas.getBoundingClientRect();if(!(bounds.width>0&&bounds.height>0))return;
+    // Un lienzo sin tamaño (pestaña minimizada o transición de pantalla completa) daría una altura NaN y dejaría la cámara inservible.
+    const zoom=Math.max(1,Math.min(1.9,bounds.height/450)),width=Math.min(729,Math.max(430,Math.round(bounds.width/zoom))),height=Math.round(bounds.height/bounds.width*width),oldWidth=canvas.width,oldHeight=canvas.height;
     if(width!==oldWidth||height!==oldHeight){canvas.width=width;canvas.height=height;if(snap!==true){camera.x+=(oldWidth-width)/2;camera.y+=(oldHeight-height)/2;}}
     if(snap===true){camera.x=Math.max(0,Math.min(WORLD.width-width,player.x-width*.4));camera.y=Math.max(WORLD.top,Math.min(WORLD.height-height,player.y-height*.7));}
   }
@@ -115,7 +121,7 @@
   function clearInput(){player.wolfQueued=null;fireBuffer.clear();powerQueued=false;queuedAim=null;keys.clear();touch.clear();jumpQueued=false;hookQueued=false;climbQueued=false;fireQueued=false;kickQueued=false;jetpackQueued=false;}
   function overlay(title,text,button){document.getElementById('next-mission').hidden=true;document.getElementById('shop').hidden=true;ui['pause-options'].hidden=true;ui['overlay-title'].textContent=title;ui['overlay-text'].textContent=text;ui.resume.textContent=button||'Continuar';ui.resume.hidden=!button;ui.overlay.hidden=false;}
   function togglePause(){
-    if(mainMenu?.isOpen()||story?.briefingOpen())return;if(!loaded||encounter.dead)return;paused=!paused;clearInput();
+    if(mainMenu?.isOpen()||story?.briefingOpen()||window.ArcadeMissionResults?.isOpen?.())return;if(!loaded||encounter.dead)return;paused=!paused;clearInput();
     ui.pause.innerHTML=paused?'Continuar <kbd>ESC</kbd>':'Menú <kbd>ESC</kbd>';
     ui['weapon-slots'].inert=paused;canvas.inert=paused;
     if(paused){rememberLoadout();overlay('Partida en pausa','Tu partida queda detenida mientras consultas el menú.','Continuar');ui['pause-options'].hidden=false;ui.shortcuts.hidden=true;ui['show-shortcuts'].textContent='Ver atajos de teclado';ui['show-shortcuts'].setAttribute('aria-expanded','false');ui.resume.focus({preventScroll:true});}
@@ -133,7 +139,7 @@
     const died=encounter.dead,remaining=player.respawnProtection||0;
     const previousCooldowns={...powers.cooldowns},previousShield=player.shield;
     if(ArcadeProgression.restartLives(profile,saveStore))full=true;
-    window.ArcadeRobotForm&&(window.ArcadeRobotForm.dock=null);document.getElementById('robot-second-weapon')?.remove();const savedFuel=player.fuel,savedFormCooldown=player.formCooldown||0;presentation?.reset();score.floating=[];nextMission.hidden=true;if(full){story?.reset();checkpoints=ArcadeCheckpoints.create(1,platforms);try{saveStore.removeItem(window.ArcadeMissionOneSave?.KEY);}catch{}if(ambience.crane)ambience.crane.x=ambience.origin;ambience=ArcadeAmbience.create(platforms,WORLD.ground);ArcadeProgression.beginWorld(profile);persist();score=ArcadeScore.create();challenges=ArcadeChallenges.create(platforms);fuelTanks.forEach(t=>t.taken=false);checkpoint={x:145,y:WORLD.ground,floor:0};maxFloor=0;}const defeated=encounter.enemies.filter(n=>n.hp<=0).map(n=>n.id);const savedInventory=encounter.inventory,savedPickups=encounter.pickups,savedMedkits=encounter.medkits;const keepWolf=!full&&encounter.won,savedForm=player.form,savedFinalWon=encounter.finalWon;player=createPlayer();if(!full)player.fuel=savedFuel;player.x=checkpoint.x;player.y=checkpoint.y;encounter=createEncounter(full?{}:{pickups:savedPickups});window.ArcadeDifficulty?.apply(encounter,difficulty);if(!full){encounter.inventory=savedInventory;encounter.pickups=savedPickups;encounter.medkits=savedMedkits;for(const n of encounter.enemies)if(defeated.includes(n.id)){n.hp=0;n.death=0;}ArcadeProgression.protect(player,died?ArcadeProgression.RESPAWN_SECONDS:remaining);}if(keepWolf){
+    window.ArcadeRobotForm&&(window.ArcadeRobotForm.dock=null);document.getElementById('robot-second-weapon')?.remove();const savedFuel=player.fuel,savedFormCooldown=player.formCooldown||0;presentation?.reset();score.floating=[];nextMission.hidden=true;if(full){missionClosed=false;story?.reset();checkpoints=ArcadeCheckpoints.create(1,platforms);try{saveStore.removeItem(window.ArcadeMissionOneSave?.KEY);}catch{}if(ambience.crane)ambience.crane.x=ambience.origin;ambience=ArcadeAmbience.create(platforms,WORLD.ground);ArcadeProgression.beginWorld(profile);persist();score=ArcadeScore.create();challenges=ArcadeChallenges.create(platforms);fuelTanks.forEach(t=>t.taken=false);checkpoint={x:145,y:WORLD.ground,floor:0};maxFloor=0;}const defeated=encounter.enemies.filter(n=>n.hp<=0).map(n=>n.id);const savedInventory=encounter.inventory,savedPickups=encounter.pickups,savedMedkits=encounter.medkits;const keepWolf=!full&&(encounter.won||encounter.boss.hp<=0),savedForm=player.form,savedFinalWon=encounter.finalWon||(encounter.finalBoss.stage===2&&encounter.finalBoss.hp<=0);player=createPlayer();if(!full)player.fuel=savedFuel;player.x=checkpoint.x;player.y=checkpoint.y;encounter=createEncounter(full?{}:{pickups:savedPickups});window.ArcadeDifficulty?.apply(encounter,difficulty);if(!full){encounter.inventory=savedInventory;encounter.pickups=savedPickups;encounter.medkits=savedMedkits;for(const n of encounter.enemies)if(defeated.includes(n.id)){n.hp=0;n.death=0;}ArcadeProgression.protect(player,died?ArcadeProgression.RESPAWN_SECONDS:remaining);}if(keepWolf){
       encounter.won=true;Object.assign(encounter.boss,{hp:0,active:false,phase:'dead',death:0});
       if(savedFinalWon){encounter.finalWon=true;Object.assign(encounter.finalBoss,{hp:0,stage:2,phase:'dead',death:0,active:false});}
     }
@@ -142,19 +148,19 @@
     if(!full){
       ArcadeZombieForm.restoreBody(player,savedForm,keepWolf);
       player.fuel=Math.min(fuelMax,savedFuel);player.formCooldown=savedFormCooldown;player.shield=previousShield;
-      Object.assign(powers.cooldowns,previousCooldowns);
+      Object.assign(powers.cooldowns,previousCooldowns);soundEvents.prime?.(powers);window.ArcadePowerFx?.prime?.(powers);
     }
     arrival=full?ArcadeArrival.create(player):null;opening=arrival?{age:0}:null;paused=false;canvas.inert=false;ui['weapon-slots'].inert=false;accumulator=0;clearInput();resize(true);ui.overlay.hidden=true;ui.pause.innerHTML='Menú <kbd>ESC</kbd>';window.ArcadeDeveloperMode?.prepare(profile,player,encounter,powers);fuelMax=player.fuelMax;rememberLoadout();notify(full?'La misión ha comenzado. Da caza al Capataz.':'De vuelta al checkpoint. Salud y combate reiniciados.');canvas.focus({preventScroll:true});}
   const movementKeys=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyA','KeyD','KeyW','KeyS','ShiftLeft','ShiftRight','KeyE','KeyJ','KeyX','Numpad0','KeyL','KeyT','KeyI','KeyK','KeyQ','KeyC','KeyO','KeyM','KeyF','KeyG','KeyB','KeyH'];
   window.addEventListener('keydown',e=>{
     const code=ArcadeArsenal.controlCode(e);
-    if(mainMenu?.isOpen()||victory?.isActive()||story?.briefingOpen())return;
-    if(paused&&code==='Tab'){const focusable=Array.from(ui.overlay.querySelectorAll('button,input')).filter(b=>!b.disabled&&!b.hidden&&!b.closest('[hidden]'));const index=focusable.indexOf(document.activeElement);e.preventDefault();focusable[(index+(e.shiftKey?-1:1)+focusable.length)%focusable.length].focus();return;}
+    if(mainMenu?.isOpen()||victory?.isActive()||story?.briefingOpen()||window.ArcadeMissionResults?.isOpen?.())return;
+    if(paused&&code==='Tab'){const focusable=Array.from(ui.overlay.querySelectorAll('button,input')).filter(b=>!b.disabled&&!b.hidden&&!b.closest('[hidden]'));const index=focusable.indexOf(document.activeElement);e.preventDefault();if(!focusable.length)return;focusable[(index+(e.shiftKey?-1:1)+focusable.length)%focusable.length].focus();return;}
     const button=e.target.tagName==='BUTTON';if(movementKeys.includes(code)&&!paused)e.preventDefault();
     // Held controls must be refreshed even on repeat or after a HUD button had focus.
     if(!paused&&!encounter.dead&&!encounter.extraction&&movementKeys.includes(code))keys.add(code);
     if(e.repeat)return;
-    if(code==='KeyP'||code==='Escape'){e.preventDefault();togglePause();return;}if(code==='KeyR'&&loaded&&!encounter.extraction){
+    if(code==='KeyP'||code==='Escape'){e.preventDefault();togglePause();return;}if(code==='KeyR'&&loaded&&!encounter.extraction){if(paused||arrival?.active)return;
       // Volver al checkpoint por voluntad propia no cura: solo quien ha caído reaparece con la vida completa.
       const kept=encounter.dead?0:encounter.hp;respawn();if(kept>0&&kept<encounter.maxHp){encounter.hp=kept;rememberLoadout();notify('De vuelta al checkpoint. Conservas la salud que tenías.');}return;}
     if(opening&&!paused&&(code==='Space'||code==='Enter')){opening.age=99;return;}
@@ -171,7 +177,7 @@
   window.addEventListener('blur',()=>{clearInput();if(loaded&&!paused&&!encounter.dead)togglePause();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();if(loaded&&!paused&&!encounter.dead)togglePause();}});
   document.querySelectorAll('[data-control]').forEach(button=>{const control=button.dataset.control;
-    button.addEventListener('pointerdown',e=>{e.preventDefault();if(!loaded||paused||encounter.dead||arrival?.active)return;button.setPointerCapture(e.pointerId);touch.add(control);if(control==='power')useFront();if(control==='jetpack')jetpackQueued=true;if(control==='transform')changeForm();if(control==='jump')jumpQueued=true;if(control==='hook')hookQueued=true;if(control==='up'&&player.rope)climbQueued=true;if(control==='kick'){if(player.form==='robot'){ArcadeRobotForm.cycle(encounter.inventory);persist();}else kickQueued=true;}});
+    button.addEventListener('pointerdown',e=>{e.preventDefault();if(!loaded||paused||encounter.dead||encounter.extraction||arrival?.active)return;button.setPointerCapture(e.pointerId);touch.add(control);if(control==='power')useFront();if(control==='jetpack')jetpackQueued=true;if(control==='transform')changeForm();if(control==='jump')jumpQueued=true;if(control==='hook')hookQueued=true;if(control==='up'&&player.rope)climbQueued=true;if(control==='kick'){if(player.form==='robot'){ArcadeRobotForm.cycle(encounter.inventory);persist();}else kickQueued=true;}});
     for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,()=>touch.delete(control));
   });
   ui['show-shortcuts'].onclick=()=>{ui.shortcuts.hidden=!ui.shortcuts.hidden;ui['show-shortcuts'].setAttribute('aria-expanded',String(!ui.shortcuts.hidden));ui['show-shortcuts'].textContent=ui.shortcuts.hidden?'Ver atajos de teclado':'Ocultar atajos de teclado';};
@@ -224,7 +230,9 @@
     if(!wasActive&&encounter.boss.active){notify('EL CAPATAZ · Combate iniciado');presentation?.intro('EL CAPATAZ','Lobo Blanco · Señor de la obra');}
     if(wasFinalStage!==2&&encounter.finalBoss.stage===2)presentation?.phase('LOBO ZOMBI','Fase 2 · La manada no muere');
     if(!wasFinalActive&&encounter.finalBoss.active&&encounter.finalBoss.stage!==2){notify('LOBO NEGRO · Jefe de la manada');presentation?.intro('LOBO NEGRO','Jefe de la manada');}
-    if(ArcadeExtraction.ready(encounter,powers)){encounter.extraction=ArcadeExtraction.create(player,platforms,true);encounter.bullets=[];encounter.finalBoss.missiles=[];clearInput();notify('¡Jefe derrotado! Helicóptero de extracción en camino.');presentation?.defeat('LA MANADA HA CAÍDO','Helicóptero de extracción en camino');}
+    if(ArcadeExtraction.ready(encounter,powers)){encounter.extraction=ArcadeExtraction.create(player,platforms,true);encounter.bullets=[];encounter.finalBoss.missiles=[];
+      // El combate deja de actualizarse: sin parpadeo de invulnerabilidad, tajos ni rayos congelados durante el rescate.
+      encounter.invincible=0;encounter.weaponAction=null;encounter.flash=0;encounter.zombieEffects=[];encounter.playerPlasma=[];encounter.plasmaDrips=[];mode={};clearInput();notify('¡Jefe derrotado! Helicóptero de extracción en camino.');presentation?.defeat('LA MANADA HA CAÍDO','Helicóptero de extracción en camino');}
     firingPose=controls.fire?.15:Math.max(0,firingPose-dt);
 
     if(!wasDefeated&&encounter.won){notify('¡Forma de lobo desbloqueada! Acceso a la azotea abierto.');presentation?.defeat('EL CAPATAZ HA CAÍDO','Su mordida te ha cambiado');}
@@ -408,7 +416,7 @@
     if(arrival?.active)ui.state.textContent=arrival.phase==='reverse'?'Llegando en jeep':arrival.phase==='jump'?'Desembarco':'Preparando la misión';
 
   }
-  function loop(t){window.ArcadeDeveloperMode?.poll();window.ArcadeControls?.poll(t);const budget=frameBudget?.plan(t,{paused:paused||encounter.dead,hidden:document.hidden,width:canvas.width,height:canvas.height})||{render:true,hud:true};const elapsed=Math.min((t-last)/1000||0,.1);last=t;if(victory?.isActive()){sound.setRunning(!document.hidden);if(!document.hidden){victory.update(elapsed);sound.loop('helicopter',.22,0,.9);}accumulator=0;requestAnimationFrame(loop);return;}sound.setRunning(loaded&&!paused&&!encounter.dead&&!document.hidden&&!encounter.extraction?.done);if(loaded){if(!paused)ArcadeScore.tick(score,elapsed);if(!paused&&!encounter.dead){accumulator+=elapsed*(presentation?presentation.tick(elapsed):1);while(accumulator>=1/120&&!encounter.dead){update(1/120);soundEvents.update({player,encounter,powers,ambience,arrival,fuelTanks,weather:{wind:.25+.75*(window.ArcadeMissionOneFx?.altitude(camera,canvas.height,WORLD)||0),rain:.55,distant:true}},1/120);accumulator-=1/120;if(paused||encounter.dead||victory?.isActive()){accumulator=0;break;}}}else accumulator=0;if(budget.render)render(budget.hud);}requestAnimationFrame(loop);}
+  function loop(t){window.ArcadeDeveloperMode?.poll();window.ArcadeControls?.poll(t);const budget=frameBudget?.plan(t,{paused:paused||encounter.dead,hidden:document.hidden,width:canvas.width,height:canvas.height})||{render:true,hud:true};const elapsed=Math.min((t-last)/1000||0,.1);last=t;if(victory?.isActive()){sound.setRunning(!document.hidden);if(!document.hidden){victory.update(elapsed);sound.loop('helicopter',.22,0,.9);}accumulator=0;requestAnimationFrame(loop);return;}if(!story?.briefingOpen())sound.setRunning(loaded&&!paused&&!encounter.dead&&!document.hidden&&!encounter.extraction?.done);if(loaded){if(!paused)ArcadeScore.tick(score,elapsed);if(!paused&&!encounter.dead){accumulator+=elapsed*(presentation?presentation.tick(elapsed):1);while(accumulator>=1/120&&!encounter.dead){update(1/120);soundEvents.update({player,encounter,powers,ambience,arrival,fuelTanks,weather:{wind:.25+.75*(window.ArcadeMissionOneFx?.altitude(camera,canvas.height,WORLD)||0),rain:.55,distant:true}},1/120);accumulator-=1/120;if(paused||encounter.dead||victory?.isActive()){accumulator=0;break;}}}else accumulator=0;if(budget.render)render(budget.hud);}requestAnimationFrame(loop);}
   let loadPromise;
   function loadLevel(){if(loaded)return Promise.resolve(true);if(loadPromise)return loadPromise;
   const useZombie=player.zombieUnlocked||player.form==='zombie';

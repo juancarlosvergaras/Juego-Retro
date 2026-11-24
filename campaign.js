@@ -38,7 +38,7 @@
         if(store.getItem(completionKey(level))==='1')return [level];
         const s=JSON.parse(store.getItem('cap-dollar.mission-'+name+'.v1')||'null');
         // Earlier versions saved the last objective within each mission.
-        const cleared=[s?.finalWon,s?.king?.defeated&&!s.inside,s?.ending,s?.road?.complete,
+        const cleared=[s?.finalWon&&s.challenges?.done!==false,s?.king?.defeated&&!s.inside,s?.ending,s?.road?.complete,
           s?.sea?.complete,s?.mall?.complete,s?.space?.complete,s?.newYork?.complete,s?.horizon?.phase==='won',s?.horizon?.phase==='won'];
         if(cleared[index]){markCompleted(store,level);return [level];}
       }catch{}

@@ -33,7 +33,10 @@
     const landTime=Math.max(0,(ground-p.y)/240,Math.abs(p.x-landX)/110),walkTime=Math.abs(pickX-landX)/110,grabAt=Math.max(3.2,landTime+walkTime);
     return{t:0,x:-220,y:ground-125,pickX,ground,startX:p.x,startY:p.y,landX,landTime,walkTime,grabAt,liftAt:grabAt+.5,boardAt:grabAt+2.7,form:p.form||'soldier',phase:'walk',door:0,boarded:false,done:false};
   }
+  // El combate ya no se actualiza durante el rescate: nada de él debe quedar congelado en el personaje.
+  function settle(p){p.wolfAttack=null;p.wolfQueued=null;p.wolfChain=null;p.ram=null;p.sprinting=false;p.zombiePose=0;p.burrow=null;p.emerging=0;p.cloak=0;}
   function update(s,p,dt){
+    settle(p);
     p.heroFlight=false;
     if(s.returning){p.anim+=dt;p.jetpack=false;p.rope=null;p.claw=0;p.kick=0;p.transform=0;p.rescueGrip=false;p.hurt=0;
       if(Math.abs(p.x-s.climbX)>1){const dx=s.climbX-p.x;p.facing=Math.sign(dx);p.vx=p.facing*110;p.x+=Math.sign(dx)*Math.min(Math.abs(dx),110*dt);p.walkCycle=(p.walkCycle||0)+110*dt/52;p.grounded=true;p.y=s.ground;p.ladder=null;}

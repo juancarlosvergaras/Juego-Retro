@@ -135,6 +135,29 @@
     }
     return best;
   }
+  // El fusilero de delante conserva su puesto. El siguiente frena o da un
+  // paso atrás en la misma plataforma, sin usar los saltos de persecución.
+  function firingLineDirection(n,playerX,list,direction){
+    const toward=Math.sign(playerX-n.x),distance=Math.abs(playerX-n.x);
+    if(!toward)return direction;
+    const spacing=40,deck=n.ground,inset=n.w/2+4;
+    const left=Math.max(deck.x+inset,n.w/2+8),right=Math.min(deck.x+deck.w-inset,P.WORLD.width-n.w/2-8);
+    let nearest=Infinity,behind=0;
+    for(const ally of list){
+      if(ally===n||ally.kind!=='rifle'||ally.scriptedAI||ally.hp<=0||!ally.grounded||ally.ground!==deck)continue;
+      const gap=(ally.x-n.x)*toward;
+      if(gap<0||(gap===0&&ally.id>n.id)){
+        if(ally.alert&&!ally.guardPost)behind++;
+      }else if(gap<=distance)nearest=Math.min(nearest,gap);
+    }
+    const room=nearest-spacing,braking=n.vx*n.vx/3400;
+    const rearSpace=toward>0?n.x-left:right-n.x,frontSpace=toward>0?right-n.x:n.x-left;
+    if(room< -3&&rearSpace>braking+1)return -toward;
+    if(room<=braking+2)return 0;
+    // Junto al borde trasero es el primero quien abre espacio para la fila.
+    if(behind&&rearSpace+2<behind*spacing&&frontSpace>braking+2&&distance>spacing+braking)return toward;
+    return direction;
+  }
   function update(list,p,elapsed,platforms,bullets,segmentHit,noises=[],view){
     let preparing=list.find(n=>n.hp>0&&n.throwAge!=null);
     for(const n of list){
@@ -247,6 +270,10 @@
         if(jump){target=n.jumpRoute.x;dir=Math.sign(target-n.x);move=Math.abs(target-n.x)>4;}
       }
       if(n.grounded&&edge&&!jump&&!route)move=false;
+      if(n.kind==='rifle'&&seen&&n.ground&&n.grounded&&!n.guardPost&&!n.jumpRoute&&!route&&!jump&&Math.abs(goalDy)<=45){
+        dir=firingLineDirection(n,p.x,list,move?dir:0);
+        move=dir!==0;
+      }
       P.step(n,{left:move&&dir<0,right:move&&dir>0,run:n.kind==='knife'&&!route,down:drop,jumpPressed:drop||jump},dt,platforms);
       if(drop&&n.dropping){n.dropRoute=route;n.jumpWait=1.2;n.flash=0;continue;}
       n.runCycle+=Math.abs(n.vx)*dt/72;

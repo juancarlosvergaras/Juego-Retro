@@ -5,6 +5,29 @@ const read=name=>fs.readFileSync(path.join(__dirname,'..',name),'utf8');
 function setup(){const platforms=P.createPlatforms();return{player:P.createPlayer(),encounter:E.createEncounter(),score:Score.create(),profile:U.fresh(),platforms,challenges:Challenges.create(platforms),fuelTanks:[{id:0,taken:false}],progression:U,campaign:C};}
 const signature=list=>list.map(x=>[x.id,x.slot,x.x,x.y,!!x.taken].join(':')).join('|');
 
+test('recargar tras un intercambio mortal en la azotea mantiene al jefe abatido',()=>{
+  const g=setup(),e=g.encounter,p=g.player;
+  Object.assign(p,{x:400,y:F.ARENA.y});
+  Object.assign(e,{hp:1,won:true,invincible:0});
+  e.boss.hp=0;
+  Object.assign(e.finalBoss,{hp:1,stage:2,active:true,phase:'chase',leapWait:4});
+  e.bullets.push({x:e.finalBoss.x,y:p.y-40,vx:300,vy:0,life:1},
+    {x:p.x,y:p.y-24,vx:-100,vy:0,life:1,enemy:true});
+  E.updateEncounter(e,p,{},1/120,g.platforms);
+  assert.equal(e.dead,true);
+  assert.equal(e.finalBoss.hp,0);
+  assert.equal(X.ready(e,{}),false);
+  let data;
+  assert.ok(S.write({setItem:(_,v)=>data=v},{...g,checkpoint:{x:p.x,y:p.y,floor:20},maxFloor:20}));
+  const next=setup();
+  S.restore(S.read({getItem:()=>data}),next);
+  assert.equal(next.encounter.finalBoss.hp,0);
+  assert.equal(next.encounter.finalWon,true);
+  assert.equal(next.challenges.done,false);
+  assert.ok(next.player.respawnProtection>0);
+  assert.ok(X.ready(next.encounter,{}));
+});
+
 test('el rescate recoge al jugador en la azotea aunque esté pegado al borde',()=>{
   const platforms=P.createPlatforms(),arena=platforms.find(p=>p.arena);
   for(const x of [20,709]){

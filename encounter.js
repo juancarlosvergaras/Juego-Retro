@@ -297,6 +297,9 @@ p.transformFrom=p.form||'soldier';(typeof module!=='undefined'&&module.exports?r
     }
     for(const n of e.enemies)if(Enemies.contact(n,p,platforms,segmentHit))hurtPlayer(e,p,n.x,n.kind==='knife');
     if(b.active&&!e.invincible&&!(p.cloak>0)&&Math.abs(p.x-b.x)<36&&Math.abs(p.y-b.y)<55){hurtPlayer(e,p,b.x);}
+    // Los proyectiles se resuelven después del turno del jefe. Si ambos caen
+    // aquí, el guardado de la muerte no tendrá otro turno para registrar la baja.
+    if(e.finalBoss.stage===2&&e.finalBoss.hp<=0)e.finalWon=true;
     e.bullets=e.bullets.filter(b=>b.life>0);if(e.hp<=0)e.dead=true;
   }
   // Respuesta al daño, común a las ocho misiones. lost() devuelve la vida perdida

@@ -1,6 +1,28 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const N=require('../enemies.js'),E=require('../encounter.js'),P=require('../physics.js');
 const floor=[{x:0,y:1000,w:729,kind:'deck',thickness:16}];
+test('los fusileros conservan espacio para disparar en ambos sentidos y junto al borde',()=>{
+  for(const facing of [-1,1]){
+    for(const crowded of [false,true]){
+      const deck={x:90,w:550,y:1000,kind:'deck'};
+      const mirror=x=>facing===1?x:2*deck.x+deck.w-x;
+      const p=Object.assign(P.createPlayer(),{x:mirror(crowded?235:545),y:deck.y});
+      const start=crowded?[100,100,100]:[160,235,310];
+      const squad=start.map((x,id)=>N.createSoldier({x:mirror(x),y:deck.y,facing},id));
+      const bullets=[];
+      for(let i=0;i<720;i++){
+        N.update(squad,p,1/120,[deck],bullets,()=>null);
+        assert.ok(squad.every(n=>n.grounded&&n.x>=deck.x&&n.x<=deck.x+deck.w));
+      }
+      const positions=squad.map(n=>n.x).sort((a,b)=>a-b);
+      assert.ok(positions[1]-positions[0]>=35&&positions[2]-positions[1]>=35);
+      assert.ok(squad.every(n=>n.alert&&n.aimReady&&n.vx===0));
+      bullets.length=0;
+      for(let i=0;i<240;i++)N.update(squad,p,1/120,[deck],bullets,()=>null);
+      assert.deepEqual(new Set(bullets.map(b=>b.x)),new Set(positions.map(x=>x+facing*20)));
+    }
+  }
+});
 function setup(){const e=E.createEncounter(),p=P.createPlayer(),n=e.enemies[0];e.enemies=[n];Object.assign(n,{x:300,y:1000,facing:1,shot:0,memory:0,alert:false});Object.assign(p,{x:220,y:1000,vx:0,grounded:true});return {e,p,n};}
 test('a soldier idle for a long time waits a full second after spotting the player',()=>{
  const {e,p,n}=setup(),bullets=[];

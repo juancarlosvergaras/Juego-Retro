@@ -1,5 +1,9 @@
 # Estado de publicación
 
+## Publicado en Mac mini · 20261124T023611Z
+
+Revisión completa de la misión 1: guardado, combate, rescate, controles, menús y sonido corregidos, con 12 pruebas de regresión. Activa también los ajustes de la misión 4 que estaban sin instalar. [Cambios, verificación y pendientes](releases/20261124T023611Z.md)
+
 ## Publicado en Mac mini · 20261120T125644Z
 
 Juego a pantalla completa con personajes más grandes, cinemáticas animadas al inicio y fin de cada misión, gran final tras la misión 8 y escaleras del centro comercial rehechas con música nueva. [Cambios y verificación](releases/20261120T125644Z.md)
